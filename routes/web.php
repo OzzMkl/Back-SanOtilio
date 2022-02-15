@@ -65,6 +65,7 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/showTwo/{producto}','ProductoController@showTwo');//sacar producto por id
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
+    Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     /************CATEGORIAS*/
