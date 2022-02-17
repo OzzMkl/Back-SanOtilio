@@ -26,7 +26,7 @@ class SubCategoriaController extends Controller
         ->join('categoria', 'subcategoria.idCat','=','categoria.idCat')
         ->select('subcategoria.*','categoria.nombre as nombreCat')
         ->where('subcategoria.idCat',$value)
-        ->orWhere('categoria.nombre', $value)
+        //->orWhere('categoria.nombre', $value)
         ->get();
         return response()->json([
             'code'          =>  200,

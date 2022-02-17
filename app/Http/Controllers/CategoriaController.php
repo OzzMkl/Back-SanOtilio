@@ -26,7 +26,7 @@ class CategoriaController extends Controller
         ->join('departamentos', 'categoria.idDep','=','departamentos.idDep')
         ->select('categoria.*','departamentos.nombre as nombreDepa')
         ->where('categoria.idDep',$value)
-        ->orWhere('departamentos.nombre', $value)
+        //->orWhere('departamentos.nombre', $value)
         ->get();
         return response()->json([
             'code'          =>  200,
