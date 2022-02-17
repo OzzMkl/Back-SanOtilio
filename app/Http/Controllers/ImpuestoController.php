@@ -12,12 +12,12 @@ class ImpuestoController extends Controller
 {
     public function index(){
         //generamos consulta
-        $impuesto = DB::table('impuesto')
+        $impuestos = DB::table('impuesto')
         ->get();
         return response()->json([
             'code'      => 200,
             'status'    => 'success',
-            'impuesto'  => $impuesto
+            'impuestos'  => $impuestos
         ]);
     }
 }
