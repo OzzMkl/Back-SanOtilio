@@ -77,7 +77,6 @@ class ProductoController extends Controller
         //devolver datos
         return response()->json($data, $data['code']);
     }
-
     public function getImageProduc($filename){
         //comprobar si existe la imagen
         $isset = \Storage::disk('imageproductos')->exists($filename);
@@ -386,6 +385,5 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);
     }
-
 }
 /**** */
