@@ -87,4 +87,5 @@ Route::get('/prueba', function(){
     Route::get('/api/impuesto/index','ImpuestoController@index');
     /***********Orden de compra */
     Route::post('/api/ordendecompra/register','OrdendecompraController@registerOrdencompra');
+    Route::post('/api/ordendecompra/registerLista','OrdendecompraController@registerProductosOrden');
 /***************************************************************************************+ */

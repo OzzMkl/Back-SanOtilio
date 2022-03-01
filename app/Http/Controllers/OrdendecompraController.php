@@ -60,18 +60,18 @@ class OrdendecompraController extends Controller
                         'message'   =>  'Orden creada pero sin productos'
                     );
 
-                     $Productos_orden = new Productos_ordenes();
-                     $Productos_orden->idOrd = $Ordencompra -> idOrd;
-                     $Productos_orden-> idProducto = $params_array['idProducto'];
-                     $Productos_orden-> cantidad = $params_array['cantidad'];
+                    //   $Productos_orden = new Productos_ordenes();
+                    //   $Productos_orden->idOrd = $Ordencompra -> idOrd;
+                    //   $Productos_orden-> idProducto = $params_array['idProducto'];
+                    //   $Productos_orden-> cantidad = $params_array['cantidad'];
 
-                     $Productos_orden->save();
+                    //   $Productos_orden->save();
 
-                     $data = array(
-                         'status'    =>  'success',
-                         'code'      =>  200,
-                         'message'   =>  'Orden creada y lista de productos tambien!'
-                     );
+                    //   $data = array(
+                    //       'status'    =>  'success',
+                    //       'code'      =>  200,
+                    //       'message'   =>  'Orden creada y lista de productos tambien!'
+                    //   );
                     DB::commit();
 
                 } catch(\Exception $e){
@@ -82,14 +82,51 @@ class OrdendecompraController extends Controller
                         'message'   =>  'Fallo al crear la orden compra Rollback!',
                         'error' => $e
                     ]);
-                }     
+                }
+                return response()->json([
+                    'code'      =>  200,
+                    'status'    => 'Success!',
+                    'Ordencompra'   =>  $Ordencompra
+                ]);
             }
-            return response()->json([
-                'code'      =>  200,
-                'status'    => 'Success!',
-                'Ordencompra'   =>  $Ordencompra
-            ]);
+            
         }
+        return response()->json([
+            'code'      =>  400,
+            'status'    => 'Erro!',
+            'message'   =>  'json vacio'
+        ]);
 
     }
+     public function registerProductosOrden(Request $req){
+         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+         $params_array = json_decode($json,true);//decodifiamos el json
+         if(!empty($params_array)){
+                //consultamos la ultima compra para poder asignarla
+                $Orden = OrdenDeCompra::latest('idOrd')->first();//la guardamos en orden
+                //recorremos el array para asignar todos los productos
+                foreach($params_array AS $param => $paramdata){
+                            $Productos_orden = new Productos_ordenes();//creamos el modelo
+                            $Productos_orden->idOrd = $Orden -> idOrd;//asignamos el ultimo idOrd para todos los productos
+                            $Productos_orden-> idProducto = $paramdata['idProducto'];
+                            $Productos_orden-> cantidad = $paramdata['cantidad'];
+                            
+                            $Productos_orden->save();//guardamos el modelo
+                            //Si todo es correcto mandamos el ultimo producto insertado
+                            $data =  array(
+                                'status'        => 'success',
+                                'code'          =>  200,
+                                'Productos_orden'       =>  $Productos_orden
+                            );
+                }
+         }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
+     }
 }
