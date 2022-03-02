@@ -93,7 +93,7 @@ class OrdendecompraController extends Controller
         }
         return response()->json([
             'code'      =>  400,
-            'status'    => 'Erro!',
+            'status'    => 'Error!',
             'message'   =>  'json vacio'
         ]);
 
