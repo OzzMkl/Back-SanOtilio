@@ -12,13 +12,23 @@ class DepartamentoController extends Controller
     //
     public function index(){
         //GENERAMOS CONSULTA
-        $departamentos = DB::table('Departamentos')
+        // $departamentos = DB::table('departamentos')
+        // ->get();
+        // return response()->json([
+        //     'code'          =>  200,
+        //     'status'        => 'success',
+        //     'departamentos'   =>  $departamentos
+        // ]);
+        $departamentos = DB::table('departamentos')
+        ->selectRaw('departamentos.*, count(categoria.idDep) as longitud')
+        ->join('categoria','departamentos.idDep','=','categoria.idDep')
+        ->groupBy('categoria.idDep')
         ->get();
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'departamentos'   =>  $departamentos
-        ]);
+            return response()->json([
+                 'code'          =>  200,
+                 'status'        => 'success',
+                 'departamentos'   =>  $departamentos
+             ]);
     }
  
 }

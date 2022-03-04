@@ -13,13 +13,14 @@ class CategoriaController extends Controller
     //
     public function index(){
         //GENERAMOS CONSULTA
-        $categoria = DB::table('categoria')
-        ->get();
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'categoria'   =>  $categoria
-        ]);
+         $categoria = DB::table('categoria')
+         ->get();
+         return response()->json([
+             'code'          =>  200,
+             'status'        => 'success',
+             'categoria'   =>  $categoria
+         ]);
+
     }
     public function getIdDepa($value){
         $gid = DB::table('categoria')
@@ -34,5 +35,13 @@ class CategoriaController extends Controller
             'gid'   =>  $gid
         ]);
         }
+        // public function getCountIdDep($value){
+        //     $categoriaC = DB::table('categoria')->where('idDep','=',$value)->count();
+        //     return response()->json([
+        //      'code'          =>  200,
+        //      'status'        => 'success',
+        //      'categoriaC'   =>  $categoriaC
+        //  ]);
+        // }
    
 }

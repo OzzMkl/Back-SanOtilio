@@ -71,6 +71,7 @@ Route::get('/prueba', function(){
     /************CATEGORIAS*/
     Route::get('/api/categoria/index','CategoriaController@index');//mostrar categorias
     Route::get('/api/categoria/getIdDepa/{value}','CategoriaController@getIdDepa');
+    
     /************SUBCATEGORIAS*/
     Route::get('/api/subcategoria/index','SubCategoriaController@index');//mostrar subcategorias
     Route::get('/api/subcategoria/getIdSuca/{value}','SubCategoriaController@getIdSuca');
