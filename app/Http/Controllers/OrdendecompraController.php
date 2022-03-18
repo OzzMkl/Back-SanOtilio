@@ -129,4 +129,34 @@ class OrdendecompraController extends Controller
         }
         return response()->json($data, $data['code']);
      }
+     public function getLastOrder(){
+         $ordencompra = OrdenDeCompra::latest('idOrd')->first();
+         return response()->json([
+             'code'         =>  200,
+             'status'       => 'success',
+             'ordencompra'   => $ordencompra
+         ]);
+     }
+     public function show($idOrd){
+        $ordencompra = DB::table('ordendecompra')
+        ->join('productos_ordenes','productos_ordenes.idOrd','=','ordendecompra.idOrd')
+        ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
+        ->select('ordendecompra.*','productos_ordenes.*','proveedores.nombre as nombreProveedor')
+        ->where('ordendecompra.idOrd','=',$idOrd)
+        ->get();
+        if(is_object($ordencompra)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'ordencompra'   =>  $ordencompra
+            ];
+        }else{
+            $data = [
+                'code'          => 400,
+                'status'        => 'error',
+                'message'       => 'El producto no existe'
+            ];
+        }
+        return response()->json($data, $data['code']);
+     }
 }

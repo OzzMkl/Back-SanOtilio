@@ -68,10 +68,11 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
+    Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos
     /************CATEGORIAS*/
     Route::get('/api/categoria/index','CategoriaController@index');//mostrar categorias
     Route::get('/api/categoria/getIdDepa/{value}','CategoriaController@getIdDepa');
-    
+
     /************SUBCATEGORIAS*/
     Route::get('/api/subcategoria/index','SubCategoriaController@index');//mostrar subcategorias
     Route::get('/api/subcategoria/getIdSuca/{value}','SubCategoriaController@getIdSuca');
@@ -89,4 +90,6 @@ Route::get('/prueba', function(){
     /***********Orden de compra */
     Route::post('/api/ordendecompra/register','OrdendecompraController@registerOrdencompra');
     Route::post('/api/ordendecompra/registerLista','OrdendecompraController@registerProductosOrden');
+    Route::get('/api/ordendecompra/getLastOrder','OrdendecompraController@getLastOrder');
+    Route::get('/api/ordendecompra/show/{idOrd}','OrdendecompraController@show');
 /***************************************************************************************+ */
