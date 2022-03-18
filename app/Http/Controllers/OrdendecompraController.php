@@ -13,13 +13,15 @@ use App\Productos_ordenes;
 class OrdendecompraController extends Controller
 {
     //
-    // public function index(){
-    //     $Ordencompra = DB::table()->get();
-    //     return response()->json({
+     public function index(){
+         $ordencompra = DB::table('ordendecompra')->get();
+         return response()->json([
+            'code'         =>  200,
+            'status'       => 'success',
+            'ordencompra'   => $ordencompra
+        ]);
 
-    //     });
-
-    // }
+     }
     public function registerOrdencompra(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
