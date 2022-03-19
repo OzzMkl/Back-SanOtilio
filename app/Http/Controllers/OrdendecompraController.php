@@ -14,7 +14,10 @@ class OrdendecompraController extends Controller
 {
     //
      public function index(){
-         $ordencompra = DB::table('ordendecompra')->get();
+         $ordencompra = DB::table('ordendecompra')
+         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
+         ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+         ->get();
          return response()->json([
             'code'         =>  200,
             'status'       => 'success',
