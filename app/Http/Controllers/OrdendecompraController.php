@@ -167,7 +167,8 @@ class OrdendecompraController extends Controller
      public function showMejorado($idOrd){
         $ordencompra = DB::table('ordendecompra')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
-        ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+        ->join('empleado','empleado.idEmpleado','=','ordendecompra.idEmpleado')
+        ->select('ordendecompra.*','proveedores.nombre as nombreProveedor', DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
         ->where('ordendecompra.idOrd','=',$idOrd)
         ->get();
         $productosOrden = DB::table('productos_ordenes')
