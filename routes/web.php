@@ -92,5 +92,6 @@ Route::get('/prueba', function(){
     Route::post('/api/ordendecompra/registerLista','OrdendecompraController@registerProductosOrden');
     Route::get('/api/ordendecompra/getLastOrder','OrdendecompraController@getLastOrder');
     Route::get('/api/ordendecompra/show/{idOrd}','OrdendecompraController@show');
+    Route::get('/api/ordendecompra/showMejorado/{idOrd}','OrdendecompraController@showMejorado');
     Route::get('/api/ordendecompra/index','OrdendecompraController@index');
 /***************************************************************************************+ */

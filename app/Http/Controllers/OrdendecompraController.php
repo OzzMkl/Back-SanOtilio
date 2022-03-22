@@ -164,4 +164,28 @@ class OrdendecompraController extends Controller
         }
         return response()->json($data, $data['code']);
      }
+     public function showMejorado($idOrd){
+        $ordencompra = DB::table('ordendecompra')
+        ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
+        ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+        ->where('ordendecompra.idOrd','=',$idOrd)
+        ->get();
+        $productosOrden = DB::table('productos_ordenes')
+        ->select('productos_ordenes.*')->where('productos_ordenes.idOrd','=',$idOrd)->get();
+        if(is_object($ordencompra)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'ordencompra'   =>  $ordencompra,
+                'productos'     => $productosOrden
+            ];
+        }else{
+            $data = [
+                'code'          => 400,
+                'status'        => 'error',
+                'message'       => 'El producto no existe'
+            ];
+        }
+        return response()->json($data, $data['code']);
+     }
 }
