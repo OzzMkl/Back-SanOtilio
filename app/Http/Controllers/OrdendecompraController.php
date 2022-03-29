@@ -142,28 +142,28 @@ class OrdendecompraController extends Controller
              'ordencompra'   => $ordencompra
          ]);
      }
-     public function show($idOrd){
-        $ordencompra = DB::table('ordendecompra')
-        ->join('productos_ordenes','productos_ordenes.idOrd','=','ordendecompra.idOrd')
-        ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
-        ->select('ordendecompra.*','productos_ordenes.*','proveedores.nombre as nombreProveedor')
-        ->where('ordendecompra.idOrd','=',$idOrd)
-        ->get();
-        if(is_object($ordencompra)){
-            $data = [
-                'code'          => 200,
-                'status'        => 'success',
-                'ordencompra'   =>  $ordencompra
-            ];
-        }else{
-            $data = [
-                'code'          => 400,
-                'status'        => 'error',
-                'message'       => 'El producto no existe'
-            ];
-        }
-        return response()->json($data, $data['code']);
-     }
+    //  public function show($idOrd){
+    //     $ordencompra = DB::table('ordendecompra')
+    //     ->join('productos_ordenes','productos_ordenes.idOrd','=','ordendecompra.idOrd')
+    //     ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
+    //     ->select('ordendecompra.*','productos_ordenes.*','proveedores.nombre as nombreProveedor')
+    //     ->where('ordendecompra.idOrd','=',$idOrd)
+    //     ->get();
+    //     if(is_object($ordencompra)){
+    //         $data = [
+    //             'code'          => 200,
+    //             'status'        => 'success',
+    //             'ordencompra'   =>  $ordencompra
+    //         ];
+    //     }else{
+    //         $data = [
+    //             'code'          => 400,
+    //             'status'        => 'error',
+    //             'message'       => 'El producto no existe'
+    //         ];
+    //     }
+    //     return response()->json($data, $data['code']);
+    //  }
      public function showMejorado($idOrd){
         $ordencompra = DB::table('ordendecompra')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
@@ -172,7 +172,11 @@ class OrdendecompraController extends Controller
         ->where('ordendecompra.idOrd','=',$idOrd)
         ->get();
         $productosOrden = DB::table('productos_ordenes')
-        ->select('productos_ordenes.*')->where('productos_ordenes.idOrd','=',$idOrd)->get();
+        ->join('producto','producto.idProducto','=','productos_ordenes.idProducto')
+        ->join('medidas','medidas.idMedida','=','producto.idMedida')
+        ->select('productos_ordenes.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
+        ->where('productos_ordenes.idOrd','=',$idOrd)
+        ->get();
         if(is_object($ordencompra)){
             $data = [
                 'code'          => 200,
