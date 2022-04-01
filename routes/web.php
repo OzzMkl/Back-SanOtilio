@@ -94,4 +94,10 @@ Route::get('/prueba', function(){
     ///Route::get('/api/ordendecompra/show/{idOrd}','OrdendecompraController@show');
     Route::get('/api/ordendecompra/showMejorado/{idOrd}','OrdendecompraController@showMejorado');
     Route::get('/api/ordendecompra/index','OrdendecompraController@index');
+    /***********Compra */
+    Route::post('/api/compra/register','CompraController@registerCompra');
+    Route::post('/api/compra/registerLista','CompraController@registerProductosCompra');
+    Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
+    Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
+    Route::get('/api/compra/index','CompraController@index');
 /***************************************************************************************+ */
