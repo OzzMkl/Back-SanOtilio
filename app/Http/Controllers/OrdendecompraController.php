@@ -174,7 +174,7 @@ class OrdendecompraController extends Controller
         $productosOrden = DB::table('productos_ordenes')
         ->join('producto','producto.idProducto','=','productos_ordenes.idProducto')
         ->join('medidas','medidas.idMedida','=','producto.idMedida')
-        ->select('productos_ordenes.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
+        ->select('productos_ordenes.*','producto.claveEx as claveEx','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
         ->where('productos_ordenes.idOrd','=',$idOrd)
         ->get();
         if(is_object($ordencompra)){
