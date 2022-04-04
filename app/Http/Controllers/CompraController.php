@@ -28,6 +28,7 @@ class CompraController extends Controller
            'compra'   => $compra
        ]);
     }
+
     public function registerCompra(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -58,7 +59,7 @@ class CompraController extends Controller
                     $Compra->observaciones = $params_array['observaciones'];
                     $Compra->fecha = $params_array['fecha'];
                     $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
-                    $Compra->idStatus = $params_array['idStatus'];
+                    $Compra->estado = $params_array['estado'];
 
                     $Compra->save();
 
