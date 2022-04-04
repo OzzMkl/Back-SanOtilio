@@ -94,6 +94,8 @@ Route::get('/prueba', function(){
     ///Route::get('/api/ordendecompra/show/{idOrd}','OrdendecompraController@show');
     Route::get('/api/ordendecompra/showMejorado/{idOrd}','OrdendecompraController@showMejorado');
     Route::get('/api/ordendecompra/index','OrdendecompraController@index');
+    Route::put('/api/ordendecompra/updateOrder/{idOrd}','OrdendecompraController@updateOrder');
+    Route::put('/api/ordendecompra/updateProductsOrder/{idOrd}','OrdendecompraController@updateProductsOrder');
     /***********Compra */
     Route::post('/api/compra/register','CompraController@registerCompra');
     Route::post('/api/compra/registerLista','CompraController@registerProductosCompra');
