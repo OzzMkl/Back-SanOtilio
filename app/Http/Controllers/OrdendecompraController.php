@@ -174,7 +174,7 @@ class OrdendecompraController extends Controller
         $productosOrden = DB::table('productos_ordenes')
         ->join('producto','producto.idProducto','=','productos_ordenes.idProducto')
         ->join('medidas','medidas.idMedida','=','producto.idMedida')
-        ->select('productos_ordenes.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
+        ->select('productos_ordenes.*','producto.claveEx as claveEx','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
         ->where('productos_ordenes.idOrd','=',$idOrd)
         ->get();
         if(is_object($ordencompra)){
@@ -192,5 +192,43 @@ class OrdendecompraController extends Controller
             ];
         }
         return response()->json($data, $data['code']);
+     }
+
+     public function updateOrder($idOrd, Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+         if(!empty($params_array)){
+             //eliminar espacios vacios
+            $params_array = array_map('trim', $params_array);
+
+            unset($params_array['idOrd']);
+            unset($params_array['idReq']);
+            unset($params_array['created_at']);
+                 $Ordencompra = OrdenDeCompra::where('idOrd',$idOrd)->update($params_array);
+                
+                 return response()->json([
+                    'status'    =>  'success',
+                    'code'      =>  200,
+                    'message'   =>  'Orden actualizada'
+                 ]);
+
+         }else{
+            return response()->json([
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            ]);   
+         }
+     }
+     public function updateProductsOrder($idOrd,Request $req){
+        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params_array = json_decode($json,true);//decodifiamos el json
+        if(!empty($params_array)){
+            unset($params_array['created_at']);
+            //$Orden = OrdenDeCompra::latest('idOrd')->first();
+            foreach($params_array AS $param => $paramdata){
+                $productosOrden = Productos_ordenes::where('idOrd',$params_array['idOrd'])->update($param);
+            }
+        }else{}
      }
 }
