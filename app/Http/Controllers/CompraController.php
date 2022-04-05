@@ -55,7 +55,7 @@ class CompraController extends Controller
                 try{
                     DB::beginTransaction();
                     $Compra = new Compras();
-                    $Compra->idOrden = $params_array['idOrden'];
+                    $Compra->idOrd = $params_array['idOrd'];
                     $Compra->idPedido = $params_array['idPedido'];
                     $Compra->idProveedor = $params_array['idProveedor'];
                     $Compra->folioProveedor = $params_array['folioProveedor'];
