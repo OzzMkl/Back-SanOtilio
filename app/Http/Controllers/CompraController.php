@@ -55,8 +55,19 @@ class CompraController extends Controller
                 try{
                     DB::beginTransaction();
                     $Compra = new Compras();
-                    $Compra->idOrd = $params_array['idOrd'];
-                    $Compra->idPedido = $params_array['idPedido'];
+                    
+                    switch ($params_array['idOrd'] && $params_array['idPedido']) {
+                        case ($params_array['idOrd']==null && $params_array['idPedido']==null):
+                            break;
+                        case ($params_array['idOrd']!=null && $params_array['idPedido']==null):
+                            $Compra->idOrd = $params_array['idOrd'];
+                            break;
+                        case ($params_array['idOrd']!=null && $params_array['idPedido']!=null):
+                            $Compra->idOrd = $params_array['idOrd'];
+                            $Compra->idPedido = $params_array['idPedido'];
+                            break;
+                    }
+
                     $Compra->idProveedor = $params_array['idProveedor'];
                     $Compra->folioProveedor = $params_array['folioProveedor'];
                     $Compra->subtotal = $params_array['subtotal'];
