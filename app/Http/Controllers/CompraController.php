@@ -55,11 +55,16 @@ class CompraController extends Controller
                 try{
                     DB::beginTransaction();
                     $Compra = new Compras();
+                    $Compra->idOrden = $params_array['idOrden'];
+                    $Compra->idPedido = $params_array['idPedido'];
                     $Compra->idProveedor = $params_array['idProveedor'];
-                    $Compra->observaciones = $params_array['observaciones'];
-                    $Compra->fecha = $params_array['fecha'];
+                    $Compra->folioProveedor = $params_array['folioProveedor'];
+                    $Compra->subtotal = $params_array['subtotal'];
+                    $Compra->total = $params_array['total'];
                     $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
                     $Compra->idStatus = $params_array['idStatus'];
+                    $Compra->fechaRecibo = $params_array['fechaRecibo'];
+                    $Compra->observaciones = $params_array['observaciones'];
 
                     $Compra->save();
 
