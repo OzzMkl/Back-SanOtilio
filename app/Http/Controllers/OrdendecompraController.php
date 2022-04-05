@@ -195,17 +195,19 @@ class OrdendecompraController extends Controller
      }
 
      public function updateOrder($idOrd, Request $request){
+
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
          if(!empty($params_array)){
              //eliminar espacios vacios
             $params_array = array_map('trim', $params_array);
-
+            //quitamos lo que no queremos actualizar
             unset($params_array['idOrd']);
             unset($params_array['idReq']);
             unset($params_array['created_at']);
-                 $Ordencompra = OrdenDeCompra::where('idOrd',$idOrd)->update($params_array);
-                
+            //actualizamos
+            $Ordencompra = OrdenDeCompra::where('idOrd',$idOrd)->update($params_array);
+                //retornamos la respuesta si esta
                  return response()->json([
                     'status'    =>  'success',
                     'code'      =>  200,
@@ -223,15 +225,15 @@ class OrdendecompraController extends Controller
      public function updateProductsOrder($idOrd,Request $req){
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
-        if(!empty($params_array)){
+        if(!empty($params_array)){//verificamos que no este vacio
 
             //eliminamos los registros que tengab ese idOrd
             Productos_ordenes::where('idOrd',$idOrd)->delete();
             //recorremos el array para asignar todos los productos
             foreach($params_array AS $param => $paramdata){
                 $Productos_orden = new Productos_ordenes();//creamos el modelo
-                $Productos_orden->idOrd = $idOrd;//asignamos el ultimo idOrd para todos los productos
-                $Productos_orden-> idProducto = $paramdata['idProducto'];
+                $Productos_orden->idOrd = $idOrd;//asignamos el id desde el parametro que recibimos
+                $Productos_orden-> idProducto = $paramdata['idProducto'];//asginamos segun el recorrido
                 $Productos_orden-> cantidad = $paramdata['cantidad'];
                 
                 $Productos_orden->save();//guardamos el modelo
