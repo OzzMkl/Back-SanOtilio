@@ -55,31 +55,30 @@ class CompraController extends Controller
                 try{
                     DB::beginTransaction();
                     $Compra = new Compras();
-                    
-                    switch ($params_array['idPedido']) {
-                        case ($params_array['idPedido']==null):
-                            break;
-                        case ($params_array['idPedido']!=null):
-                            $Compra->idPedido = $params_array['idPedido'];
-                            break;
-                    }
 
-                    switch ($params_array['idOrd']) {
-                        case ($params_array['idOrd']==null):
-                            break;
-                        case ($params_array['idOrd']!=null):
-                            $Compra->idOrd = $params_array['idOrd'];
-                            break;
+                    if($params_array['idOrd']== null || $params_array['idPedido']== null){
+                        
+                        $Compra->idProveedor = $params_array['idProveedor'];
+                        $Compra->folioProveedor = $params_array['folioProveedor'];
+                        $Compra->subtotal = $params_array['subtotal'];
+                        $Compra->total = $params_array['total'];
+                        $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
+                        $Compra->idStatus = $params_array['idStatus'];
+                        $Compra->fechaRecibo = $params_array['fechaRecibo'];
+                        $Compra->observaciones = $params_array['observaciones'];
                     }
-
-                    $Compra->idProveedor = $params_array['idProveedor'];
-                    $Compra->folioProveedor = $params_array['folioProveedor'];
-                    $Compra->subtotal = $params_array['subtotal'];
-                    $Compra->total = $params_array['total'];
-                    $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
-                    $Compra->idStatus = $params_array['idStatus'];
-                    $Compra->fechaRecibo = $params_array['fechaRecibo'];
-                    $Compra->observaciones = $params_array['observaciones'];
+                    else{
+                        $Compra->idOrd = $params_array['idOrd'];
+                        $Compra->idPedido = $params_array['idPedido'];
+                        $Compra->idProveedor = $params_array['idProveedor'];
+                        $Compra->folioProveedor = $params_array['folioProveedor'];
+                        $Compra->subtotal = $params_array['subtotal'];
+                        $Compra->total = $params_array['total'];
+                        $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
+                        $Compra->idStatus = $params_array['idStatus'];
+                        $Compra->fechaRecibo = $params_array['fechaRecibo'];
+                        $Compra->observaciones = $params_array['observaciones'];
+                    }
 
                     $Compra->save();
 
