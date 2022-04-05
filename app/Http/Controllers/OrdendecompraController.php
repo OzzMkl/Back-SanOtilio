@@ -225,30 +225,25 @@ class OrdendecompraController extends Controller
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){
 
-            $productosOrden = Productos_ordenes::find('idOrd',$idOrd);
-                 $productosOrden-> idProducto = $paramdata['idProducto'];
-                 $productosOrden-> cantidad = $paramdata['cantidad'];
-                 $productosOrden->save();
-                 $data =  array(
-                     'status'        => 'success',
-                     'code'          =>  200,
-                     'Productos_orden'       =>  $productosOrden
-                 );
+            //eliminamos los registros que tengab ese idOrd
+            Productos_ordenes::where('idOrd',$idOrd)->delete();
+            //recorremos el array para asignar todos los productos
+            foreach($params_array AS $param => $paramdata){
+                $Productos_orden = new Productos_ordenes();//creamos el modelo
+                $Productos_orden->idOrd = $idOrd;//asignamos el ultimo idOrd para todos los productos
+                $Productos_orden-> idProducto = $paramdata['idProducto'];
+                $Productos_orden-> cantidad = $paramdata['cantidad'];
+                
+                $Productos_orden->save();//guardamos el modelo
+                //Si todo es correcto mandamos el ultimo producto insertado
+            }
+            $data =  array(
+                'status'            => 'success',
+                'code'              =>  200,
+                'message'           =>  'Eliminacion e insercion correcta!',
+                'Productos_orden'   =>  $Productos_orden
+            );
             
-            //$Orden = OrdenDeCompra::latest('idOrd')->first();
-            // foreach($params_array AS $param => $paramdata){
-
-            //     $productosOrden = Productos_ordenes::where('idOrd',$idOrd);
-            //     //$Productos_orden->idOrd = $Orden -> idOrd;//asignamos el ultimo idOrd para todos los productos
-            //     $productosOrden-> idProducto = $paramdata['idProducto'];
-            //     $productosOrden-> cantidad = $paramdata['cantidad'];
-            //     $productosOrden->save();
-            //     $data =  array(
-            //         'status'        => 'success',
-            //         'code'          =>  200,
-            //         'Productos_orden'       =>  $productosOrden
-            //     );
-            // }
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
             $data =  array(
