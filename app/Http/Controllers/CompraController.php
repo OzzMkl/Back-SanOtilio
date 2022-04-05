@@ -59,7 +59,7 @@ class CompraController extends Controller
                     $Compra->observaciones = $params_array['observaciones'];
                     $Compra->fecha = $params_array['fecha'];
                     $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
-                    $Compra->estado = $params_array['estado'];
+                    $Compra->idStatus = $params_array['idStatus'];
 
                     $Compra->save();
 

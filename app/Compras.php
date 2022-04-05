@@ -10,6 +10,6 @@ class Compras extends Model
     protected $table = 'compra';
     protected $primaryKey = 'idCompra';
     protected  $fillable = [
-        'idOrd','idPedido','idProveedor','folioProveedor','subtotal','total','idEmpleadoR','estado','fechaRecibo','observaciones'
+        'idOrd','idPedido','idProveedor','folioProveedor','subtotal','total','idEmpleadoR','idStatus','fechaRecibo','observaciones'
     ];
 }
