@@ -224,11 +224,39 @@ class OrdendecompraController extends Controller
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){
-            unset($params_array['created_at']);
+
+            $productosOrden = Productos_ordenes::find('idOrd',$idOrd);
+                 $productosOrden-> idProducto = $paramdata['idProducto'];
+                 $productosOrden-> cantidad = $paramdata['cantidad'];
+                 $productosOrden->save();
+                 $data =  array(
+                     'status'        => 'success',
+                     'code'          =>  200,
+                     'Productos_orden'       =>  $productosOrden
+                 );
+            
             //$Orden = OrdenDeCompra::latest('idOrd')->first();
-            foreach($params_array AS $param => $paramdata){
-                $productosOrden = Productos_ordenes::where('idOrd',$params_array['idOrd'])->update($param);
-            }
-        }else{}
+            // foreach($params_array AS $param => $paramdata){
+
+            //     $productosOrden = Productos_ordenes::where('idOrd',$idOrd);
+            //     //$Productos_orden->idOrd = $Orden -> idOrd;//asignamos el ultimo idOrd para todos los productos
+            //     $productosOrden-> idProducto = $paramdata['idProducto'];
+            //     $productosOrden-> cantidad = $paramdata['cantidad'];
+            //     $productosOrden->save();
+            //     $data =  array(
+            //         'status'        => 'success',
+            //         'code'          =>  200,
+            //         'Productos_orden'       =>  $productosOrden
+            //     );
+            // }
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
      }
 }
