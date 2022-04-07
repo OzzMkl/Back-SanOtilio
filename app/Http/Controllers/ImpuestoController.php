@@ -20,4 +20,28 @@ class ImpuestoController extends Controller
             'impuestos'  => $impuestos
         ]);
     }
+
+    public function show($idImpuesto){
+        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
+         //FUNCION QUE DEVULEVE LOS IMPUESTOS DE ACUERDO A SU ID
+         $proveedores = DB::table('impuesto')
+         ->select('impuesto.*')
+         ->where('impuesto.idImpuesto',$idImpuesto)
+         ->get();
+         if(is_object($proveedores)){
+             $data = [
+                 'code'          => 200,
+                 'status'        => 'success',
+                 'impuesto'   =>  $idImpuesto
+             ];
+         }else{
+             $data = [
+                 'code'          => 400,
+                 'status'        => 'error',
+                 'message'       => 'El impuesto no existe'
+             ];
+         }
+         return response()->json($data, $data['code']);
+     }
+
 }
