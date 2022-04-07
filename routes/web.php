@@ -87,6 +87,7 @@ Route::get('/prueba', function(){
     Route::get('/api/lote/index','LoteController@index');// mostrar lotes
     /***********IMPUESTO */
     Route::get('/api/impuesto/index','ImpuestoController@index');
+    Route::get('/api/impuesto/{idImpuesto}','ImpuestoController@show');//sacar impuesto por id
     /***********Orden de compra */
     Route::post('/api/ordendecompra/register','OrdendecompraController@registerOrdencompra');
     Route::post('/api/ordendecompra/registerLista','OrdendecompraController@registerProductosOrden');
