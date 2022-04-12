@@ -35,16 +35,17 @@ class ClienteController extends Controller
         ]);
     }
     public function registerCliente(Request $request){
-        $json = $request -> input('json',null);
-        //$params = json_decode($json);
-        $params_array = json_decode($json, true);
-        if( !empty($params_array)){
+        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params = json_decode($json);
+        $params_array = json_decode($json,true);
+
+        if(!empty($params) && !empty($params_array)){
             $params_array = array_map('trim',$params_array);
 
             $validate = Validator::make($params_array, [
                 'nombre'       => 'required',
                 'rfc'    => 'required',
-                'correo'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
+                'correo'      => 'required',
                 'credito'   => 'required',
                 'idStatus'   => 'required',
                 'idTipo'   => 'required',
@@ -71,24 +72,35 @@ class ClienteController extends Controller
                     $Cliente->idStatus = $params_array['idStatus'];
                     $Cliente->idTipo = $params_array['idTipo'];
                     $Cliente->fechaAlta = $params_array['fechaAlta'];
+                    $Cliente->save();
+                    
                     DB::commit();
+
+                    $data = array(
+                        'code'      =>  200,
+                        'status'    => 'success',
+                        'message'   =>  'Cliente registrado'
+                    );
                 }catch(\Exception $e){
                     DB::rollBack();
-                    return response()->json([
+                    $data = array(
                         'code'      => 400,
                         'status'    => 'Error',
                         'message'   =>  'Fallo al crear la orden compra Rollback!',
                         'error' => $e
-                    ]);
+                    );
                 }
 
             }
 
+        }else{
+            $data = array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            );
         }
-        return response()->json([
-            'code'      =>  400,
-            'status'    => 'Error!',
-            'message'   =>  'json vacio'
-        ]);
+        return response()->json($data, $data['code']);
     }
 }
+
