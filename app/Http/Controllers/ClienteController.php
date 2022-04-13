@@ -7,6 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Cliente;
+use App\Cdireccion;
 use Validator;
 
 class ClienteController extends Controller
@@ -40,7 +41,7 @@ class ClienteController extends Controller
         $params_array = json_decode($json,true);
 
         if(!empty($params) && !empty($params_array)){
-            $params_array = array_map('trim',$params_array);
+            //$params_array = array_map('trim',$params_array);
 
             $validate = Validator::make($params_array, [
                 'nombre'       => 'required',
@@ -48,8 +49,7 @@ class ClienteController extends Controller
                 'correo'      => 'required',
                 'credito'   => 'required',
                 'idStatus'   => 'required',
-                'idTipo'   => 'required',
-                'fechaAlta'   => 'required'
+                'idTipo'   => 'required'
             ]);
 
             if($validate->fails()){
@@ -63,17 +63,37 @@ class ClienteController extends Controller
                 try{
                     DB::beginTransaction();
                     $Cliente = new Cliente();
+
                     $Cliente->nombre = $params_array['nombre'];
-                    $Cliente->aPaterno = $params_array['aPaterno'];
-                    $Cliente->aMaterno = $params_array['aMaterno'];
+                    if( isset($params_array['aPaterno']) && isset($params_array['aMaterno'])){
+                        $Cliente->aPaterno = $params_array['aPaterno'];
+                        $Cliente->aMaterno = $params_array['aMaterno'];
+                    }
                     $Cliente->rfc = $params_array['rfc'];
                     $Cliente->correo = $params_array['correo'];
                     $Cliente->credito = $params_array['credito'];
                     $Cliente->idStatus = $params_array['idStatus'];
                     $Cliente->idTipo = $params_array['idTipo'];
-                    $Cliente->fechaAlta = $params_array['fechaAlta'];
                     $Cliente->save();
                     
+                    //consuktamos el ultimo insertado
+                    //$Cliente = Cliente::latest('idCliente')->first();
+//
+                    //$cdireccion = new Cdireccion();
+                    //$cdireccion->idCliente = $Cliente->idCliente;
+                    //$cdireccion->pais = $params_array[''];
+                    //$cdireccion->estado = $params_array[''];
+                    //$cdireccion->ciudad = $params_array[''];
+                    //$cdireccion->colonia = $params_array[''];
+                    //$cdireccion->calle = $params_array[''];
+                    //$cdireccion->numExt = $params_array[''];
+                    //$cdireccion->numInt = $params_array[''];
+                    //$cdireccion->cp = $params_array[''];
+                    //$cdireccion->referencia = $params_array[''];
+                    //$cdireccion->telefono = $params_array[''];
+                    //$cdireccion->idZona = $params_array[''];
+                    //$cdireccion->save();
+
                     DB::commit();
 
                     $data = array(
