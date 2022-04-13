@@ -10,7 +10,6 @@ class Cliente extends Model
     protected $primaryKey = 'idCliente';
     protected $fillable = [
         'nombre', 'aPaterno', 'aMaterno', 'rfc',
-        'correo', 'credito', 'idStatus', 'idTipo',
-        'fechaAlta'
+        'correo', 'credito', 'idStatus', 'idTipo'
     ];
 }
