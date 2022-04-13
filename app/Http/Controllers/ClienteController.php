@@ -134,19 +134,25 @@ class ClienteController extends Controller
                     $Cliente = Cliente::latest('idCliente')->first();
                     $cdireccion = new Cdireccion();
                     $cdireccion->idCliente = $Cliente->idCliente;
-                    $cdireccion->pais = $params_array[''];
-                    $cdireccion->estado = $params_array[''];
-                    $cdireccion->ciudad = $params_array[''];
-                    $cdireccion->colonia = $params_array[''];
-                    $cdireccion->calle = $params_array[''];
-                    $cdireccion->numExt = $params_array[''];
-                    $cdireccion->numInt = $params_array[''];
-                    $cdireccion->cp = $params_array[''];
-                    $cdireccion->referencia = $params_array[''];
-                    $cdireccion->telefono = $params_array[''];
-                    $cdireccion->idZona = $params_array[''];
+                    $cdireccion->pais = $params_array['pais'];
+                    $cdireccion->estado = $params_array['estado'];
+                    $cdireccion->ciudad = $params_array['ciudad'];
+                    $cdireccion->colonia = $params_array['colonia'];
+                    $cdireccion->calle = $params_array['calle'];
+                    $cdireccion->entreCalles = $params_array['entreCalles'];
+                    $cdireccion->numExt = $params_array['numExt'];
+                    $cdireccion->numInt = $params_array['numInt'];
+                    $cdireccion->cp = $params_array['cp'];
+                    $cdireccion->referencia = $params_array['referencia'];
+                    $cdireccion->telefono = $params_array['telefono'];
+                    $cdireccion->idZona = $params_array['idZona'];
                     $cdireccion->save();
 
+                    $data = array(
+                        'code'      =>  200,
+                        'status'    => 'success',
+                        'message'   =>  'Direccion registrada correctamente'
+                    );
              }
         }else{
             $data = array(
