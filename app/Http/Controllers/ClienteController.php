@@ -163,6 +163,24 @@ class ClienteController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    public function getDetallesCliente($idCliente){
+        $cliente = DB::table('cliente')
+        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+        ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
+        ->where('cliente.idCliente',$idCliente)
+        ->get();
+        $cdireccion = DB::table('cdireccion')
+        ->join('zona','zona.idZona','=','cdireccion.idZona')
+        ->select('cdireccion.*','zona.nombre as nombreZona')
+        ->where('cdireccion.idCliente',$idCliente)
+        ->get();
+        return response()->json([
+            'code'          => 200,
+            'status'        => 'success',
+            'cliente'       => $cliente,
+            'cdireccion'    => $cdireccion
+        ]);
+    }
 }
 
 /** */
