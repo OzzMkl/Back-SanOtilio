@@ -107,4 +107,6 @@ Route::get('/prueba', function(){
     Route::get('/api/clientes/index','ClienteController@index');
     Route::get('/api/clientes/indexTipocliente','ClienteController@indexTipocliente');
     Route::post('/api/clientes/register','ClienteController@registerCliente');
+    Route::post('/api/clientes/registerCdireccion','ClienteController@registerCdireccion');
+    Route::get('/api/clientes/getDetallesCliente/{idCliente}','ClienteController@getDetallesCliente');
 /***************************************************************************************+ */
