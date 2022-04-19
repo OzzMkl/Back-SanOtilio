@@ -141,7 +141,7 @@ class CompraController extends Controller
                            $Productos_compra-> precio = $paramdata['precio'];
                            $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
                            
-                           $Productos_orden->save();//guardamos el modelo
+                           $Productos_compra->save();//guardamos el modelo
                            //Si todo es correcto mandamos el ultimo producto insertado
                            $data =  array(
                                'status'        => 'success',
