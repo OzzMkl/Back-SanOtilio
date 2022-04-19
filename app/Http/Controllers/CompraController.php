@@ -131,11 +131,11 @@ class CompraController extends Controller
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){
                //consultamos la ultima compra para poder asignarla
-               $Compra = Compra::latest('idCompra')->first();//la guardamos en orden
+               $Compra = Compras::latest('idCompra')->first();//la guardamos en compra
                //recorremos el array para asignar todos los productos
                foreach($params_array AS $param => $paramdata){
                            $Productos_compra = new Productos_compra();//creamos el modelo
-                           $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idOrd para todos los productos
+                           $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idCompra para todos los productos
                            $Productos_compra-> idProducto = $paramdata['idProducto'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
@@ -161,7 +161,7 @@ class CompraController extends Controller
     }
 
     public function getLastCompra(){
-        $ordencompra = OrdenDeCompra::latest('idCompra')->first();
+        $Compra = Compras::latest('idCompra')->first();
         return response()->json([
             'code'         =>  200,
             'status'       => 'success',
