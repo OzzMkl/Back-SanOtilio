@@ -134,12 +134,12 @@ class CompraController extends Controller
                $Orden = Compra::latest('idCompra')->first();//la guardamos en orden
                //recorremos el array para asignar todos los productos
                foreach($params_array AS $param => $paramdata){
-                           $Productos_compra = new Productos_ordenes();//creamos el modelo
+                           $Productos_compra = new Productos_compra();//creamos el modelo
                            $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idOrd para todos los productos
                            $Productos_compra-> idProducto = $paramdata['idProducto'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
-                           $Productos_compra-> impuesto = $paramdata['impuesto'];
+                           $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
                            
                            $Productos_orden->save();//guardamos el modelo
                            //Si todo es correcto mandamos el ultimo producto insertado
