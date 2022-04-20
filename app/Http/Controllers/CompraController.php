@@ -165,7 +165,7 @@ class CompraController extends Controller
         return response()->json([
             'code'         =>  200,
             'status'       => 'success',
-            'compra'   => $compra
+            'compra'   => $Compra
         ]);
     }
 
