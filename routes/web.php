@@ -103,10 +103,13 @@ Route::get('/prueba', function(){
     Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
     Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
     Route::get('/api/compra/index','CompraController@index');
+    Route::get('/api/compra/updateExistencia','CompraController@updateExistencia');
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
     Route::get('/api/clientes/indexTipocliente','ClienteController@indexTipocliente');
     Route::post('/api/clientes/register','ClienteController@registerCliente');
     Route::post('/api/clientes/registerCdireccion','ClienteController@registerCdireccion');
     Route::get('/api/clientes/getDetallesCliente/{idCliente}','ClienteController@getDetallesCliente');
+    Route::put('/api/clientes/updateCliente/{idCliente}','ClienteController@updateCliente');
+    Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
 /***************************************************************************************+ */

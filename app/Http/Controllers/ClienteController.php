@@ -181,6 +181,77 @@ class ClienteController extends Controller
             'cdireccion'    => $cdireccion
         ]);
     }
+    public function updateCliente($idCliente, Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        if(!empty($params_array)){
+             //eliminar espacios vacios
+             $params_array = array_map('trim', $params_array);
+             //actualizamos
+             $cliente = Cliente::where('idCliente',$idCliente)->update($params_array);
+
+             $data = array(
+                'code'         =>  200,
+                'status'       =>  'success',
+                'cliente'    =>  $params_array
+            );
+
+        }else{
+            $data = array(
+                'code'         =>  200,
+                'status'       =>  'error',
+                'message'      =>  'Error al procesar'
+            );
+        }
+        return response()->json($data,$data['code']);
+    }
+
+    public function updateCdireccion($idCliente, Request $req){
+        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params_array = json_decode($json,true);//decodifiamos el json
+        if(!empty($params_array)){//verificamos que no este vacio
+
+            //eliminamos los registros que tengab ese idOrd
+            Cdireccion::where('idCliente',$idCliente)->delete();
+            //recorremos el array para asignar todos los productos
+            //Cdireccion::where('idCliente',$idCliente)->update($params_array);
+
+            foreach($params_array AS $param => $paramdata){
+                $cdireccion = new Cdireccion();//creamos el modelo
+                $cdireccion-> idCliente = $idCliente;//asignamos el id desde el parametro que recibimos
+                $cdireccion-> pais = $paramdata['pais'];//asginamos segun el recorrido
+                $cdireccion-> estado = $paramdata['estado'];
+                $cdireccion-> ciudad = $paramdata['ciudad'];
+                $cdireccion-> colonia = $paramdata['colonia'];
+                $cdireccion-> calle = $paramdata['calle'];
+                $cdireccion-> entreCalles = $paramdata['entreCalles'];
+                $cdireccion-> numExt = $paramdata['numExt'];
+                $cdireccion-> numInt = $paramdata['numInt'];
+                $cdireccion-> cp = $paramdata['cp'];
+                $cdireccion-> referencia = $paramdata['referencia'];
+                $cdireccion-> telefono = $paramdata['telefono'];
+                $cdireccion-> idZona = $paramdata['idZona'];
+                
+                $cdireccion->save();//guardamos el modelo
+                //Si todo es correcto mandamos el ultimo producto insertado
+                }
+            $data =  array(
+                'status'            => 'success',
+                'code'              =>  200,
+                'message'           =>  'Eliminacion e insercion correcta!',
+                'cdireccion'   =>  $params_array
+            );
+            
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
 }
 
 /** */

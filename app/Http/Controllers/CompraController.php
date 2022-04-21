@@ -10,6 +10,7 @@ use Validator;
 use App\OrdenDeCompra;
 use App\Productos_compra;
 use App\Compras;
+use App\Producto;
 
 class CompraController extends Controller
 {
@@ -123,6 +124,20 @@ class CompraController extends Controller
             'code'      =>  400,
             'status'    => 'Error!',
             'message'   =>  'json vacio'
+        ]);
+    }
+
+    public function updateExistencia(){
+        //Insertar el lote
+        //Agregar Producto - Existencia - Lote
+        //Recalcular la existencia general y Actualizarla
+        ini_set('memory_limit', '-1');// Se agrega para eliminar el limite de memoria asignado
+        $producto = DB::table('producto')
+        ->get();
+        return response()->json([
+            'code'         =>  200,
+            'status'       => 'success',
+            'producto'   => $producto
         ]);
     }
 
