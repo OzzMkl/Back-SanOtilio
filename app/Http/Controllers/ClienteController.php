@@ -166,7 +166,8 @@ class ClienteController extends Controller
     public function getDetallesCliente($idCliente){
         $cliente = DB::table('cliente')
         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
-        ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
+        ->join('statuss','statuss.idStatus','=','cliente.idStatus')
+        ->select('cliente.*','tipocliente.Nombre as nombreTipoC','statuss.nombre as nombreStatus')
         ->where('cliente.idCliente',$idCliente)
         ->get();
         $cdireccion = DB::table('cdireccion')
