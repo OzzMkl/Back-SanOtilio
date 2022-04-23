@@ -110,6 +110,7 @@ Route::get('/prueba', function(){
     Route::post('/api/clientes/register','ClienteController@registerCliente');
     Route::post('/api/clientes/registerCdireccion','ClienteController@registerCdireccion');
     Route::get('/api/clientes/getDetallesCliente/{idCliente}','ClienteController@getDetallesCliente');
+    Route::get('/api/clientes/getDireccionCliente/{idCliente}','ClienteController@getDireccionCliente');
     Route::put('/api/clientes/updateCliente/{idCliente}','ClienteController@updateCliente');
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
 /***************************************************************************************+ */

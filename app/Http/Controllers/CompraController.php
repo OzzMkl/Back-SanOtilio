@@ -127,8 +127,13 @@ class CompraController extends Controller
         ]);
     }
 
+    public function registerLote(){//Insertar el lote
+
+
+    }
+
     public function updateExistencia(){
-        //Insertar el lote
+        //Obtener idLote
         //Agregar Producto - Existencia - Lote
         //Recalcular la existencia general y Actualizarla
         ini_set('memory_limit', '-1');// Se agrega para eliminar el limite de memoria asignado
@@ -139,6 +144,7 @@ class CompraController extends Controller
             'status'       => 'success',
             'producto'   => $producto
         ]);
+
     }
 
     public function registerProductosCompra(Request $req){

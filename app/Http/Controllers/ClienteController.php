@@ -182,6 +182,16 @@ class ClienteController extends Controller
             'cdireccion'    => $cdireccion
         ]);
     }
+    public function getDireccionCliente($idCliente){
+        $direccion = DB::table('cdireccion')
+        ->where('idCliente','=',$idCliente)
+        ->get();
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'direccion' => $direccion
+        ]);
+    }
     public function updateCliente($idCliente, Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
