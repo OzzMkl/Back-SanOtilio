@@ -15,9 +15,9 @@ class ClienteController extends Controller
     public function index(){
         config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
         $clientes = DB::table('cliente')
-        ->join('cdireccion','cdireccion.idCliente','=','cliente.idCliente')
+        //->join('cdireccion','cdireccion.idCliente','=','cliente.idCliente')
         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
-        ->select('cliente.*','cdireccion.*','tipocliente.Nombre as nombreTipoC')
+        ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
         ->groupBy('cliente.idCliente')
         ->get();
         return response()->json([

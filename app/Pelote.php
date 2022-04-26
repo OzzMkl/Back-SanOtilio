@@ -6,9 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pelote extends Model
 {
-    protected $table = 'lote';
-    protected $primaryKey = 'idLote';
+    protected $table = 'pelote';
     protected $fillable = [
-        'codigo','caducidad'
+        'idProducto','existencia','idLote','caducidad'
     ];
 }

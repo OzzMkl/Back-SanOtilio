@@ -100,6 +100,7 @@ Route::get('/prueba', function(){
     /***********Compra */
     Route::post('/api/compra/register','CompraController@registerCompra');
     Route::post('/api/compra/registerLista','CompraController@registerProductosCompra');
+    Route::post('/api/compra/registerLote','CompraController@registerLote');
     Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
     Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
     Route::get('/api/compra/index','CompraController@index');

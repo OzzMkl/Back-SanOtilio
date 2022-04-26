@@ -11,6 +11,9 @@ use App\OrdenDeCompra;
 use App\Productos_compra;
 use App\Compras;
 use App\Producto;
+use App\lote;
+use App\Pelote;
+
 
 class CompraController extends Controller
 {
@@ -127,24 +130,128 @@ class CompraController extends Controller
         ]);
     }
 
-    public function registerLote(){//Insertar el lote
+    public function registerLote (Request $request){
+        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params = json_decode($json);
+        $params_array = json_decode($json,true);
 
+        if(!empty($params) && !empty($params_array)){
+            //eliminar espacios vacios
+            $params_array = array_map('trim', $params_array);
+            //validamos los datos
+            $validate = Validator::make($params_array, [
+                'idLote'   => 'required',
+                'codigo'   => 'required'
+            ]);
+            if($validate->fails()){//si el json esta mal mandamos esto (falta algun dato)
+                $data = array(
+                    'status'    => 'error',
+                    'code'      => 404,
+                    'message'   => 'Fallo! El Lote no se ha creado',
+                    'errors'    => $validate->errors()
+                );
+            }else{
+                try{
+                    DB::beginTransaction();
+                    $Lote = new lote();
+                        $Lote->idLote = $params_array['idLote'];
+                        $Lote->codigo = $params_array['codigo'];                  
+                    $Lote->save();
 
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'Lote creado'
+                    );
+
+                    //   $Productos_orden = new Productos_ordenes();
+                    //   $Productos_orden->idOrd = $Ordencompra -> idOrd;
+                    //   $Productos_orden-> idProducto = $params_array['idProducto'];
+                    //   $Productos_orden-> cantidad = $params_array['cantidad'];
+
+                    //   $Productos_orden->save();
+
+                    //   $data = array(
+                    //       'status'    =>  'success',
+                    //       'code'      =>  200,
+                    //       'message'   =>  'Orden creada y lista de productos tambien!'
+                    //   );
+                    DB::commit();
+
+                } catch(\Exception $e){
+                    DB::rollBack();
+                    return response()->json([
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   =>  'Fallo al crear el Lote Rollback!',
+                        'error' => $e
+                    ]);
+                }
+                return response()->json([
+                    'code'      =>  200,
+                    'status'    => 'Success!',
+                    'lote'   =>  $Lote
+                ]);
+            }
+            
+        }
+        return response()->json([
+            'code'      =>  400,
+            'status'    => 'Error!',
+            'message'   =>  'json vacio'
+        ]);
     }
 
-    public function updateExistencia(){
-        //Obtener idLote
-        //Agregar Producto - Existencia - Lote
-        //Recalcular la existencia general y Actualizarla
-        ini_set('memory_limit', '-1');// Se agrega para eliminar el limite de memoria asignado
-        $producto = DB::table('producto')
-        ->get();
-        return response()->json([
-            'code'         =>  200,
-            'status'       => 'success',
-            'producto'   => $producto
-        ]);
+    public function updateExistencia(Request $request){
+        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params_array = json_decode($json,true);//decodifiamos el json
+        if(!empty($params_array)){
+            //Obtener idLote
+            $Lote = lote::latest('idLote')->first();//la guardamos en Lote
+            //Recorremos el array para asignar todos los productos
+            //Agregar Producto - Existencia - Lote
+            foreach($params_array AS $param => $paramdata){
+                        $Pelote = new Pelote();//creamos el modelo
+                        $Pelote->idLote = $Lote -> idLote;//asignamos el ultimo idLote para todos los productos
+                        $Pelote-> idProducto = $paramdata['idProducto'];
+                        $Pelote-> existencia = $paramdata['existencia'];
+                        $Pelote-> caducidad = $paramdata['caducidad'];
+                        
+                        $Pelote->save();//guardamos el modelo
+                        //Si todo es correcto mandamos el ultimo producto insertado
+                        $data =  array(
+                            'status'        => 'success',
+                            'code'          =>  200,
+                            'Pelote'       =>  $Pelote
+                        );
+            }
+            
+            //Recalcular la existencia general y la actualizamos
+            foreach($params_array AS $param => $paramdata){
+                $ExistenciaGeneral = new Producto();//creamos el modelo
+                $ExistenciaTemp = Producto::where('idProducto', $idProducto) -> select('producto.existenciaG') ->get($params_array);
+                $ExistenciaGeneral-> idProducto = $paramdata['idProducto'];
+                $ExistenciaGeneral-> existencia = $paramdata['existencia'];
+                $ExistenciaGeneral-> caducidad = $paramdata['caducidad'];
+                
+                $Pelote->save();//guardamos el modelo
+                //Si todo es correcto mandamos el ultimo producto insertado
+                $data =  array(
+                    'status'        => 'success',
+                    'code'          =>  200,
+                    'Pelote'       =>  $Pelote
+                );
+            }
 
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
     }
 
     public function registerProductosCompra(Request $req){
