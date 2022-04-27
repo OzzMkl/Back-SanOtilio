@@ -116,7 +116,7 @@ class ClienteController extends Controller
                  'colonia'   => 'required',
                  'calle'   => 'required',
                  'numExt'   => 'required',
-                 'cp'   => 'required',
+                 //'cp'   => 'required',
                  'referencia'   => 'required',
                  'telefono'   => 'required',
                  'idZona'   => 'required'
@@ -154,6 +154,69 @@ class ClienteController extends Controller
                         'message'   =>  'Direccion registrada correctamente'
                     );
              }
+        }else{
+            $data = array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
+    public function registrarNuevaDireccion(Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json,true);
+        if(!empty($params_array)){
+            $params_array = array_map('trim',$params_array);
+
+            $validate = Validator::make($params_array, [
+                'idCliente'       => 'required',
+                'pais'       => 'required',
+                'estado'    => 'required',
+                'ciudad'      => 'required',
+                'colonia'   => 'required',
+                'calle'   => 'required',
+                'numExt'   => 'required',
+                'referencia'   => 'required',
+                'cp'   => 'required',
+                'telefono'   => 'required',
+                'idZona'   => 'required'
+            ]);
+            if($validate->fails()){
+                $data = array(
+                    'status'    => 'error',
+                    'code'      => 404,
+                    'message'   => 'Fallo la validacion de los datos del cliente',
+                    'errors'    => $validate->errors()
+                );
+            }else{
+                $Ndireccion = new Cdireccion();
+                    $Ndireccion->idCliente = $params_array['idCliente'];
+                    if( isset($params_array['numInt'])){
+                        $Ndireccion->numInt = $params_array['numInt'];
+                    }
+                    if(isset($params_array['entreCalles'])){
+                        $Ndireccion->entreCalles = $params_array['entreCalles'];
+                    }
+                    $Ndireccion->pais = $params_array['pais'];
+                    $Ndireccion->estado = $params_array['estado'];
+                    $Ndireccion->ciudad = $params_array['ciudad'];
+                    $Ndireccion->colonia = $params_array['colonia'];
+                    $Ndireccion->calle = $params_array['calle'];
+                    $Ndireccion->numExt = $params_array['numExt'];
+                    $Ndireccion->referencia = $params_array['referencia'];
+                    $Ndireccion->cp = $params_array['cp'];
+                    $Ndireccion->telefono = $params_array['telefono'];
+                    $Ndireccion->idZona = $params_array['idZona'];
+                    $Ndireccion->save();
+
+                    $data = array(
+                        'code'      =>  200,
+                        'status'    => 'success',
+                        'message'   =>  'Direccion registrada'
+                    );
+            }
+
         }else{
             $data = array(
                 'code'      =>  400,

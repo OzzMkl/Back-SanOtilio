@@ -101,15 +101,16 @@ Route::get('/prueba', function(){
     Route::post('/api/compra/register','CompraController@registerCompra');
     Route::post('/api/compra/registerLista','CompraController@registerProductosCompra');
     Route::post('/api/compra/registerLote','CompraController@registerLote');
+    Route::post('/api/compra/updateExistencia','CompraController@updateExistencia');
     Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
     Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
     Route::get('/api/compra/index','CompraController@index');
-    Route::get('/api/compra/updateExistencia','CompraController@updateExistencia');
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
     Route::get('/api/clientes/indexTipocliente','ClienteController@indexTipocliente');
     Route::post('/api/clientes/register','ClienteController@registerCliente');
     Route::post('/api/clientes/registerCdireccion','ClienteController@registerCdireccion');
+    Route::post('/api/clientes/registrarNuevaDireccion','ClienteController@registrarNuevaDireccion');
     Route::get('/api/clientes/getDetallesCliente/{idCliente}','ClienteController@getDetallesCliente');
     Route::get('/api/clientes/getDireccionCliente/{idCliente}','ClienteController@getDireccionCliente');
     Route::put('/api/clientes/updateCliente/{idCliente}','ClienteController@updateCliente');
