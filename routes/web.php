@@ -56,6 +56,7 @@ Route::get('/prueba', function(){
     Route::get('/api/banco/index','BancoController@index');//mostrar BANcos
     /*******PRODUCTOS */
     Route::get('/api/productos/index','ProductoController@index');//mostrar productos activos
+    Route::get('/api/productos/indexPV','ProductoController@indexPV');//mostrar productos activos
     Route::get('/api/productos/productosDes','ProductoController@productoDes');//mostrar proveedores deshabilitados
     Route::post('/api/productos/uploadimage', 'ProductoController@uploadimage');
     Route::get('/api/productos/getImageProduc/{filname}', 'ProductoController@getImageProduc');
@@ -115,4 +116,6 @@ Route::get('/prueba', function(){
     Route::get('/api/clientes/getDireccionCliente/{idCliente}','ClienteController@getDireccionCliente');
     Route::put('/api/clientes/updateCliente/{idCliente}','ClienteController@updateCliente');
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
+    /****VENTAS */
+    Route::get('/api/ventas/indexTP','VentasController@indexTP');
 /***************************************************************************************+ */

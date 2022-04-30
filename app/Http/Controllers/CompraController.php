@@ -203,10 +203,11 @@ class CompraController extends Controller
     }
 
     public function updateExistencia(Request $request){
-        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        
+        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){
-            //Obtener idLote
+            //Obtener idLotess
             $Lote = lote::latest('idLote')->first();//la guardamos en Lote
             //Recorremos el array para asignar todos los productos
             //Agregar Producto - Existencia - Lote
@@ -227,45 +228,7 @@ class CompraController extends Controller
             }
             
             //Recalcular la existencia general y la actualizamos
-            foreach($params_array AS $param => $paramdata){
-                $ExistenciaGeneral = new Producto();//creamos el modelo
-                $ExistenciaTemp = Producto::where('idProducto', $idProducto) -> select('producto.existenciaG') ->get();;
-                
-                unset($params_array['idProducto']);
-                unset($params_array['idMedida']);
-                unset($params_array['idMarca']);
-                unset($params_array['idDep']);
-                unset($params_array['idCat']);
-                unset($params_array['idSubCat']);
-                unset($params_array['claveEx']);
-                unset($params_array['cbarras']);
-                unset($params_array['descripcion']);
-                unset($params_array['stockMin']);
-                unset($params_array['stockMax']);
-                unset($params_array['imagen']);
-                unset($params_array['ubicacion']);
-                unset($params_array['claveSat']);
-                unset($params_array['tEntrega']);
-                unset($params_array['idAlmacen']);
-                unset($params_array['precioR']);
-                unset($params_array['precioS']);
-                unset($params_array['idProductoS']);
-                unset($params_array['factorConv']);
-                unset($params_array['existenciaG']);
-                unset($params_array['created_at']);
-
-                $ExistenciaGeneral-> existenciaG = $paramdata['existencia'] + ExistenciaTemp;
-                
-                //Actualizamos
-                $producto = Producto::where('idProducto', $idProducto)->update($params_array);
-                
-               
-                $data =  array(
-                    'status'        => 'success',
-                    'code'          =>  200,
-                    'Pelote'       =>  $Pelote
-                );
-            }
+            
 
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
