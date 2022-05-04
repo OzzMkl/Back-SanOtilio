@@ -88,7 +88,7 @@ class VentasController extends Controller
                 $productos_cotizacion = new Productos_cotizaciones();
                 $productos_cotizacion->idCotiza = $Cotizacion->idCotiza;
                 $productos_cotizacion->idProducto = $paramdata['idProducto'];
-                $productos_cotizacion->descripcion = $paramdata['descripcion'];
+                //$productos_cotizacion->descripcion = $paramdata['descripcion'];
                 $productos_cotizacion->precio = $paramdata['precio'];
                 $productos_cotizacion->cantidad = $paramdata['cantidad'];
                 if(isset($paramdata['descuento'])){
@@ -111,6 +111,47 @@ class VentasController extends Controller
                 'code'          =>  404,
                 'message'       =>  'Los datos enviados no son correctos'
             );
+        }
+        return response()->json($data, $data['code']);
+    }
+    public function consultaUltimaCotiza(){
+        $Cotiza = Cotizacion::latest('idCotiza')->first();
+        return response()->json([
+            'code'          => 200,
+            'status'        => 'success',
+            'Cotizacion'    => $Cotiza
+        ]);
+    }
+    public function detallesCotizacion($idCotiza){
+        $Cotiza = DB::table('cotizaciones')
+        ->join('cliente','cliente.idCliente','=','cotizaciones.idCliente')
+        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+        ->join('empleado','empleado.idEmpleado','=','cotizaciones.idEmpleado')
+        ->join('statuss','statuss.idStatus','=','cotizaciones.idStatus')
+        ->select('cotizaciones.*',
+        DB::raw("CONCAT(cliente.nombre,' ',cliente.Apaterno,' ',cliente.Amaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        ->where('cotizaciones.idCotiza','=',$idCotiza)
+        ->get();
+        $productosCotiza = DB::table('productos_cotizaciones')
+        ->join('producto','producto.idProducto','=','productos_cotizaciones.idProducto')
+        ->join('medidas','medidas.idMedida','=','producto.idMedida')
+        ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
+        ->where('productos_cotizaciones.idCotiza','=',$idCotiza)
+        ->get();
+        if(is_object($Cotiza)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'Cotizacion'   =>  $Cotiza,
+                'productos_cotiza'     => $productosCotiza
+            ];
+        }else{
+            $data = [
+                'code'          => 400,
+                'status'        => 'error',
+                'message'       => 'El producto no existe'
+            ];
         }
         return response()->json($data, $data['code']);
     }
