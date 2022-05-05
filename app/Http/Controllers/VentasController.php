@@ -49,6 +49,9 @@ class VentasController extends Controller
             }else{
                 $cotizacion = new Cotizacion();
                 $cotizacion->idCliente = $params_array['idCliente'];
+                if(isset($params_array['dirCliente'])){
+                    $cotizacion->cdireccion = $params_array['dirCliente'];
+                }
                 $cotizacion->idEmpleado = $params_array['idEmpleado'];
                 $cotizacion->idStatus = $params_array['idStatus'];
                 if(isset($params_array['observaciones'])){
@@ -156,3 +159,5 @@ class VentasController extends Controller
         return response()->json($data, $data['code']);
     }
 }
+
+/******************************************************** */
