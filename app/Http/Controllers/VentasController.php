@@ -23,6 +23,22 @@ class VentasController extends Controller
             'tipo_pago'   =>  $tp
         ]);
     }
+    public function indexCotiza(){
+        $Cotizaciones = DB::table('cotizaciones')
+        ->join('cliente','cliente.idCliente','=','cotizaciones.idCliente')
+        ->join('empleado','empleado.idEmpleado','=','cotizaciones.idEmpleado')
+        ->join('statuss','statuss.idStatus','=','cotizaciones.idStatus')
+        ->select('cotizaciones.*',
+        DB::raw("CONCAT(cliente.nombre,' ',cliente.Apaterno,' ',cliente.Amaterno) as nombreCliente"),
+        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+        'statuss.nombre as nombreStatus')
+        ->get();
+        return response()->json([
+            'code'          => 200,
+            'status'        => 'success',
+            'Cotizaciones'  => $Cotizaciones
+        ]);
+    }
     public function guardarCotizacion(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
