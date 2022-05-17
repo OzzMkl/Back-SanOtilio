@@ -203,7 +203,9 @@ class CompraController extends Controller
     }
 
     public function updateExistencia(Request $request){
-        
+        //Alta de lote con codigo y idLote = idCompra
+
+
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){
@@ -282,6 +284,7 @@ class CompraController extends Controller
             'status'       => 'success',
             'compra'   => $Compra
         ]);
+
     }
 
     public function showMejorado($idCompra){
@@ -297,7 +300,7 @@ class CompraController extends Controller
         ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
         ->where('productos_compra.idCompra','=',$idCompra)
         ->get();
-        if(is_object($ordencompra)){
+        if(is_object($compra)){
             $data = [
                 'code'          => 200,
                 'status'        => 'success',

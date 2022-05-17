@@ -400,5 +400,16 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    public function getExistenciaG($idProducto){
+        $producto = DB::table('producto')
+        ->select('idProducto','existenciaG')
+        ->where('idProducto',$idProducto)
+        ->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'producto'   =>  $producto
+        ]);
+    }
 }
 /**** */

@@ -67,6 +67,7 @@ Route::get('/prueba', function(){
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
     Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
+    Route::get('/api/productos/getExistenciaG/{producto}', 'ProductoController@getExistenciaG');
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos
