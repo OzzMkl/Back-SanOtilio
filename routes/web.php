@@ -119,11 +119,13 @@ Route::get('/prueba', function(){
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
     /****VENTAS */
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
+                //cotizaciones
     Route::get('/api/cotizaciones/indexCotizaciones','VentasController@indexCotiza');
     Route::post('/api/cotizaciones/guardarCotizacion','VentasController@guardarCotizacion');
     Route::post('/api/cotizaciones/guardarProductosCotiza','VentasController@guardarProductosCotiza');
     Route::get('/api/cotizaciones/consultaUltimaCotiza','VentasController@consultaUltimaCotiza');
     Route::get('/api/cotizaciones/detallesCotizacion/{idCotiza}','VentasController@detallesCotizacion');
+    Route::put('/api/cotizaciones/actualizaCotizacion/{idCotiza}','VentasController@actualizaCotizacion');
     /*******EMPRESA */
     Route::get('/api/empresa/index','EmpresaController@index');
 /***************************************************************************************+ */

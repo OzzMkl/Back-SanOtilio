@@ -113,7 +113,7 @@ class VentasController extends Controller
                 if(isset($paramdata['descuento'])){
                     $productos_cotizacion->descuento = $paramdata['descuento'];
                 }
-                $productos_cotizacion->total = $paramdata['subtotal'];
+                $productos_cotizacion->subtotal = $paramdata['subtotal'];
                 //guardamos el producto
                 $productos_cotizacion->save();
                 //Si todo es correcto mandamos el ultimo producto insertado
@@ -173,6 +173,34 @@ class VentasController extends Controller
             ];
         }
         return response()->json($data, $data['code']);
+    }
+    public function actualizaCotizacion($idCotiza, Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        if(!empty($params_array)){
+            //eliminar espacios vacios
+            $params_array = array_map('trim', $params_array);
+            //quitamos lo que no queremos actualizar
+            unset($params_array['idCotiza']);
+            unset($params_array['created_at']);
+            //actualizamos
+            $Cotizacion = Cotizacion ::where('idCotiza',$idCotiza)->update($params_array);
+                //retornamos la respuesta si esta
+                 return response()->json([
+                    'status'    =>  'success',
+                    'code'      =>  200,
+                    'message'   =>  'Cotizacion actualizada'
+                 ]);
+        }else{
+            return response()->json([
+                'code'      => 400,
+                'status'    => 'error',
+                'message'   => 'Algo salio mal, favor de revisar'
+            ]);
+        }
+    }
+    public function actualizaProductosCotiza(){
+
     }
 }
 
