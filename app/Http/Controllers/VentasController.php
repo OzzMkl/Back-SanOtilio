@@ -199,8 +199,42 @@ class VentasController extends Controller
             ]);
         }
     }
-    public function actualizaProductosCotiza(){
-
+    public function actualizaProductosCotiza($idCotiza, Request $req){
+        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params_array = json_decode($json,true);//decodifiamos el json
+        if(!empty($params_array)){
+            //eliminamos los registros que tengab ese idOrd
+            Productos_cotizaciones::where('idCotiza',$idCotiza)->delete();
+            //recorremos el array para asignar todos los productos
+            foreach($params_array as $param => $paramdata){
+                $productos_cotizacion = new Productos_cotizaciones();
+                $productos_cotizacion->idCotiza = $idCotiza;
+                $productos_cotizacion->idProducto = $paramdata['idProducto'];
+                //$productos_cotizacion->descripcion = $paramdata['descripcion'];
+                $productos_cotizacion->precio = $paramdata['precio'];
+                $productos_cotizacion->cantidad = $paramdata['cantidad'];
+                if(isset($paramdata['descuento'])){
+                    $productos_cotizacion->descuento = $paramdata['descuento'];
+                }
+                $productos_cotizacion->subtotal = $paramdata['subtotal'];
+                //guardamos el producto
+                $productos_cotizacion->save();
+                //Si todo es correcto mandamos el ultimo producto insertado
+                $data =  array(
+                    'status'        => 'success',
+                    'code'          =>  200,
+                    'Productos_cotizacion'       =>  $productos_cotizacion
+                );
+            }
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
     }
 }
 

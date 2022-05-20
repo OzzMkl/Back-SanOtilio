@@ -126,6 +126,7 @@ Route::get('/prueba', function(){
     Route::get('/api/cotizaciones/consultaUltimaCotiza','VentasController@consultaUltimaCotiza');
     Route::get('/api/cotizaciones/detallesCotizacion/{idCotiza}','VentasController@detallesCotizacion');
     Route::put('/api/cotizaciones/actualizaCotizacion/{idCotiza}','VentasController@actualizaCotizacion');
+    Route::put('/api/cotizaciones/actualizaProductosCotizacion/{idCotiza}','VentasController@actualizaProductosCotiza');
     /*******EMPRESA */
     Route::get('/api/empresa/index','EmpresaController@index');
 /***************************************************************************************+ */
