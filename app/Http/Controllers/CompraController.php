@@ -315,6 +315,7 @@ class CompraController extends Controller
             ];
         }
         return response()->json($data, $data['code']);
-     }
+    }
 
 }
+

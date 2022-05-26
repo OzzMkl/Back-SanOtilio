@@ -119,6 +119,7 @@ Route::get('/prueba', function(){
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
     /****VENTAS */
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
+    Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
                 //cotizaciones
     Route::get('/api/cotizaciones/indexCotizaciones','VentasController@indexCotiza');
     Route::post('/api/cotizaciones/guardarCotizacion','VentasController@guardarCotizacion');

@@ -10,6 +10,7 @@ use Validator;
 use App\models\tipo_pago;
 use App\models\Cotizacion;
 use App\models\Productos_cotizaciones;
+use App\models\Ventasg;
 
 class VentasController extends Controller
 {
@@ -23,6 +24,7 @@ class VentasController extends Controller
             'tipo_pago'   =>  $tp
         ]);
     }
+    /****** COTIZACIONES *****/
     public function indexCotiza(){
         $Cotizaciones = DB::table('cotizaciones')
         ->join('cliente','cliente.idCliente','=','cotizaciones.idCliente')
@@ -180,8 +182,12 @@ class VentasController extends Controller
         if(!empty($params_array)){
             //eliminar espacios vacios
             $params_array = array_map('trim', $params_array);
-            //quitamos lo que no queremos actualizar
+            //quitamos lo que no queremos actualizar o no son necesarios
             unset($params_array['idCotiza']);
+            unset($params_array['idVenta']);
+            unset($params_array['fecha']);
+            unset($params_array['idTipoVenta']);
+            unset($params_array['nombreCliente']);
             unset($params_array['created_at']);
             //actualizamos
             $Cotizacion = Cotizacion ::where('idCotiza',$idCotiza)->update($params_array);
@@ -232,6 +238,60 @@ class VentasController extends Controller
                 'status'        => 'error',
                 'code'          =>  404,
                 'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
+    /***** VENTAS *****/
+    public function guardarVenta(Request $request){
+        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params = json_decode($json);
+        $params_array = json_decode($json,true);
+        if(!empty($params) && !empty($params_array)){
+            //eliminamos espacios vacios
+            $params_array = array_map('trim',$params_array);
+            //validamos los datos
+            $validate = Validator::make($params_array, [
+                'idCliente'       => 'required',
+                'idTipoVenta'       => 'required',
+                'idStatus'   => 'required',
+                'idEmpleado'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
+                'subtotal'   => 'required',
+                'total'   => 'required',
+            ]);
+            if($validate->fails()){
+                $data = array(
+                    'status'    => 'error',
+                    'code'      => 404,
+                    'message'   => 'Fallo! La orden de compra no se ha creado',
+                    'errors'    => $validate->errors()
+                );
+            }else{
+                $ventasg = new Ventasg();
+                $ventasg->idCliente = $params_array['idCliente'];
+                $ventasg->idTipoVenta = $params_array['idTipoVenta'];
+                $ventasg->observaciones = $params_array['observaciones'];
+                $ventasg->idStatus = $params_array['idStatus'];
+                $ventasg->idEmpleado = $params_array['idEmpleado'];
+                $ventasg->subtotal = $params_array['subtotal'];
+                if(isset($params_array['descuento'])){
+                    $ventasg->descuento = $params_array['descuento'];
+                }
+                $ventasg->total = $params_array['total'];
+
+                $ventasg->save();
+
+                $data = array(
+                    'status'    =>  'success',
+                    'code'      =>  200,
+                    'message'   =>  'Venta creada pero sin productos'
+                );
+            }
+        }else{
+            $data = array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'Los datos enviados son incorrectos'
             );
         }
         return response()->json($data, $data['code']);
