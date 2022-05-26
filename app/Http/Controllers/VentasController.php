@@ -11,6 +11,7 @@ use App\models\tipo_pago;
 use App\models\Cotizacion;
 use App\models\Productos_cotizaciones;
 use App\models\Ventasg;
+use App\models\Productos_ventasg;
 
 class VentasController extends Controller
 {
@@ -292,6 +293,43 @@ class VentasController extends Controller
                 'code'      =>  400,
                 'status'    => 'Error!',
                 'message'   =>  'Los datos enviados son incorrectos'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
+    public function guardarProductosVenta(Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json,true);
+        if(!empty($params_array)){
+            //consultamos la ultima venta realizada
+            $ventasg = Ventasg::latest('idVenta')->first();
+            //recorremos la lista de productos
+            foreach($params_array as $param => $paramdata){
+                $productos_ventasg = new Productos_ventasg();
+                $productos_ventasg->idVenta = $ventasg->idVenta;
+                $productos_ventasg-> idProducto = $paramdata['idProducto'];
+                $productos_ventasg-> descripcion = $paramdata['descripcion'];
+                $productos_ventasg-> cantidad = $paramdata['cantidad'];
+                $productos_ventasg-> precio = $paramdata['precio'];
+                if(isset($paramdata['descuento'])){
+                    $productos_ventasg-> descuento = $paramdata['descuento'];
+                }
+                $productos_ventasg-> total = $paramdata['subtotal'];
+                //guardamos el producto
+                $productos_ventasg->save();
+                //Si todo es correcto mandamos el ultimo producto insertado
+                $data =  array(
+                    'status'        => 'success',
+                    'code'          =>  200,
+                    'Productos_ventasg'       =>  $productos_ventasg
+                );
+            }
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
             );
         }
         return response()->json($data, $data['code']);
