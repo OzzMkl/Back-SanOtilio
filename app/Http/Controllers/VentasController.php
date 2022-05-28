@@ -15,9 +15,10 @@ use App\models\Productos_ventasg;
 
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
-use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+//use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\PrintConnectors\FilePrintConnector;
-use Mike42\Escpos\CapabilityProfile;
+//use Mike42\Escpos\CapabilityProfile;
+use Mike42\Escpos\EscposImage;
 
 class VentasController extends Controller
 {
@@ -330,28 +331,7 @@ class VentasController extends Controller
                     'Productos_ventasg'       =>  $productos_ventasg
                 );
             }
-            /************** */
-            //$nombreImpresora = "EPSON TM-U220 Receipt";
-            $profile = CapabilityProfile::load("simple");
-                                                    //  Usuario,Contraseña,nombremaquina ó ip,nombre de la impresora
-            $connector = new WindowsPrintConnector("smb://ventas03mat/EPSONTMU220B V3");
-            $impresora = new Printer($connector,$profile);
-            $impresora->setJustification(Printer::JUSTIFY_CENTER);
-            $impresora->setTextSize(2, 2);
-            $impresora->text("Imprimiendo\n");
-            $impresora->text("Imprimiendo\n");
-            $impresora->text("Imprimiendo\n");
-            $impresora->text("Imprimiendo\n");
-            $impresora->text("Imprimiendo\n");
-            $impresora->text("Imprimiendo\n");
-            $impresora->text("ticket\n");
-            $impresora->text("desde\n");
-            $impresora->text("Laravel\n");
-            $impresora->setTextSize(1, 1);
-            $impresora->text("https://parzibyte.me");
-            $impresora->feed(5);
-            $impresora->close();
-            /************** */
+            
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
             $data =  array(
@@ -361,5 +341,35 @@ class VentasController extends Controller
             );
         }
         return response()->json($data, $data['code']);
+    }
+    public function generaTicket(){
+        /************** */
+            //$nombreImpresora = "EPSON TM-U220 Receipt";
+            //$profile = CapabilityProfile::load("simple");
+                                                    //  Usuario,Contraseña,nombremaquina ó ip,nombre de la impresora
+            //$connector = new WindowsPrintConnector("smb://ventas03mat/EPSONTMU220B V3");
+            $connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
+            //$connector = new FilePrintConnector("//SISTEMAS02/EPSON TM-U220 Receipt");
+            $impresora = new Printer($connector);
+            $impresora->setJustification(Printer::JUSTIFY_CENTER);
+            $impresora->setTextSize(3, 3);
+            $impresora->text("MATERIALES PARA CONSTRUCCION \n");
+            $impresora->text("\"SAN OTILIO\" \n");
+            $impresora->text("C. SONORA SUR #2059 \n");
+            $impresora->text("MEXICO SUR, TEHUACAN PUEBLA \n");
+            $impresora->text("238 107 1077 - 238 125 7845\n");
+            $impresora->text("======================================== \n");
+            $img = EscposImage::load("../storage/app/imageproductos/1639533086CHEM.png");
+            //$impresora->bitImage($img);graphics
+            $impresora->bitImageColumnFormat($img, Printer::IMG_DOUBLE_WIDTH | Printer::IMG_DOUBLE_HEIGHT);
+            $impresora->text("\n");
+            $impresora->text("\n");
+            $impresora->text("\n");
+            $impresora->text("\n");
+            $impresora->text("\n");
+            
+            $impresora->cut();
+            $impresora->close();
+            /************** */
     }
 }

@@ -121,6 +121,7 @@ Route::get('/prueba', function(){
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
     Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
     Route::post('/api/ventas/guardarProductosVenta','VentasController@guardarProductosVenta');
+    Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
                 //cotizaciones
     Route::get('/api/cotizaciones/indexCotizaciones','VentasController@indexCotiza');
     Route::post('/api/cotizaciones/guardarCotizacion','VentasController@guardarCotizacion');
