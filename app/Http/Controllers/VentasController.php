@@ -13,6 +13,12 @@ use App\models\Productos_cotizaciones;
 use App\models\Ventasg;
 use App\models\Productos_ventasg;
 
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Mike42\Escpos\PrintConnectors\FilePrintConnector;
+use Mike42\Escpos\CapabilityProfile;
+
 class VentasController extends Controller
 {
     public function indexTP(){
@@ -324,6 +330,28 @@ class VentasController extends Controller
                     'Productos_ventasg'       =>  $productos_ventasg
                 );
             }
+            /************** */
+            //$nombreImpresora = "EPSON TM-U220 Receipt";
+            $profile = CapabilityProfile::load("simple");
+                                                    //  Usuario,Contraseña,nombremaquina ó ip,nombre de la impresora
+            $connector = new WindowsPrintConnector("smb://ventas03mat/EPSONTMU220B V3");
+            $impresora = new Printer($connector,$profile);
+            $impresora->setJustification(Printer::JUSTIFY_CENTER);
+            $impresora->setTextSize(2, 2);
+            $impresora->text("Imprimiendo\n");
+            $impresora->text("Imprimiendo\n");
+            $impresora->text("Imprimiendo\n");
+            $impresora->text("Imprimiendo\n");
+            $impresora->text("Imprimiendo\n");
+            $impresora->text("Imprimiendo\n");
+            $impresora->text("ticket\n");
+            $impresora->text("desde\n");
+            $impresora->text("Laravel\n");
+            $impresora->setTextSize(1, 1);
+            $impresora->text("https://parzibyte.me");
+            $impresora->feed(5);
+            $impresora->close();
+            /************** */
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
             $data =  array(
@@ -335,5 +363,3 @@ class VentasController extends Controller
         return response()->json($data, $data['code']);
     }
 }
-
-/******************************************************** */
