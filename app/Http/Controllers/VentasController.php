@@ -12,13 +12,14 @@ use App\models\Cotizacion;
 use App\models\Productos_cotizaciones;
 use App\models\Ventasg;
 use App\models\Productos_ventasg;
+use App\models\Empresa;
 
-use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
-//use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
-use Mike42\Escpos\PrintConnectors\FilePrintConnector;
-//use Mike42\Escpos\CapabilityProfile;
 use Mike42\Escpos\EscposImage;
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+//use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+//use Mike42\Escpos\PrintConnectors\FilePrintConnector;
+//use Mike42\Escpos\CapabilityProfile;
 
 class VentasController extends Controller
 {
@@ -348,26 +349,88 @@ class VentasController extends Controller
             //$profile = CapabilityProfile::load("simple");
                                                     //  Usuario,Contraseña,nombremaquina ó ip,nombre de la impresora
             //$connector = new WindowsPrintConnector("smb://ventas03mat/EPSONTMU220B V3");
-            $connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
             //$connector = new FilePrintConnector("//SISTEMAS02/EPSON TM-U220 Receipt");
+
+            /*****traemos informacion de la empresa*****/
+
+            $empresa = Empresa::first();
+            $ventasg = DB::table('ventasg')
+                        ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
+                        ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
+                        ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+                        ->select('ventasg.*',
+                                 'tiposdeventas.nombre as nombreVenta',
+                                 DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                        ->latest('idVenta')
+                        ->first();
+            $productos_ventasg = Productos_ventasg::where('idVenta',$ventasg->idVenta)
+                                 ->join('producto','producto.idProducto','=','productos_ventasg.idProducto')
+                                 ->select('productos_ventasg.*','producto.claveEx as claveEx')
+                                 ->get();
+            //declaramos el nombre de la impresora
+            $connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
+            //asociamos la impresora
             $impresora = new Printer($connector);
+            //ajustamos el texto en el centro
             $impresora->setJustification(Printer::JUSTIFY_CENTER);
-            $impresora->setTextSize(3, 3);
-            $impresora->text("MATERIALES PARA CONSTRUCCION \n");
-            $impresora->text("\"SAN OTILIO\" \n");
-            $impresora->text("C. SONORA SUR #2059 \n");
-            $impresora->text("MEXICO SUR, TEHUACAN PUEBLA \n");
-            $impresora->text("238 107 1077 - 238 125 7845\n");
-            $impresora->text("======================================== \n");
-            $img = EscposImage::load("../storage/app/imageproductos/1639533086CHEM.png");
-            //$impresora->bitImage($img);graphics
+            //declaramos imagen
+            $img = EscposImage::load("../storage/app/images/logo2.png");
+            //insertamos imagen
             $impresora->bitImageColumnFormat($img, Printer::IMG_DOUBLE_WIDTH | Printer::IMG_DOUBLE_HEIGHT);
-            $impresora->text("\n");
-            $impresora->text("\n");
-            $impresora->text("\n");
-            $impresora->text("\n");
-            $impresora->text("\n");
-            
+            //ajustamos tamaño del texto
+            $impresora->setTextSize(1, 1);
+            //escribimos MATERIALES PARA CONSTRUCCION SAN OTILIO
+            $impresora->text( $empresa->nombreLargo ."\n");
+            //Escribimos SUCURSAL MATRIZ
+            $impresora->text($empresa->nombreCorto ." \n");
+            //Empezamos con la direccion C. SONORA SUR #2509, MEXICO SUR
+            $impresora->text("C.". $empresa->calle." #".$empresa->numero.", ".$empresa->colonia ."\n");
+            //TEHUACAN, PUEBLA. RFC: LUPB7803313V9
+            $impresora->text($empresa->ciudad.", ".$empresa->estado.". RFC: ".$empresa->rfc."\n");
+            //EMAIL: sabin_mil1000@hotmail.com
+            $impresora->text("EMAIL:".$empresa->correo1. "\n");
+            //238 107 1077 - 238 125 7845
+            $impresora->text($empresa->telefono." - ".$empresa->telefono2. "\n");
+            $impresora->text("======================================== \n");
+            /***** INFORMACION DE LA VENTA PRIMERA PARTE*****/
+            //ajustamos el texto en el centro
+            $impresora->setJustification(Printer::JUSTIFY_LEFT);
+            //VENTA: 00000
+            $impresora->text("VENTA: ".$ventasg->idVenta."   TV: ".$ventasg->nombreVenta. "\n");
+            //VENDEDOR: 
+            $impresora->text("VENDEDOR: ".$ventasg->nombreEmpleado. "\n");
+            //CLIENTE: 
+            $impresora->text("CLIENTE: ".$ventasg->nombreCliente. "\n");
+            //fecha y hora
+            $impresora->text("FECHA: ".$ventasg->created_at. "\n");
+            $impresora->text("======================================== \n");
+            /***** PRODUCTOS *****/
+            $impresora->text("CLAVE- PRECIO- CANTIDAD- DESC.- SUBTOTAL"."\n");
+            foreach($productos_ventasg AS $param => $paramdata){
+                //
+                $impresora->text($paramdata['claveEx']."- ".
+                                 $paramdata['precio']."- ".
+                                 $paramdata['cantidad']."- ".
+                                 $paramdata['descuento']."- ".
+                                 $paramdata['total']."\n");
+            }
+            /***** INFORMACION DE LA VENTA 2DA PARTE *****/
+            $impresora->text("---------------------------------------- \n");
+            $impresora->text("SUBTOTAL:");
+            $impresora->setJustification(Printer::JUSTIFY_RIGHT);
+            $impresora->text("$".$ventasg->subtotal."\n");
+            //$impresora->setJustification(Printer::JUSTIFY_LEFT);
+            $impresora->text("DESCUENTO: ");
+            //$impresora->setJustification(Printer::JUSTIFY_RIGHT);
+            $impresora->text("$".$ventasg->descuento."\n");
+            //$impresora->setJustification(Printer::JUSTIFY_LEFT);
+            $impresora->text("TOTAL: ");
+            //$impresora->setJustification(Printer::JUSTIFY_RIGHT);
+            $impresora->text("---------- \n");
+            $impresora->text("$".$ventasg->total."\n");
+            $impresora->text("---------------------------------------- \n");
+            $impresora->text($ventasg->observaciones."\n");
             $impresora->cut();
             $impresora->close();
             /************** */
