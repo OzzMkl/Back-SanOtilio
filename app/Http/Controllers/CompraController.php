@@ -141,6 +141,7 @@ class CompraController extends Controller
             //validamos los datos
             $validate = Validator::make($params_array, [
                 'idLote'   => 'required',
+                'idOrigen' => 'required',
                 'codigo'   => 'required'
             ]);
             if($validate->fails()){//si el json esta mal mandamos esto (falta algun dato)

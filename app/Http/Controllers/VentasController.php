@@ -331,6 +331,7 @@ class VentasController extends Controller
                     'code'          =>  200,
                     'Productos_ventasg'       =>  $productos_ventasg
                 );
+                
             }
             
         }else{
@@ -341,6 +342,9 @@ class VentasController extends Controller
                 'message'       =>  'Los datos enviados no son correctos'
             );
         }
+        if($data['status'] == 'success'){
+            $this-> generaTicket();
+        }
         return response()->json($data, $data['code']);
     }
     public function generaTicket(){
@@ -348,7 +352,7 @@ class VentasController extends Controller
             //$nombreImpresora = "EPSON TM-U220 Receipt";
             //$profile = CapabilityProfile::load("simple");
                                                     //  Usuario,Contraseña,nombremaquina ó ip,nombre de la impresora
-            //$connector = new WindowsPrintConnector("smb://ventas03mat/EPSONTMU220B V3");
+            
             //$connector = new FilePrintConnector("//SISTEMAS02/EPSON TM-U220 Receipt");
 
             /*****traemos informacion de la empresa*****/
@@ -368,7 +372,9 @@ class VentasController extends Controller
                                  ->join('producto','producto.idProducto','=','productos_ventasg.idProducto')
                                  ->select('productos_ventasg.*','producto.claveEx as claveEx')
                                  ->get();
-            //declaramos el nombre de la impresora
+            for($i = 1; $i<=3; $i++){
+                //declaramos el nombre de la impresora
+                //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
             $connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
             //asociamos la impresora
             $impresora = new Printer($connector);
@@ -401,38 +407,37 @@ class VentasController extends Controller
             //VENDEDOR: 
             $impresora->text("VENDEDOR: ".$ventasg->nombreEmpleado. "\n");
             //CLIENTE: 
-            $impresora->text("CLIENTE: ".$ventasg->nombreCliente. "\n");
+            $impresora->text("CLIENTE: ".str_pad($ventasg->nombreCliente,25," "). "\n");
             //fecha y hora
             $impresora->text("FECHA: ".$ventasg->created_at. "\n");
             $impresora->text("======================================== \n");
             /***** PRODUCTOS *****/
-            $impresora->text("CLAVE- PRECIO- CANTIDAD- DESC.- SUBTOTAL"."\n");
+            $impresora->text("CLAVE/ PRECIO/ CANTIDAD/ DESC./ SUBTOTAL"."\n");
             foreach($productos_ventasg AS $param => $paramdata){
                 //
-                $impresora->text($paramdata['claveEx']."- ".
-                                 $paramdata['precio']."- ".
-                                 $paramdata['cantidad']."- ".
-                                 $paramdata['descuento']."- ".
-                                 $paramdata['total']."\n");
+                $impresora->text(str_pad($paramdata['claveEx'],12," ")."/".
+                                 str_pad($paramdata['precio'],8," ",STR_PAD_BOTH)."/".
+                                 str_pad($paramdata['cantidad'],4," ",STR_PAD_BOTH)."/".
+                                 str_pad($paramdata['descuento'],4," ",STR_PAD_BOTH)."/".
+                                 str_pad($paramdata['total'],8," ",STR_PAD_BOTH)."\n");
             }
             /***** INFORMACION DE LA VENTA 2DA PARTE *****/
             $impresora->text("---------------------------------------- \n");
-            $impresora->text("SUBTOTAL:");
+            $impresora->text("SUBTOTAL:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
+            $impresora->text("DESCUENTO:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
             $impresora->setJustification(Printer::JUSTIFY_RIGHT);
-            $impresora->text("$".$ventasg->subtotal."\n");
-            //$impresora->setJustification(Printer::JUSTIFY_LEFT);
-            $impresora->text("DESCUENTO: ");
-            //$impresora->setJustification(Printer::JUSTIFY_RIGHT);
-            $impresora->text("$".$ventasg->descuento."\n");
-            //$impresora->setJustification(Printer::JUSTIFY_LEFT);
-            $impresora->text("TOTAL: ");
-            //$impresora->setJustification(Printer::JUSTIFY_RIGHT);
-            $impresora->text("---------- \n");
-            $impresora->text("$".$ventasg->total."\n");
+            $impresora->text("                   ---------- \n");
+            $impresora->setJustification(Printer::JUSTIFY_LEFT);
+            $impresora->text("TOTAL:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
             $impresora->text("---------------------------------------- \n");
             $impresora->text($ventasg->observaciones."\n");
+            $impresora->text("======================================== \n");
+            $impresora->text("* TODO CAMBIO CAUSARA UN 10% EN EL IMPORTE TOTAL *"."\n");
+            $impresora->text("* TODA CANCELACION SE COBRARA 20% DEL IMPORTE TOTAL SIN EXCEPCION *"."\n");
             $impresora->cut();
             $impresora->close();
             /************** */
+            }
+            
     }
 }
