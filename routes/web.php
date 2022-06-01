@@ -120,6 +120,7 @@ Route::get('/prueba', function(){
     /****VENTAS */
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
     Route::get('/api/ventas/indexVentas','VentasController@indexVentas');
+    Route::get('/api/ventas/getDetallesVenta/{idVenta}','VentasController@getDetallesVenta');
     Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
     Route::post('/api/ventas/guardarProductosVenta','VentasController@guardarProductosVenta');
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');

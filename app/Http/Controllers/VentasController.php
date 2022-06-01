@@ -266,6 +266,41 @@ class VentasController extends Controller
             'Ventas'    => $ventas
         ]);
     }
+    public function getDetallesVenta($idVenta){
+        $venta = DB::table('ventasg')
+        ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
+        ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
+        ->join('statuss','statuss.idStatus','=','ventasg.idStatus')
+        ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+        ->select('ventasg.*',
+                 'tiposdeventas.nombre as nombreTipoVenta',
+                 'statuss.nombre as nombreStatus',
+                 DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        ->where('ventasg.idVenta','=',$idVenta)
+        ->get();
+        $productosVenta = DB::table('productos_ventasg')
+        ->join('producto','producto.idProducto','=','productos_ventasg.idProducto')
+        ->join('medidas','medidas.idMedida','=','producto.idMedida')
+        ->select('productos_ventasg.*','producto.claveEx as claveEx','medidas.nombre as nombreMedida')
+        ->where('productos_ventasg.idVenta','=',$idVenta)
+        ->get();
+        if(is_object($venta)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'venta'   =>  $venta,
+                'productos_ventasg'     => $productosVenta
+            ];
+        }else{
+            $data = [
+                'code'          => 400,
+                'status'        => 'error',
+                'message'       => 'El producto no existe'
+            ];
+        }
+        return response()->json($data, $data['code']);
+    }
     public function guardarVenta(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
