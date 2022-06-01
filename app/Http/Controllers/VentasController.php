@@ -252,6 +252,20 @@ class VentasController extends Controller
         return response()->json($data, $data['code']);
     }
     /***** VENTAS *****/
+    public function indexVentas(){
+        $ventas = DB::table('ventasg')
+        ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
+        ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+        ->select('ventasg.*',
+                 DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        ->get();
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'Ventas'    => $ventas
+        ]);
+    }
     public function guardarVenta(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -439,5 +453,8 @@ class VentasController extends Controller
             /************** */
             }
             
+    }
+    public function generaTicketmini(){
+
     }
 }

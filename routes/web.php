@@ -119,9 +119,10 @@ Route::get('/prueba', function(){
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
     /****VENTAS */
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
+    Route::get('/api/ventas/indexVentas','VentasController@indexVentas');
     Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
     Route::post('/api/ventas/guardarProductosVenta','VentasController@guardarProductosVenta');
-    Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
+    //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
                 //cotizaciones
     Route::get('/api/cotizaciones/indexCotizaciones','VentasController@indexCotiza');
     Route::post('/api/cotizaciones/guardarCotizacion','VentasController@guardarCotizacion');
