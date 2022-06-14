@@ -130,6 +130,40 @@ class CompraController extends Controller
         ]);
     }
 
+    public function registerProductosCompra(Request $req){
+        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params_array = json_decode($json,true);//decodifiamos el json
+        if(!empty($params_array)){
+               //consultamos la ultima compra para poder asignarla
+               $Compra = Compras::latest('idCompra')->first();//la guardamos en compra
+               //recorremos el array para asignar todos los productos
+               foreach($params_array AS $param => $paramdata){
+                           $Productos_compra = new Productos_compra();//creamos el modelo
+                           $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idCompra para todos los productos
+                           $Productos_compra-> idProducto = $paramdata['idProducto'];
+                           $Productos_compra-> cantidad = $paramdata['cantidad'];
+                           $Productos_compra-> precio = $paramdata['precio'];
+                           $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                           
+                           $Productos_compra->save();//guardamos el modelo
+                           //Si todo es correcto mandamos el ultimo producto insertado
+                           $data =  array(
+                               'status'        => 'success',
+                               'code'          =>  200,
+                               'Productos_compra'       =>  $Productos_compra
+                           );
+               }
+        }else{
+           //Si el array esta vacio o mal echo mandamos mensaje de error
+           $data =  array(
+               'status'        => 'error',
+               'code'          =>  404,
+               'message'       =>  'Los datos enviados no son correctos'
+           );
+       }
+       return response()->json($data, $data['code']);
+    }
+
     public function registerLote (Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -242,40 +276,6 @@ class CompraController extends Controller
             );
         }
         return response()->json($data, $data['code']);
-    }
-
-    public function registerProductosCompra(Request $req){
-        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
-        $params_array = json_decode($json,true);//decodifiamos el json
-        if(!empty($params_array)){
-               //consultamos la ultima compra para poder asignarla
-               $Compra = Compras::latest('idCompra')->first();//la guardamos en compra
-               //recorremos el array para asignar todos los productos
-               foreach($params_array AS $param => $paramdata){
-                           $Productos_compra = new Productos_compra();//creamos el modelo
-                           $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idCompra para todos los productos
-                           $Productos_compra-> idProducto = $paramdata['idProducto'];
-                           $Productos_compra-> cantidad = $paramdata['cantidad'];
-                           $Productos_compra-> precio = $paramdata['precio'];
-                           $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
-                           
-                           $Productos_compra->save();//guardamos el modelo
-                           //Si todo es correcto mandamos el ultimo producto insertado
-                           $data =  array(
-                               'status'        => 'success',
-                               'code'          =>  200,
-                               'Productos_compra'       =>  $Productos_compra
-                           );
-               }
-        }else{
-           //Si el array esta vacio o mal echo mandamos mensaje de error
-           $data =  array(
-               'status'        => 'error',
-               'code'          =>  404,
-               'message'       =>  'Los datos enviados no son correctos'
-           );
-       }
-       return response()->json($data, $data['code']);
     }
 
     public function getLastCompra(){
