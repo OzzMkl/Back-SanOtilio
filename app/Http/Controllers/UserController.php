@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;//se habilita para la obtencion de la imagen
+use Illuminate\Support\Facades\DB;
 use Validator;
 use App\Empleado;
 
@@ -237,7 +238,7 @@ class UserController extends Controller
         
     }
 
-    public function  detail($idEmpleado){
+    public function detail($idEmpleado){
         $user = Empleado::find($idEmpleado);
         if(is_object($user)){
             $data = array(
@@ -254,5 +255,15 @@ class UserController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
+    public function indexPermisos(){
+        $permisos = DB::table('permisos')
+        ->get();
+        return response()->json([
+            'code'      =>  200,
+            'status'    =>  'success',
+            'permisos'       =>  $permisos
+        ]);
+    } 
 
 }
