@@ -42,6 +42,7 @@ Route::get('/prueba', function(){
     Route::post('/api/user/upload', 'UserController@upload')->middleware(App\Http\Middleware\ApiAuthMiddleware::class);//asignamos metodo de autenticacion a traves de middleware
     Route::get('/api/user/avatar/{filename}', 'UserController@getImage');
     Route::get('/api/user/detail/{idEmpleado}', 'UserController@detail');
+    Route::get('/api/permisos','UserController@indexPermisos');
     
     /****** RUTAS DE CONTROLADOR DE PROVEEDORES ******/
     Route::post('/api/proveedor/register','ProveedoresController@register');
