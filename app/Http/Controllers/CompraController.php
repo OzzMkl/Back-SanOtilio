@@ -53,12 +53,13 @@ class CompraController extends Controller
                     'status'    => 'error',
                     'code'      => 404,
                     'message'   => 'Fallo! La compra no se ha creado',
-                    'errors'    => $validate->errors()
+                    'errors'    => $validate->errors();
                 );
             }else{
                 try{
                     DB::beginTransaction();
                     $Compra = new Compras();
+
 
                     if($params_array['idOrd']== null || $params_array['idPedido']== null){
                         
@@ -68,8 +69,11 @@ class CompraController extends Controller
                         $Compra->total = $params_array['total'];
                         $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
                         $Compra->idStatus = $params_array['idStatus'];
-                        $Compra->fechaRecibo = $params_array['fechaRecibo'];
-                        $Compra->observaciones = $params_array['observaciones'];
+                        $Compra->fechaRecibo = $params_array['fechaRecibo'];                    
+                        if(isset($params_array['observaciones'])){
+                            $Compra->observaciones = $params_array['observaciones'];
+                        }
+    
                     }
                     else{
                         $Compra->idOrd = $params_array['idOrd'];
@@ -81,7 +85,10 @@ class CompraController extends Controller
                         $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
                         $Compra->idStatus = $params_array['idStatus'];
                         $Compra->fechaRecibo = $params_array['fechaRecibo'];
-                        $Compra->observaciones = $params_array['observaciones'];
+                        if(isset($params_array['observaciones'])){
+                            $Compra->observaciones = $params_array['observaciones'];
+                        }
+    
                     }
 
                     $Compra->save();
