@@ -264,6 +264,32 @@ class UserController extends Controller
             'status'    =>  'success',
             'permisos'       =>  $permisos
         ]);
-    } 
+    }
+    public function RolesBySubmodulo($idSubModulo){
+        $roles = DB::table('permisos')
+                //->select('permisos.idRol')
+                ->where('idSubModulo','=',$idSubModulo)
+                ->get();
+        return response()->json([
+            'code'      =>  200,
+            'status'    =>  'success',
+            'roles'     =>  $roles
+        ]);
+    }
+    public function PermissionsByRol( $idRol,$idModulo,$idSubModulo){
+
+                 $permissions = DB::table('permisos')
+                             //->select('permisos.*')
+                             ->where('idRol','=',$idRol)
+                             ->where('idModulo','=',$idModulo)
+                             ->where('idSubModulo','=',$idSubModulo)
+                             ->get();
+
+                return response()->json([
+                                'code'          =>  200,
+                                'status'        => 'success',
+                                'permisos'   =>  $permissions
+                            ]);
+    }
 
 }

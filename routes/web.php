@@ -43,6 +43,8 @@ Route::get('/prueba', function(){
     Route::get('/api/user/avatar/{filename}', 'UserController@getImage');
     Route::get('/api/user/detail/{idEmpleado}', 'UserController@detail');
     Route::get('/api/permisos','UserController@indexPermisos');
+    Route::get('/api/RolesBySubmodulo/{idSubModulo}','UserController@RolesBySubmodulo');
+    Route::get('/api/PermissionsByRol/{idRol}/{idModulo}/{idSubModulo}','UserController@PermissionsByRol');
     
     /****** RUTAS DE CONTROLADOR DE PROVEEDORES ******/
     Route::post('/api/proveedor/register','ProveedoresController@register');

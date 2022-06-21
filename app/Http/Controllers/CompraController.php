@@ -53,7 +53,7 @@ class CompraController extends Controller
                     'status'    => 'error',
                     'code'      => 404,
                     'message'   => 'Fallo! La compra no se ha creado',
-                    'errors'    => $validate->errors();
+                    'errors'    => $validate->errors()
                 );
             }else{
                 try{
