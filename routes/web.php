@@ -137,4 +137,9 @@ Route::get('/prueba', function(){
     Route::put('/api/cotizaciones/actualizaProductosCotizacion/{idCotiza}','VentasController@actualizaProductosCotiza');
     /*******EMPRESA */
     Route::get('/api/empresa/index','EmpresaController@index');
-/***************************************************************************************+ */
+    /*******CAJAS */
+    Route::post('/api/cajas/aperturaCaja','CajasController@aperturaCaja');
+    Route::put('/api/cajas/cierreCaja/{idCaja}','CajasController@cierreCaja');
+    Route::get('/api/cajas/verificarCaja/{idEmpleado}','CajasController@verificarCaja');
+/**************************************************************************************+ */
+
