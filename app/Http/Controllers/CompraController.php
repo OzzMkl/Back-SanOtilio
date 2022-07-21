@@ -44,7 +44,6 @@ class CompraController extends Controller
             //validamos los datos
             $validate = Validator::make($params_array, [
                 'idProveedor'       =>'required',
-                'observaciones'    => 'required',
                 'idEmpleadoR'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
                 'folioProveedor'   => 'required'
             ]);
@@ -60,9 +59,7 @@ class CompraController extends Controller
                     DB::beginTransaction();
                     $Compra = new Compras();
 
-
                     if($params_array['idOrd']== null || $params_array['idPedido']== null){
-                        
                         $Compra->idProveedor = $params_array['idProveedor'];
                         $Compra->folioProveedor = $params_array['folioProveedor'];
                         $Compra->subtotal = $params_array['subtotal'];
@@ -73,7 +70,6 @@ class CompraController extends Controller
                         if(isset($params_array['observaciones'])){
                             $Compra->observaciones = $params_array['observaciones'];
                         }
-    
                     }
                     else{
                         $Compra->idOrd = $params_array['idOrd'];
@@ -88,7 +84,6 @@ class CompraController extends Controller
                         if(isset($params_array['observaciones'])){
                             $Compra->observaciones = $params_array['observaciones'];
                         }
-    
                     }
 
                     $Compra->save();

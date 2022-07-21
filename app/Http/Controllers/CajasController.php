@@ -96,8 +96,78 @@ class CajasController extends Controller
             'caja'      => $Caja
         ]);
     }
-    public function cobroNota($idVenta){
+    public function cobroVenta(Request $req){
+        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params = json_decode($json);
+        $params_array = json_decode($json,true);
 
+        if(!empty($params) && !empty($params_array)){
+            
+            $params_array = array_map('trim',$params_array);
+            $validate = Validator::make($params_array,[
+                'idCaja'        =>  'required',
+                'dinero'        =>  'required',
+                'idTipoMov'     =>  'required',
+                //'idTipoPago'    =>  'required',
+                'idOrigen'      =>  'required',
+                //'autoriza'      =>  'required',
+                //'observaciones' =>  'required'
+            ]);
+
+            if($validate -> fails()){
+                $data = array(
+                    'status'    => 'error',
+                    'code'      => 404,
+                    'message'   => 'Fallo la validacion de los datos del cliente',
+                    'errors'    => $validate->errors()
+                );
+            } else{
+                try{
+                    DB::beginTransaction();
+                    $caja_movimientos = new Caja_movimientos;
+
+                    $caja_movimientos->idCaja = $params_array['idCaja'];
+                    $caja_movimientos->dinero = $params_array['dinero'];
+                    $caja_movimientos->idTipoMov = $params_array['idTipoMov'];
+                    $caja_movimientos->idOrigen = $params_array['idOrigen'];
+                
+                    if(isset($params_array['idTipoPago'])){
+                        $caja_movimientos->idTipoPago = $params_array['idTipoPago'];
+                    }
+                    if(isset($params_array['autoriza'])){
+                        $caja_movimientos->autoriza = $params_array['autoriza'];
+                    }
+                    if(isset($params_array['observaciones'])){
+                        $caja_movimientos->observaciones = $params_array['observaciones'];
+                    }
+
+                    $caja_movimientos->save();
+
+                    DB::commit();
+
+                    $data = array(
+                        'code'      =>  200,
+                        'status'    =>  'success',
+                        'message'   =>  'Registro correcto'
+                    );
+                } catch(\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   =>  'Algo salio mal rollback',
+                        'error' => $e
+                    );
+                }
+            }
+        } else{
+            $data = array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'datos incorrectos'
+            );
+        }
+        return response()->json($data, $data['code']);
     }
 }
 /********************* */
