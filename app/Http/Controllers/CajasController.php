@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Caja;
 use App\Caja_movimientos;
+use App\models\Ventasg;
 use Validator;
 
 class CajasController extends Controller
@@ -96,55 +97,58 @@ class CajasController extends Controller
             'caja'      => $Caja
         ]);
     }
-    public function cobroVenta(Request $req){
+    public function cobroVenta($idVenta,Request $req){
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
         $params_array = json_decode($json,true);
-
+        
         if(!empty($params) && !empty($params_array)){
             
-            $params_array = array_map('trim',$params_array);
-            $validate = Validator::make($params_array,[
-                'idCaja'        =>  'required',
-                'dinero'        =>  'required',
-                'idTipoMov'     =>  'required',
-                //'idTipoPago'    =>  'required',
-                'idOrigen'      =>  'required',
-                //'autoriza'      =>  'required',
-                //'observaciones' =>  'required'
-            ]);
-
-            if($validate -> fails()){
-                $data = array(
-                    'status'    => 'error',
-                    'code'      => 404,
-                    'message'   => 'Fallo la validacion de los datos del cliente',
-                    'errors'    => $validate->errors()
-                );
-            } else{
                 try{
                     DB::beginTransaction();
-                    $caja_movimientos = new Caja_movimientos;
 
-                    $caja_movimientos->idCaja = $params_array['idCaja'];
-                    $caja_movimientos->dinero = $params_array['dinero'];
-                    $caja_movimientos->idTipoMov = $params_array['idTipoMov'];
-                    $caja_movimientos->idOrigen = $params_array['idOrigen'];
-                
-                    if(isset($params_array['idTipoPago'])){
-                        $caja_movimientos->idTipoPago = $params_array['idTipoPago'];
-                    }
-                    if(isset($params_array['autoriza'])){
-                        $caja_movimientos->autoriza = $params_array['autoriza'];
-                    }
-                    if(isset($params_array['observaciones'])){
-                        $caja_movimientos->observaciones = $params_array['observaciones'];
+                    foreach($params_array as $param => $paramdata){
+                        //creamos el modelo
+                        $caja_movimientos = new Caja_movimientos;
+                        //asginamos datos
+                        $caja_movimientos->idCaja = $paramdata['idCaja'];
+                        $caja_movimientos->totalNota = $paramdata['totalNota'];
+                        $caja_movimientos->idTipoMov = $paramdata['idTipoMov'];
+                        $caja_movimientos->pagoCliente = $paramdata['pagoCliente'];
+                    
+                        //si los siguientes datos existen los guardamos
+                        if(isset($paramdata['idOrigen'])){
+                            $caja_movimientos->idOrigen = $paramdata['idOrigen'];
+                        }
+                        if(isset($paramdata['idTipoPago'])){
+                            $caja_movimientos->idTipoPago = $paramdata['idTipoPago'];
+                        }
+                        if(isset($paramdata['autoriza'])){
+                            $caja_movimientos->autoriza = $paramdata['autoriza'];
+                        }
+                        if(isset($paramdata['observaciones'])){
+                            $caja_movimientos->observaciones = $paramdata['observaciones'];
+                        }
+                        if(isset($paramdata['cambioCliente'])){
+                            $caja_movimientos->cambioCliente = $paramdata['cambioCliente'];
+                        }
+
+                        //por ultimo guardamos
+                        $caja_movimientos->save();
                     }
 
-                    $caja_movimientos->save();
+                    /*actualizamos venta*/
+                    //primero la buscamos
+                    $venta = Ventasg::find($idVenta);
+                    //asignamos status a actualizar
+                    $venta->idStatus = 4;
+                    //guardamos o en su caso actualizamos
+                    $venta->save();
+                    
 
                     DB::commit();
 
+                    //generamos array de que el proceso fue correcto
                     $data = array(
                         'code'      =>  200,
                         'status'    =>  'success',
@@ -159,7 +163,7 @@ class CajasController extends Controller
                         'error' => $e
                     );
                 }
-            }
+            
         } else{
             $data = array(
                 'code'      =>  400,
@@ -169,5 +173,15 @@ class CajasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    
+    // public function indexTipoMovimiento(){
+    //     $tipo_movimiento = DB::table('tipo_movimiento')
+    //     ->get();
+    //     return response()->json([
+    //         'code'  => 200,
+    //         'status'    => 'success',
+    //         'tipo_movimiento'   => $tipo_movimiento
+    //     ]);
+    // }
 }
 /********************* */

@@ -9,7 +9,7 @@ class Caja_movimientos extends Model
     protected $table = 'caja_movimientos';
     protected $primaryKey = 'idMovCaja';
     protected $fillable = [
-        'dinero','idTipoMov','idTipoPago','idOrigen',
-        'autoriza','observaciones'
+        'idCaja','totalNota','idTipoMov','idTipoPago','pagoCliente',
+        'cambioCliente','idOrigen','autoriza','observaciones'
     ];   
 }

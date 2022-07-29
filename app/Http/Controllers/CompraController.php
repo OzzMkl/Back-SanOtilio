@@ -59,7 +59,7 @@ class CompraController extends Controller
                     DB::beginTransaction();
                     $Compra = new Compras();
 
-                    if($params_array['idOrd']== null || $params_array['idPedido']== null){
+                    if($params_array['idPedido']== null){
                         $Compra->idProveedor = $params_array['idProveedor'];
                         $Compra->folioProveedor = $params_array['folioProveedor'];
                         $Compra->subtotal = $params_array['subtotal'];
@@ -69,6 +69,9 @@ class CompraController extends Controller
                         $Compra->fechaRecibo = $params_array['fechaRecibo'];                    
                         if(isset($params_array['observaciones'])){
                             $Compra->observaciones = $params_array['observaciones'];
+                        }
+                        if(isset($params_array['idOrd'])){
+                            $Compra->idOrd = $params_array['idOrd'];
                         }
                     }
                     else{
@@ -145,7 +148,7 @@ class CompraController extends Controller
                            $Productos_compra-> idProducto = $paramdata['idProducto'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
-                           $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                           //$Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
                            
                            $Productos_compra->save();//guardamos el modelo
                            //Si todo es correcto mandamos el ultimo producto insertado

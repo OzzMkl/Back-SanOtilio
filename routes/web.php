@@ -141,7 +141,8 @@ Route::get('/prueba', function(){
     Route::post('/api/cajas/aperturaCaja','CajasController@aperturaCaja');
     Route::put('/api/cajas/cierreCaja/{idCaja}','CajasController@cierreCaja');
     Route::get('/api/cajas/verificarCaja/{idEmpleado}','CajasController@verificarCaja');
-    Route::post('/api/cajas/cobroVenta','CajasController@cobroVenta');
+    Route::post('/api/cajas/cobroVenta/{idVenta}','CajasController@cobroVenta');
+    //Route::get('/api/cajas/indexTipoMovimiento','CajasController@indexTipoMovimiento');
 /**************************************************************************************+ */
 
 

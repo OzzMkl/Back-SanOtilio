@@ -259,6 +259,7 @@ class VentasController extends Controller
         ->select('ventasg.*',
                  DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                  DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        ->where('ventasg.idStatus',3)
         ->get();
         return response()->json([
             'code'      => 200,
