@@ -13,14 +13,16 @@ use Validator;
 
 class CajasController extends Controller
 {
+    //genera insert en la tabla de caja / generamos sesion de caja
     public function aperturaCaja(Request $req){
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
         $params_array = json_decode($json,true);
 
         if(!empty($params) && !empty($params_array)){
+            //eliminamos espacios
             $params_array = array_map('trim', $params_array);
-
+            //validamos los datos
             $validate = Validator::make($params_array, [
                 'horaI'        => 'required',
                 //'horaF'           => 'required',
@@ -28,7 +30,7 @@ class CajasController extends Controller
                 //'pc'       => 'required',
                 'idEmpleado'      => 'required'
             ]);
-
+            //revisamos la validacion
             if($validate->fails()){
                 $data = array(
                     'status'    => 'error',
@@ -37,15 +39,18 @@ class CajasController extends Controller
                     'errors'    => $validate->errors()
                 );
             }else{
+                //si no hay errores en la validacion
+                //obtenemos el nombre de la maquina
                 $nombre_host = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+                //creamos modelo
                 $Caja = new Caja();
-
+                //insertamos los datos
                 $Caja->horaI = $params_array['horaI'];
                 //$Caja->horaF = $params_array['horaF'];
                 $Caja->pc = $nombre_host;
                 $Caja->fondo = $params_array['fondo'];
                 $Caja->idEmpleado = $params_array['idEmpleado'];
-
+                //guardamos
                 $Caja->save();
 
                 $data = array(
@@ -64,21 +69,40 @@ class CajasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
-    public function cierreCaja($idCaja, Request $request){
+    //finalizamos sesion de caja actualizando el campo horaF con la hora de cierre
+    public function cierreCaja(Request $request){
         $json = $request -> input('json', null);
         $params_array = json_decode($json, true);
 
         if(!empty($params_array)){
-            //eliminamos espacios vacios
-            $params_array = array_map('trim', $params_array);
-            //actualizamos
-            $Caja = Caja::where('idCaja',$idCaja)->update($params_array);
+            $params_array = array_map('trim',$params_array);
 
-            $data = array(
-                'code'      =>  200,
-                'status'    => 'success',
-                'caja'   => $params_array
-            );
+            $validate = Validator::make($params_array,[
+                'idCaja'    => 'required'
+            ]);
+
+            if($validate->fails()){
+                $data = array(
+                    'status'    => 'error',
+                    'code'      => 404,
+                    'message'   => 'Fallo la validacion de los datos del cliente',
+                    'errors'    => $validate->errors()
+                );
+            } else{
+                //buscamos
+                $caja = Caja::find($params_array['idCaja']);
+                //actualizamos el valor
+                $caja->horaF = date("Y-m-d H:i:s");
+                //guardamos
+                $caja->save();
+
+                $data= array(
+                    'code'  => 200,
+                    'status'    =>'success',
+                    'caja' => $caja
+                );
+
+            }
 
         } else{
             $data = array(
@@ -89,6 +113,7 @@ class CajasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    //traemos la inforamcion de caja de acuerdo al empleado y la ultima que creo
     public function verificarCaja($idEmpleado){
         $Caja = Caja::latest('idCaja')->where('idEmpleado',$idEmpleado)->first();
         return response()->json([
@@ -97,6 +122,8 @@ class CajasController extends Controller
             'caja'      => $Caja
         ]);
     }
+    //generamos cobro de venta / se genera insert en la tabla movimientos_caja
+    //registramos que se genero un cobro
     public function cobroVenta($idVenta,Request $req){
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -105,8 +132,10 @@ class CajasController extends Controller
         if(!empty($params) && !empty($params_array)){
             
                 try{
+                    //comenzamos transaccion
                     DB::beginTransaction();
 
+                    //recorremos el array ya que un cobro puede tener 2 movimientos
                     foreach($params_array as $param => $paramdata){
                         //creamos el modelo
                         $caja_movimientos = new Caja_movimientos;
@@ -142,7 +171,7 @@ class CajasController extends Controller
                     $venta = Ventasg::find($idVenta);
                     //asignamos status a actualizar
                     $venta->idStatus = 4;
-                    //guardamos o en su caso actualizamos
+                    //guardamos/actualizamos
                     $venta->save();
                     
 
@@ -173,7 +202,40 @@ class CajasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
-    
+    //trae los id de las cajas que no tienen horafinal registrada
+    //dando a entender que la sesion de la caja sigue activa
+    public function verificaSesionesCaja(){
+        $caja = DB::table('caja')
+            ->join('empleado','empleado.idEmpleado','caja.idEmpleado')
+            ->select('caja.*',
+            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+            ->where('horaF',null)
+            ->get();
+
+        return response()->json([
+            'code'  => 200,
+            'status'    => 'success',
+            'caja'  => $caja
+        ]);
+
+    }
+    /**Trae los movimientos de caja (cobros,pagos, etc)
+     * que se realizaron de acuerdo al idCaja
+     */
+    public function movimientosSesionCaja($idCaja){
+        $caja = DB::table('caja_movimientos')
+            ->join('tipo_movimiento','tipo_movimiento.idTipo','caja_movimientos.idTipoMov')
+            ->join('tipo_pago','tipo_pago.idt','caja_movimientos.idTipoPago')
+            ->select('caja_movimientos.*','tipo_movimiento.nombre as nombreTipoMov','tipo_pago.tipo as nombreTipoPago')
+            ->where('idCaja',$idCaja)
+            ->get();
+
+        return response()->json([
+            'code'  => 200,
+            'status'    => 'success',
+            'caja'  => $caja
+        ]);
+    }
     // public function indexTipoMovimiento(){
     //     $tipo_movimiento = DB::table('tipo_movimiento')
     //     ->get();

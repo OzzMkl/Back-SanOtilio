@@ -139,10 +139,12 @@ Route::get('/prueba', function(){
     Route::get('/api/empresa/index','EmpresaController@index');
     /*******CAJAS */
     Route::post('/api/cajas/aperturaCaja','CajasController@aperturaCaja');
-    Route::put('/api/cajas/cierreCaja/{idCaja}','CajasController@cierreCaja');
+    Route::put('/api/cajas/cierreCaja','CajasController@cierreCaja');
     Route::get('/api/cajas/verificarCaja/{idEmpleado}','CajasController@verificarCaja');
     Route::post('/api/cajas/cobroVenta/{idVenta}','CajasController@cobroVenta');
-    //Route::get('/api/cajas/indexTipoMovimiento','CajasController@indexTipoMovimiento');
+    Route::get('/api/cajas/verificaSesionesCaja','CajasController@verificaSesionesCaja');
+    //Route::get('/api/cajas/indexTipoMovimiento','CajasController@indexTipoMovimiento');movimientosSesionCaja
+    Route::get('/api/cajas/movimientosSesionCaja/{idCaja}','CajasController@movimientosSesionCaja');
 /**************************************************************************************+ */
 
 

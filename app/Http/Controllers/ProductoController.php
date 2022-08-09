@@ -172,7 +172,7 @@ class ProductoController extends Controller
                     $producto -> imagen = $params_array['imagen'];
                     $producto -> statuss = $params_array['statuss'];
                     $producto -> ubicacion = $params_array['ubicacion'];
-                    $producto -> claveSat = $params_array['claveSat'];
+                    $producto -> claveSat = "000";
                     $producto -> tEntrega = $params_array['tEntrega'];
                     $producto -> idAlmacen = $params_array['idAlmacen'];
                     $producto -> precioR = $params_array['precioR'];

@@ -133,6 +133,8 @@ class CompraController extends Controller
             'status'    => 'Error!',
             'message'   =>  'json vacio'
         ]);
+
+        
     }
 
     public function registerProductosCompra(Request $req){
@@ -169,76 +171,23 @@ class CompraController extends Controller
        return response()->json($data, $data['code']);
     }
 
-    public function registerLote (Request $request){
-        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
-        $params = json_decode($json);
-        $params_array = json_decode($json,true);
+    public function registerLote(){
+        $Compra = Compras::latest('idCompra')->first();
 
-        if(!empty($params) && !empty($params_array)){
-            //eliminar espacios vacios
-            $params_array = array_map('trim', $params_array);
-            //validamos los datos
-            $validate = Validator::make($params_array, [
-                'idLote'   => 'required',
-                'idOrigen' => 'required',
-                'codigo'   => 'required'
-            ]);
-            if($validate->fails()){//si el json esta mal mandamos esto (falta algun dato)
-                $data = array(
-                    'status'    => 'error',
-                    'code'      => 404,
-                    'message'   => 'Fallo! El Lote no se ha creado',
-                    'errors'    => $validate->errors()
-                );
-            }else{
-                try{
-                    DB::beginTransaction();
-                    $Lote = new lote();
-                        $Lote->idLote = $params_array['idLote'];
-                        $Lote->codigo = $params_array['codigo'];                  
-                    $Lote->save();
+        //idLote -> idCompra
+        //idOrigen -> 3
+        //codigo -> null
 
-                    $data = array(
-                        'status'    =>  'success',
-                        'code'      =>  200,
-                        'message'   =>  'Lote creado'
-                    );
+        $Lote = new Lote();//creamos el modelo
+        $Lote->idLote = $Compra -> idCompra;//Asignamos el id de la ultima compra a idlote
+        $Lote->idOrigen = 3; //Asignamos el numero de modulo    
+        
+        $Lote->save();//guardamos el modelo
 
-                    //   $Productos_orden = new Productos_ordenes();
-                    //   $Productos_orden->idOrd = $Ordencompra -> idOrd;
-                    //   $Productos_orden-> idProducto = $params_array['idProducto'];
-                    //   $Productos_orden-> cantidad = $params_array['cantidad'];
-
-                    //   $Productos_orden->save();
-
-                    //   $data = array(
-                    //       'status'    =>  'success',
-                    //       'code'      =>  200,
-                    //       'message'   =>  'Orden creada y lista de productos tambien!'
-                    //   );
-                    DB::commit();
-
-                } catch(\Exception $e){
-                    DB::rollBack();
-                    return response()->json([
-                        'code'      => 400,
-                        'status'    => 'Error',
-                        'message'   =>  'Fallo al crear el Lote Rollback!',
-                        'error' => $e
-                    ]);
-                }
-                return response()->json([
-                    'code'      =>  200,
-                    'status'    => 'Success!',
-                    'lote'   =>  $Lote
-                ]);
-            }
-            
-        }
         return response()->json([
-            'code'      =>  400,
-            'status'    => 'Error!',
-            'message'   =>  'json vacio'
+            'code'         =>  200,
+            'status'       => 'success',
+            'Lote'   => $Lote
         ]);
     }
 
@@ -322,6 +271,8 @@ class CompraController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
+
 
 }
 
