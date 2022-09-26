@@ -23,7 +23,8 @@ class ProductoController extends Controller
         ->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
         ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca','departamentos.nombre as nombreDep','categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat')
         ->where('statuss',1)
-        ->get();
+        ->paginate(10);
+        //->get();
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
@@ -142,10 +143,10 @@ class ProductoController extends Controller
                 //'imagen'            =>  'required',
                 'statuss'           =>  'required',
                 'ubicacion'         =>  'required',
+                //'claveSat'          =>  'required',
                 'tEntrega'          =>  'required',
                 'idAlmacen'         =>  'required',
-                'precioR'           =>  'required',
-                'precioS'           =>  'required',
+                //'idProductoS'       =>  'required',
                 'factorConv'        =>  'required',
                 'existenciaG'       =>  'required'
             ]);
@@ -174,9 +175,7 @@ class ProductoController extends Controller
                     $producto -> ubicacion = $params_array['ubicacion'];
                     $producto -> claveSat = "000";
                     $producto -> tEntrega = $params_array['tEntrega'];
-                    $producto -> idAlmacen = $params_array['idAlmacen'];
-                    $producto -> precioR = $params_array['precioR'];
-                    $producto -> precioS = $params_array['precioS'];                    
+                    $producto -> idAlmacen = $params_array['idAlmacen'];                  
                     $producto -> factorConv = $params_array['factorConv'];
                     $producto -> existenciaG = $params_array['existenciaG'];
     
@@ -207,8 +206,6 @@ class ProductoController extends Controller
                     $producto -> claveSat = $params_array['claveSat'];
                     $producto -> tEntrega = $params_array['tEntrega'];
                     $producto -> idAlmacen = $params_array['idAlmacen'];
-                    $producto -> precioR = $params_array['precioR'];
-                    $producto -> precioS = $params_array['precioS'];
                     $producto -> idProductoS = $params_array['idProductoS'];
                     $producto -> factorConv = $params_array['factorConv'];
                     $producto -> existenciaG = $params_array['existenciaG'];

@@ -145,6 +145,8 @@ Route::get('/prueba', function(){
     Route::get('/api/cajas/verificaSesionesCaja','CajasController@verificaSesionesCaja');
     //Route::get('/api/cajas/indexTipoMovimiento','CajasController@indexTipoMovimiento');movimientosSesionCaja
     Route::get('/api/cajas/movimientosSesionCaja/{idCaja}','CajasController@movimientosSesionCaja');
+    /******ENTREGAS */
+    Route::get('/api/entregas/indexEntregas','VentasController@indexEntregas');
 /**************************************************************************************+ */
 
 

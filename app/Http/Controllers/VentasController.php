@@ -337,6 +337,9 @@ class VentasController extends Controller
                 if(isset($params_array['descuento'])){
                     $ventasg->descuento = $params_array['descuento'];
                 }
+                if(isset($params_array['cdireccion'])){
+                    $ventasg->cdireccion = $params_array['cdireccion'];
+                }
                 $ventasg->total = $params_array['total'];
 
                 $ventasg->save();
@@ -494,7 +497,24 @@ class VentasController extends Controller
             }
             
     }
-    public function generaTicketmini(){
-
+    /****ENTREGAS */
+    public function indexEntregas(){
+        $ventas = DB::table('ventasg')
+        ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
+        ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+        ->join('statuss','statuss.idStatus','ventasg.idStatus')
+        ->select('ventasg.*',
+                 DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                 'statuss.nombre as nombreStatus')
+        ->where('ventasg.idStatus',22)
+        ->orwhere('ventasg.idStatus',16)
+        ->orwhere('ventasg.idStatus',3)
+        ->get();
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'entregas'    => $ventas
+        ]);
     }
 }

@@ -90,6 +90,13 @@ class CompraController extends Controller
                     }
 
                     $Compra->save();
+                    
+                    //Registro de lote
+                    $Compra = Compras::latest('idCompra')->first();
+                    $Lote = new Lote();//creamos el modelo
+                    $Lote->idLote = $Compra -> idCompra;//Asignamos el id de la ultima compra a idlote
+                    $Lote->idOrigen = 3; //Asignamos el numero de modulo    
+                    $Lote->save();//guardamos el modelo
 
                     $data = array(
                         'status'    =>  'success',
@@ -150,7 +157,7 @@ class CompraController extends Controller
                            $Productos_compra-> idProducto = $paramdata['idProducto'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
-                           //$Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                           $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
                            
                            $Productos_compra->save();//guardamos el modelo
                            //Si todo es correcto mandamos el ultimo producto insertado
@@ -178,16 +185,12 @@ class CompraController extends Controller
         //idOrigen -> 3
         //codigo -> null
 
-        $Lote = new Lote();//creamos el modelo
-        $Lote->idLote = $Compra -> idCompra;//Asignamos el id de la ultima compra a idlote
-        $Lote->idOrigen = 3; //Asignamos el numero de modulo    
         
-        $Lote->save();//guardamos el modelo
 
         return response()->json([
             'code'         =>  200,
             'status'       => 'success',
-            'Lote'   => $Lote
+            'Lote'   => $Compra
         ]);
     }
 

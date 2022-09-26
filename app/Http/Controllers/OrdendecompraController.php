@@ -222,6 +222,7 @@ class OrdendecompraController extends Controller
             ]);   
          }
      }
+
      public function updateProductsOrder($idOrd,Request $req){
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
