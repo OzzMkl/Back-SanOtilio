@@ -170,7 +170,9 @@ class ProductoController extends Controller
                     $producto -> descripcion = $params_array['descripcion'];
                     $producto -> stockMin = $params_array['stockMin'];
                     $producto -> stockMax = $params_array['stockMax'];
-                    $producto -> imagen = $params_array['imagen'];
+                    if( isset($params_array['imagen'])){
+                        $producto -> imagen = $params_array['imagen'];
+                    }
                     $producto -> statuss = $params_array['statuss'];
                     $producto -> ubicacion = $params_array['ubicacion'];
                     $producto -> claveSat = "000";
@@ -200,7 +202,9 @@ class ProductoController extends Controller
                     $producto -> descripcion = $params_array['descripcion'];
                     $producto -> stockMin = $params_array['stockMin'];
                     $producto -> stockMax = $params_array['stockMax'];
-                    $producto -> imagen = $params_array['imagen'];
+                    if( isset($params_array['imagen'])){
+                        $producto -> imagen = $params_array['imagen'];
+                    }
                     $producto -> statuss = $params_array['statuss'];
                     $producto -> ubicacion = $params_array['ubicacion'];
                     $producto -> claveSat = $params_array['claveSat'];
@@ -406,6 +410,47 @@ class ProductoController extends Controller
             'code'          =>  200,
             'status'        => 'success',
             'producto'   =>  $producto
+        ]);
+    }
+    /**
+     * Busca a partir de la clave externa de los productos
+     * que tengan estatus 1 (activos), ademas trae la informacion pagina
+     * y los convertimos en formato json
+     */
+    public function searchClaveEx($claveExterna){
+        //GENERAMOS CONSULTA
+        $productos = DB::table('producto')
+        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('marca', 'marca.idMarca','=','producto.idMarca')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->where('claveEx','like','%'.$claveExterna.'%')
+        ->where('statuss',1)
+        ->paginate(10);
+        //->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
+        ]);
+    }
+    /**
+     * Busca a partir de la clave externa de los productos
+     * que tengan estatus 2 (inactivos)
+     */
+    public function searchClaveExInactivos($claveExterna){
+        //GENERAMOS CONSULTA
+        $productos = DB::table('producto')
+        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('marca', 'marca.idMarca','=','producto.idMarca')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->where('claveEx','like','%'.$claveExterna.'%')
+        ->where('statuss',2)
+        ->paginate(10);
+        //->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
         ]);
     }
 }
