@@ -71,8 +71,12 @@ Route::get('/prueba', function(){
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
     Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
     Route::get('/api/productos/getExistenciaG/{producto}', 'ProductoController@getExistenciaG');
-    Route::get('/api/productos/searchClaveExterna/{claveex}', 'ProductoController@searchClaveEx');
-    Route::get('/api/productos/searchClaveExInactivos/{claveex}', 'ProductoController@searchClaveExInactivos');
+    Route::get('/api/productos/searchClaveExterna/{claveex}', 'ProductoController@searchClaveEx');//buscar por clave externa productos con status 1
+    Route::get('/api/productos/searchCodbar/{codbar}', 'ProductoController@searchCodbar');//buscar por codigo de barras productos con status 1
+    Route::get('/api/productos/searchDescripcion/{descripcion}', 'ProductoController@searchDescripcion');//buscar por descripcion productos con status 1
+    Route::get('/api/productos/searchClaveExInactivos/{claveex}', 'ProductoController@searchClaveExInactivos');//buscar por clave externa productos con status 2
+    Route::get('/api/productos/searchCodbarI/{codbar}', 'ProductoController@searchCodbarI');//buscar por codigo de barras productos con status 2
+    Route::get('/api/productos/searchDescripcionI/{descripcion}', 'ProductoController@searchDescripcionI');//buscar por descripcion productos con status 2
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos

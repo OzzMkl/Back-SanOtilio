@@ -412,6 +412,8 @@ class ProductoController extends Controller
             'producto'   =>  $producto
         ]);
     }
+    /* MODULO INVENTARIO->PRODUCTOS */
+
     /**
      * Busca a partir de la clave externa de los productos
      * que tengan estatus 1 (activos), ademas trae la informacion pagina
@@ -433,6 +435,49 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
+
+    /**
+     * Busca a partir del codigo de barras de los productos
+     * que tengan estatus 1 (activos)
+     */
+    public function searchCodbar($codbar){
+        //GENERAMOS CONSULTA
+        $productos = DB::table('producto')
+        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('marca', 'marca.idMarca','=','producto.idMarca')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->where('cbarras','like','%'.$codbar.'%')
+        ->where('statuss',1)
+        ->paginate(10);
+        //->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
+        ]);
+    }
+
+    /**
+     * Busca a partir de su descripcion de los productos
+     * que tengan estatus 1 (activos)
+     */
+    public function searchDescripcion($descripcion){
+        //GENERAMOS CONSULTA
+        $productos = DB::table('producto')
+        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('marca', 'marca.idMarca','=','producto.idMarca')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->where('descripcion','like','%'.$descripcion.'%')
+        ->where('statuss',1)
+        ->paginate(10);
+        //->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
+        ]);
+    }
+
     /**
      * Busca a partir de la clave externa de los productos
      * que tengan estatus 2 (inactivos)
@@ -453,5 +498,49 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
+
+    /**
+     * Busca a partir del codigo de barras de los productos
+     * que tengan estatus 2 (inactivos)
+     */
+    public function searchCodbarI($codbar){
+        //GENERAMOS CONSULTA
+        $productos = DB::table('producto')
+        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('marca', 'marca.idMarca','=','producto.idMarca')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->where([
+            ['statuss','=','2'],
+            ['cbarras','like','%'.$codbar.'%']
+                ])
+        ->paginate(10);
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
+        ]);
+    }
+
+    /**
+     * Busca a partir de su descripcion de los productos
+     * que tengan estatus 2 (activos)
+     */
+    public function searchDescripcionI($descripcion){
+        //GENERAMOS CONSULTA
+        $productos = DB::table('producto')
+        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('marca', 'marca.idMarca','=','producto.idMarca')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->where('descripcion','like','%'.$descripcion.'%')
+        ->where('statuss',2)
+        ->paginate(10);
+        //->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
+        ]);
+    }
+    
 }
 /**** */
