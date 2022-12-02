@@ -153,6 +153,8 @@ Route::get('/prueba', function(){
     Route::get('/api/cajas/movimientosSesionCaja/{idCaja}','CajasController@movimientosSesionCaja');
     /******ENTREGAS */
     Route::get('/api/entregas/indexEntregas','VentasController@indexEntregas');
+    /******PRODUCTO_PRECIO */
+    Route::post('/api/productos_precio/registraPrecio','Producto_precioController@registraPrecio');
 /**************************************************************************************+ */
 
 
