@@ -120,16 +120,24 @@ class ProductoController extends Controller
             return response()->json($data, $data['code']);
                 }
     }
-    public function register(Request $request){
 
+    /**
+     * Da de alta el producto
+     * Recibe los datos del objeto junto con las cabeceras
+     */
+    public function register(Request $request){
+        //tomamos solo el json
         $json = $request -> input('json', null);
+        //lo codificamos como json
         $params = json_decode($json);
+        //se separa y se ponen como array
         $params_array = json_decode($json, true);
 
+            //revisamos que no vengan vacios
         if( !empty($params_array) && !empty($params_array)){
-
-            $params_array = array_map('trim', $params_array);//limpiamos los datos
-
+            //limpiamos los datos
+            $params_array = array_map('trim', $params_array);
+            //validamos los datos que llegaron
             $validate = Validator::make($params_array, [
                 'idMedida'          =>  'required',
                 'idMarca'           =>  'required',
@@ -137,7 +145,7 @@ class ProductoController extends Controller
                 'idCat'             =>  'required',
                 //'idSubCat'          =>  'required',
                 'claveEx'           =>  'required',
-                'cbarras'           =>  'required',
+                //'cbarras'           =>  'required',
                 'descripcion'       =>  'required',
                 'stockMin'          =>  'required',
                 'stockMax'          =>  'required',
@@ -151,6 +159,7 @@ class ProductoController extends Controller
                 'factorConv'        =>  'required',
                 'existenciaG'       =>  'required'
             ]);
+            //si falla creamos la respuesta a enviar
             if($validate->fails()){
                 $data = array(
                     'status'    =>  'error',
@@ -159,7 +168,15 @@ class ProductoController extends Controller
                     'errors'    =>  $validate->errors()
                 );
             }else{
-                
+                try{
+                    DB::beginTransaction();
+
+                    //consultamos el ultimo producto registrado y extraemos su codigo de barras
+                    $ultimoProducto = Producto::latest('idProducto')->first()->cbarras;
+                    //sumamos +1 AL CODIGO DE BARRAS
+                    $ultimoProducto = $ultimoProducto +1;
+
+                    //creamos el producto a ingresar
                     $producto = new Producto();
                     $producto -> idMedida = $params_array['idMedida'];
                     $producto -> idMarca = $params_array['idMarca'];
@@ -167,7 +184,7 @@ class ProductoController extends Controller
                     $producto -> idCat = $params_array['idCat'];
                     //$producto -> idSubCat = $params_array['idSubCat'];
                     $producto -> claveEx = $params_array['claveEx'];
-                    $producto -> cbarras = $params_array['cbarras'];
+                    $producto -> cbarras = $ultimoProducto;//aqui ingresamos el codigo de barras consultado
                     $producto -> descripcion = $params_array['descripcion'];
                     $producto -> stockMin = $params_array['stockMin'];
                     $producto -> stockMax = $params_array['stockMax'];
@@ -184,30 +201,39 @@ class ProductoController extends Controller
                     }
                     $producto -> factorConv = $params_array['factorConv'];
                     $producto -> existenciaG = $params_array['existenciaG'];
-    
+                    //guardamos
                     $producto->save();
-    
-                    $data = array(//una vez guardado mandamos mensaje de OK
+                    //una vez guardado mandamos mensaje de OK
+                    $data = array(
                         'status'    =>  'success',
                         'code'      =>  '200',
                         'message'   =>  'El producto se a guardado correctamente',
-                        'producto' =>  $producto
+                        'producto'  =>  $producto
                     );
-                
-                
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => 'Algo salio mal rollback',
+                        'error'     => $e
+                    );
+                }
             }
 
         }else{
             $data =  array(
+                'code'          =>  400,
                 'status'        => 'error',
-                'code'          =>  '404',
-                'message'       =>  'Los datos enviados no son correctos'
+                'message'       =>  'Un campo viene vacio'
             );
         }
         return response()->json($data, $data['code']);
     }
     public function getLastProduct(){
-        $productos = Producto::latest('idProducto')->first();
+        $productos = Producto::latest('idProducto')->first()->cbarras;
+        $productos = $productos+1;
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
@@ -220,12 +246,12 @@ class ProductoController extends Controller
         ->join('marca', 'marca.idMarca','=','allproducts.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','allproducts.idDep')
         ->join('categoria', 'categoria.idCat','=','allproducts.idCat')
-        ->join('subcategoria', 'subcategoria.idSubCat','=','allproducts.idSubCat')
+        //->join('subcategoria', 'subcategoria.idSubCat','=','allproducts.idSubCat')
         ->join('almacenes','almacenes.idAlmacen','=','allproducts.idAlmacen')
         ->join('producto', 'producto.idProducto','=','allproducts.idProductoS')
         //->join('pelote','pelote.idProducto','=','allproducts.idProducto')
         ->select('producto.*','allproducts.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca',
-                 'departamentos.nombre as nombreDep','categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat',
+                 'departamentos.nombre as nombreDep','categoria.nombre as nombreCat',
                  'almacenes.nombre as nombreAlmacen','producto.claveEx as claveExProductoSiguiente')
         ->where('allproducts.idProducto',$idProducto)
         ->get();
@@ -326,10 +352,11 @@ class ProductoController extends Controller
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
-        ->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
+        //->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
         ->join('almacenes','almacenes.idAlmacen','=','producto.idAlmacen')
         //->join('pelote','pelote.idProducto','=','producto.idProducto')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca','departamentos.nombre as nombreDep','categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat','almacenes.nombre as nombreAlmacen')
+        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat','almacenes.nombre as nombreAlmacen')
         ->where('producto.idProducto',$idProducto)
         ->get();
         if(is_object($producto)){
