@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Validator;
 use App\Producto;
+use App\Productos_precios;
 
 class ProductoController extends Controller
 {
@@ -172,9 +173,9 @@ class ProductoController extends Controller
                     DB::beginTransaction();
 
                     //consultamos el ultimo producto registrado y extraemos su codigo de barras
-                    $ultimoProducto = Producto::latest('idProducto')->first()->cbarras;
+                    $ultimoCbarras = Producto::latest('idProducto')->first()->cbarras;
                     //sumamos +1 AL CODIGO DE BARRAS
-                    $ultimoProducto = $ultimoProducto +1;
+                    $ultimoCbarras = $ultimoCbarras +1;
 
                     //creamos el producto a ingresar
                     $producto = new Producto();
@@ -184,7 +185,7 @@ class ProductoController extends Controller
                     $producto -> idCat = $params_array['idCat'];
                     //$producto -> idSubCat = $params_array['idSubCat'];
                     $producto -> claveEx = $params_array['claveEx'];
-                    $producto -> cbarras = $ultimoProducto;//aqui ingresamos el codigo de barras consultado
+                    $producto -> cbarras = $ultimoCbarras;//aqui ingresamos el codigo de barras consultado
                     $producto -> descripcion = $params_array['descripcion'];
                     $producto -> stockMin = $params_array['stockMin'];
                     $producto -> stockMax = $params_array['stockMax'];
@@ -204,11 +205,15 @@ class ProductoController extends Controller
                     //guardamos
                     $producto->save();
                     //una vez guardado mandamos mensaje de OK
+
+                    $this->registraPrecioProducto($request);
+
                     $data = array(
                         'status'    =>  'success',
                         'code'      =>  '200',
                         'message'   =>  'El producto se a guardado correctamente',
                         'producto'  =>  $producto
+                        //'precios'   =>  $precios
                     );
                     DB::commit();
                 } catch (\Exception $e){
@@ -412,6 +417,89 @@ class ProductoController extends Controller
             'producto'   =>  $producto
         ]);
     }
+    public function registraPrecioProducto(Request $request){
+
+        $json = $request -> input('json', null);
+        //echo $json;
+        $params = json_decode($json);
+        $params_array = json_decode($json, true);
+
+        if(!empty($params) && !empty($params_array)){
+            $params_array = array_map('trim', $params_array);
+
+            $validate = Validator::make($params_array, [
+                'preciocompra'      =>  'required',
+                'precio5'           =>  'required',
+                'porcentaje5'       =>  'required',
+                'precio4'           =>  'required',
+                'porcentaje4'       =>  'required',
+                'precio3'           =>  'required',
+                'porcentaje3'       =>  'required',
+            ]);
+
+            if($validate->fails()){
+                $data = array(
+                    'status'    =>  'error',
+                    'code'      =>  '404',
+                    'message'   =>  'Fallo la validacion de los datos del producto',
+                    'errors'    =>  $validate->errors()
+                );
+            } else{
+                try{
+                    DB::beginTransaction();
+
+                    $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
+
+                    $precios = new Productos_precios();
+                    $precios -> idProducto = $ultimoProducto;
+                    $precios -> preciocompra = $params_array['preciocompra'];
+                    $precios -> precio5 = $params_array['precio5'];
+                    $precios -> porcentaje5 = $params_array['porcentaje5'];
+                    $precios -> precio4 = $params_array['precio4'];
+                    $precios -> porcentaje4 = $params_array['porcentaje4'];
+                    $precios -> precio3 = $params_array['precio3'];
+                    $precios -> porcentaje3 = $params_array['porcentaje3'];
+                    if( isset($params_array['precio2'])){
+                        $precios -> precio2 = $params_array['precio2'];
+                    }
+                    if( isset($params_array['porcentaje2'])){
+                        $precios -> porcentaje2 = $params_array['porcentaje2'];
+                    }
+                    if( isset($params_array['precio1'])){
+                        $precios -> precio1 = $params_array['precio1'];
+                    }
+                    if( isset($params_array['porcentaje1'])){
+                        $precios -> porcentaje1 = $params_array['porcentaje1'];
+                    }
+                    $precios -> save();
+                    
+                    $data = array(
+                        'code' => 200,
+                        'status' => 'success',
+                        'message' => 'Precios registrados correctamente',
+                        'precios' => $precios
+                    );
+                    DB::commit();
+                } catch(\Exception $e){
+                    DB::rollback();
+                    $data = array(
+                        'code' => 400,
+                        'status' => 'error',
+                        'message' => 'Algo salio mal rollback',
+                        'errors' => $e
+                    );
+                }
+
+            }
+        } else {
+            $data = array(
+                'code' => 400,
+                'status' => 'error',
+                'message' => 'Un campo viene vacio / mal'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
     /* MODULO INVENTARIO->PRODUCTOS */
 
     /**
@@ -523,7 +611,7 @@ class ProductoController extends Controller
 
     /**
      * Busca a partir de su descripcion de los productos
-     * que tengan estatus 2 (activos)
+     * que tengan estatus 2 (inactivos)
      */
     public function searchDescripcionI($descripcion){
         //GENERAMOS CONSULTA
