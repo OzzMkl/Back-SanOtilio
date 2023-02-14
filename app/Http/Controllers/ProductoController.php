@@ -127,6 +127,7 @@ class ProductoController extends Controller
      * Recibe los datos del objeto junto con las cabeceras
      */
     public function register(Request $request){
+        
         //tomamos solo el json
         $json = $request -> input('json', null);
         //lo codificamos como json
@@ -135,7 +136,7 @@ class ProductoController extends Controller
         $params_array = json_decode($json, true);
 
             //revisamos que no vengan vacios
-        if( !empty($params_array) && !empty($params_array)){
+        if( !empty($params_array) && !empty($params)){
             //limpiamos los datos
             $params_array = array_map('trim', $params_array);
             //validamos los datos que llegaron
@@ -197,7 +198,7 @@ class ProductoController extends Controller
                     $producto -> claveSat = $params_array['claveSat'];
                     $producto -> tEntrega = $params_array['tEntrega'];
                     $producto -> idAlmacen = $params_array['idAlmacen'];
-                    if( isset($params_array['idProductoS'])){
+                    if( $params_array['idProductoS'] != '' || $params_array['idProductoS'] != null){
                         $producto -> idProductoS = $params_array['idProductoS'];
                     }
                     $producto -> factorConv = $params_array['factorConv'];
@@ -206,15 +207,15 @@ class ProductoController extends Controller
                     $producto->save();
                     //una vez guardado mandamos mensaje de OK
 
-                    $this->registraPrecioProducto($request);
+                    return $this->registraPrecioProducto($request);
 
-                    $data = array(
-                        'status'    =>  'success',
-                        'code'      =>  '200',
-                        'message'   =>  'El producto se a guardado correctamente',
-                        'producto'  =>  $producto
-                        //'precios'   =>  $precios
-                    );
+                    // $data = array(
+                    //     'status'    =>  'success',
+                    //     'code'      =>  '200',
+                    //     'message'   =>  'El producto se a guardado correctamente',
+                    //     'producto'  =>  $producto
+                    //     //'precios'   =>  $precios
+                    // );
                     DB::commit();
                 } catch (\Exception $e){
                     DB::rollBack();
@@ -448,37 +449,47 @@ class ProductoController extends Controller
                 try{
                     DB::beginTransaction();
 
-                    $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
+                    if($params_array['precio5'] <= 0 || $params_array['precio4']  <= 0 || $params_array['precio3'] <= 0){
 
-                    $precios = new Productos_precios();
-                    $precios -> idProducto = $ultimoProducto;
-                    $precios -> preciocompra = $params_array['preciocompra'];
-                    $precios -> precio5 = $params_array['precio5'];
-                    $precios -> porcentaje5 = $params_array['porcentaje5'];
-                    $precios -> precio4 = $params_array['precio4'];
-                    $precios -> porcentaje4 = $params_array['porcentaje4'];
-                    $precios -> precio3 = $params_array['precio3'];
-                    $precios -> porcentaje3 = $params_array['porcentaje3'];
-                    if( isset($params_array['precio2'])){
-                        $precios -> precio2 = $params_array['precio2'];
+                        $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
+
+                        $precios = new Productos_precios();
+                        $precios -> idProducto = $ultimoProducto;
+                        $precios -> preciocompra = $params_array['preciocompra'];
+                        $precios -> precio5 = $params_array['precio5'];
+                        $precios -> porcentaje5 = $params_array['porcentaje5'];
+                        $precios -> precio4 = $params_array['precio4'];
+                        $precios -> porcentaje4 = $params_array['porcentaje4'];
+                        $precios -> precio3 = $params_array['precio3'];
+                        $precios -> porcentaje3 = $params_array['porcentaje3'];
+                        if( isset($params_array['precio2'])){
+                            $precios -> precio2 = $params_array['precio2'];
+                        }
+                        if( isset($params_array['porcentaje2'])){
+                            $precios -> porcentaje2 = $params_array['porcentaje2'];
+                        }
+                        if( isset($params_array['precio1'])){
+                            $precios -> precio1 = $params_array['precio1'];
+                        }
+                        if( isset($params_array['porcentaje1'])){
+                            $precios -> porcentaje1 = $params_array['porcentaje1'];
+                        }
+                        $precios -> save();
+                        
+                        $data = array(
+                            'code' => 200,
+                            'status' => 'success',
+                            'message' => 'Precios registrados correctamente',
+                            'precios' => $precios
+                        );
+                    } else {
+                        $data = array(
+                            'code' => 400,
+                            'status' => 'error',
+                            'message' => 'Los precios de venta no pueden ser menores o iguales a cero',
+                        );
                     }
-                    if( isset($params_array['porcentaje2'])){
-                        $precios -> porcentaje2 = $params_array['porcentaje2'];
-                    }
-                    if( isset($params_array['precio1'])){
-                        $precios -> precio1 = $params_array['precio1'];
-                    }
-                    if( isset($params_array['porcentaje1'])){
-                        $precios -> porcentaje1 = $params_array['porcentaje1'];
-                    }
-                    $precios -> save();
                     
-                    $data = array(
-                        'code' => 200,
-                        'status' => 'success',
-                        'message' => 'Precios registrados correctamente',
-                        'precios' => $precios
-                    );
                     DB::commit();
                 } catch(\Exception $e){
                     DB::rollback();
