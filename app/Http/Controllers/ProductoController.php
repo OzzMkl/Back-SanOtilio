@@ -34,14 +34,12 @@ class ProductoController extends Controller
         ]);
     }
     public function indexPV(){
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
-        ini_set('memory_limit', '-1');// Se agrega para eliminar el limite de memoria asignado
         $productos = DB::table('producto')
         ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion','producto.precioS','producto.precioR','producto.existenciaG','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion','producto.existenciaG','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
         ->where('statuss',1)
-        ->get();
+        ->paginate(10);
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
