@@ -33,6 +33,7 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
+    //Trae la informacion de los productos para el modulo de punto de venta
     public function indexPV(){
         $productos = DB::table('producto')
         ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
