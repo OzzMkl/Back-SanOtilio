@@ -21,9 +21,9 @@ class ProductoController extends Controller
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
-        ->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
+        //->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
         ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca',
-                 'departamentos.nombre as nombreDep','categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat')
+                 'departamentos.nombre as nombreDep','categoria.nombre as nombreCat')
         ->where('statuss',1)
         ->paginate(10);
         //->get();
