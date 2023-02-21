@@ -13,6 +13,8 @@ use App\Compras;
 use App\Producto;
 use App\lote;
 use App\Pelote;
+use App\models\moviproduc;
+use App\models\Monitoreo;
 
 
 class CompraController extends Controller
@@ -92,11 +94,11 @@ class CompraController extends Controller
                     $Compra->save();
                     
                     //Registro de lote
-                    $Compra = Compras::latest('idCompra')->first();
-                    $Lote = new Lote();//creamos el modelo
-                    $Lote->idLote = $Compra -> idCompra;//Asignamos el id de la ultima compra a idlote
-                    $Lote->idOrigen = 3; //Asignamos el numero de modulo    
-                    $Lote->save();//guardamos el modelo
+                    // $Compra = Compras::latest('idCompra')->first();
+                    // $Lote = new Lote();//creamos el modelo
+                    // $Lote->idLote = $Compra -> idCompra;//Asignamos el id de la ultima compra a idlote
+                    // $Lote->idOrigen = 3; //Asignamos el numero de modulo    
+                    // $Lote->save();//guardamos el modelo
 
                     $data = array(
                         'status'    =>  'success',
@@ -157,7 +159,9 @@ class CompraController extends Controller
                            $Productos_compra-> idProducto = $paramdata['idProducto'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
-                           $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                           if( $paramdata['idImpuesto'] != 0){
+                               $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                           }
                            
                            $Productos_compra->save();//guardamos el modelo
                            //Si todo es correcto mandamos el ultimo producto insertado
@@ -194,35 +198,84 @@ class CompraController extends Controller
         ]);
     }
 
+    /**
+     * Actualiza existencia de productos en productos.existenciaG
+     * Inserta en moviproducto el stock anterior y el actualizado
+     * Inserta en monitoreo la accion
+     */
     public function updateExistencia(Request $request){
-        //Alta de lote con codigo y idLote = idCompra
+        //recogemos los datos enviados por post en formato json
+        $json = $request -> input('json',null);
+        //decodifiamos el json
+        $params_array = json_decode($json,true);
 
-
-        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
-        $params_array = json_decode($json,true);//decodifiamos el json
+        //revisamos que no venga vacio
         if(!empty($params_array)){
-            //Obtener idLotess
-            $Lote = lote::latest('idLote')->first();//la guardamos en Lote
-            //Recorremos el array para asignar todos los productos
-            //Agregar Producto - Existencia - Lote
-            foreach($params_array AS $param => $paramdata){
-                        $Pelote = new Pelote();//creamos el modelo
-                        $Pelote->idLote = $Lote -> idLote;//asignamos el ultimo idLote para todos los productos
-                        $Pelote-> idProducto = $paramdata['idProducto'];
-                        $Pelote-> existencia = $paramdata['cantidad'];
-                        $Pelote-> caducidad = $paramdata['caducidad'];
-                        
-                        $Pelote->save();//guardamos el modelo
-                        //Si todo es correcto mandamos el ultimo producto insertado
-                        $data =  array(
-                            'status'        => 'success',
-                            'code'          =>  200,
-                            'Pelote'       =>  $Pelote
-                        );
+            try{//comenzamos transaccion
+                DB::beginTransaction();
+
+                //Obtenemos de la ultima compra el idCompra, idOrden y IdEmpleadoRecibe
+                $Foliocompra = Compras::latest('idCompra')->first()->idCompra; 
+                $Foliorden = Compras::latest('idCompra')->first()->idOrd; 
+                $idUsuario = Compras::latest('idCompra')->first()->idEmpleadoR;
+                //obtenemos el nombre de la maquina
+                $pc = gethostname();
+
+                //Recorremos el array para asignar todos los productos
+                //Actualizar Producto -> ExistenciaG
+                foreach($params_array AS $param => $paramdata){
+                
+                    //antes de actualizar el producto obtenemos su existencia
+                    $stockanterior = Producto::find($paramdata['idProducto'])->existenciaG;
+                    //Buscamos el producto a actualizar y actualizamos
+                    $Producto = Producto::find($paramdata['idProducto']);
+                    $Producto -> existenciaG = $Producto -> existenciaG + $paramdata['cantidad'];
+                    $Producto->save();//guardamos el modelo
+
+                    //obtenemos la existencia del producto actualizado
+                    $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+
+                    //insertamos el movimiento de existencia del producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $paramdata['claveEx'];
+                    $moviproduc -> accion =  "Alta de compra";
+                    $moviproduc -> folioAccion =  $Foliocompra;
+                    $moviproduc -> cantidad =  $paramdata['cantidad'];
+                    $moviproduc -> stockanterior =  $stockanterior;
+                    $moviproduc -> stockactualizado =  $stockactualizado;
+                    $moviproduc -> idUsuario =  $idUsuario;
+                    $moviproduc -> pc =  $pc;
+                    $moviproduc ->save();
+
+                    //insertamos el movimiento que se hizo en general
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $idUsuario;
+                    $monitoreo -> accion =  "Alta de compra";
+                    $monitoreo -> folioAnterior =  $Foliorden;
+                    $monitoreo -> folioNuevo =  $Foliocompra;
+                    $monitoreo -> pc =  $pc;
+                    $monitoreo ->save();
+
+                    
+                    //Si todo es correcto mandamos el ultimo producto insertado y el movimiento
+                    $data =  array(
+                        'status'        => 'success',
+                        'code'          =>  200,
+                        'Producto'       =>  $Producto,
+                        'Movimiento'    =>  $moviproduc
+                    );
+                }
+                DB::commit();
+            } catch(\Exception $e){
+                DB::rollBack();
+                return response()->json([
+                    'code'      => 400,
+                    'status'    => 'Error',
+                    'message'   =>  'Fallo algo',
+                    'error' => $e
+                ]);
             }
-            
-            //Recalcular la existencia general y la actualizamos
-            
 
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
@@ -249,7 +302,9 @@ class CompraController extends Controller
         $compra = DB::table('compra')
         ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
         ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
-        ->select('compra.*','proveedores.nombre as nombreProveedor', DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where('compra.idCompra','=',$idCompra)
         ->get();
         $productosCompra = DB::table('productos_compra')
