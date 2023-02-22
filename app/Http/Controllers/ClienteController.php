@@ -13,19 +13,18 @@ use Validator;
 class ClienteController extends Controller
 {
     public function index(){
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
         $clientes = DB::table('cliente')
-        //->join('cdireccion','cdireccion.idCliente','=','cliente.idCliente')
         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
         ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
-        ->groupBy('cliente.idCliente')
-        ->get();
+        ->orderBy('cliente.idCliente')
+        ->paginate(10);
         return response()->json([
             'code'      =>  200,
             'status'    =>  'success',
             'clientes'  =>  $clientes
         ]);
     }
+
     public function indexTipocliente(){
         $tipocliente = DB::table('tipocliente')
         ->get();
@@ -35,6 +34,7 @@ class ClienteController extends Controller
             'tipocliente'   =>  $tipocliente
         ]);
     }
+
     public function registerCliente(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -103,6 +103,7 @@ class ClienteController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function registerCdireccion(Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json,true);
@@ -163,6 +164,7 @@ class ClienteController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function registrarNuevaDireccion(Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json,true);
@@ -226,6 +228,7 @@ class ClienteController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function getDetallesCliente($idCliente){
         $cliente = DB::table('cliente')
         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
@@ -245,6 +248,7 @@ class ClienteController extends Controller
             'cdireccion'    => $cdireccion
         ]);
     }
+
     public function getDireccionCliente($idCliente){
         $direccion = DB::table('cdireccion')
         ->where('idCliente','=',$idCliente)
@@ -255,6 +259,7 @@ class ClienteController extends Controller
             'direccion' => $direccion
         ]);
     }
+
     public function updateCliente($idCliente, Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
@@ -326,6 +331,21 @@ class ClienteController extends Controller
         }
         return response()->json($data, $data['code']);
     }
-}
 
-/** */
+    /**
+     * Busca en la tabla clientes por su nombre concatenado
+     */
+    public function searchNombreCliente($nombreCliente){
+        $clientes = DB::table('cliente')
+        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+        ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
+        ->where(DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno)"),'Like','%'.$nombreCliente.'%')
+        ->orderBy('cliente.idCliente')
+        ->paginate(10);
+        return response()->json([
+            'code'      =>  200,
+            'status'    =>  'success',
+            'clientes'  =>  $clientes
+        ]);
+    }
+}

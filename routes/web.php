@@ -126,6 +126,7 @@ Route::get('/prueba', function(){
     Route::get('/api/clientes/getDireccionCliente/{idCliente}','ClienteController@getDireccionCliente');
     Route::put('/api/clientes/updateCliente/{idCliente}','ClienteController@updateCliente');
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
+    Route::get('/api/clientes/searchNombreCliente/{nombreCliente}','ClienteController@searchNombreCliente');
     /****VENTAS */
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
     Route::get('/api/ventas/indexVentas','VentasController@indexVentas');
