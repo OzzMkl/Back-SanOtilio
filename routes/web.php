@@ -116,6 +116,8 @@ Route::get('/prueba', function(){
     Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
     Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
     Route::get('/api/compra/index','CompraController@index');
+    Route::get('/api/compra/listaComprasRecibidas','CompraController@listaComprasRecibidas');
+    Route::get('/api/compra/searchIdCompra/{idCompra}','CompraController@searchIdCompra');
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
     Route::get('/api/clientes/indexTipocliente','ClienteController@indexTipocliente');

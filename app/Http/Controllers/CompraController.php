@@ -23,7 +23,6 @@ class CompraController extends Controller
     public function index(){
         $compra = DB::table('compra')
         ->join('ordendecompra','ordendecompra.idOrden','=','compra.idOrden')
-        ->join('pedido','pedido.idPedido','=','compra.idPedido')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
         ->join('empleado','empleado.idEmpleadoR','=','empleado.idEmpleado')
         ->select('compra.*','proveedores.nombre as nombreProveedor',)
@@ -35,6 +34,10 @@ class CompraController extends Controller
        ]);
     }
 
+    /**
+     * Registra la compra
+     * Actualiza el statuss de la orden de compra
+     */
     public function registerCompra(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -60,90 +63,68 @@ class CompraController extends Controller
                 try{
                     DB::beginTransaction();
                     $Compra = new Compras();
-
-                    if($params_array['idPedido']== null){
-                        $Compra->idProveedor = $params_array['idProveedor'];
-                        $Compra->folioProveedor = $params_array['folioProveedor'];
-                        $Compra->subtotal = $params_array['subtotal'];
-                        $Compra->total = $params_array['total'];
-                        $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
-                        $Compra->idStatus = $params_array['idStatus'];
-                        $Compra->fechaRecibo = $params_array['fechaRecibo'];                    
-                        if(isset($params_array['observaciones'])){
-                            $Compra->observaciones = $params_array['observaciones'];
-                        }
-                        if(isset($params_array['idOrd'])){
-                            $Compra->idOrd = $params_array['idOrd'];
-                        }
+                    $Compra->idProveedor = $params_array['idProveedor'];
+                    $Compra->folioProveedor = $params_array['folioProveedor'];
+                    $Compra->subtotal = $params_array['subtotal'];
+                    $Compra->total = $params_array['total'];
+                    $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
+                    $Compra->idStatus = 28;
+                    $Compra->fechaRecibo = $params_array['fechaRecibo'];                    
+                    if(isset($params_array['observaciones'])){
+                        $Compra->observaciones = $params_array['observaciones'];
                     }
-                    else{
+                    if(isset($params_array['idOrd'])){
                         $Compra->idOrd = $params_array['idOrd'];
-                        $Compra->idPedido = $params_array['idPedido'];
-                        $Compra->idProveedor = $params_array['idProveedor'];
-                        $Compra->folioProveedor = $params_array['folioProveedor'];
-                        $Compra->subtotal = $params_array['subtotal'];
-                        $Compra->total = $params_array['total'];
-                        $Compra->idEmpleadoR = $params_array['idEmpleadoR'];
-                        $Compra->idStatus = $params_array['idStatus'];
-                        $Compra->fechaRecibo = $params_array['fechaRecibo'];
-                        if(isset($params_array['observaciones'])){
-                            $Compra->observaciones = $params_array['observaciones'];
-                        }
                     }
 
                     $Compra->save();
                     
-                    //Registro de lote
-                    // $Compra = Compras::latest('idCompra')->first();
-                    // $Lote = new Lote();//creamos el modelo
-                    // $Lote->idLote = $Compra -> idCompra;//Asignamos el id de la ultima compra a idlote
-                    // $Lote->idOrigen = 3; //Asignamos el numero de modulo    
-                    // $Lote->save();//guardamos el modelo
+                    //Obtenemos de la ultima compra el idCompra, idOrden y IdEmpleadoRecibe
+                    $Foliocompra = Compras::latest('idCompra')->first()->idCompra; 
+                    //obtenemos el nombre de la maquina
+                    $pc = gethostname();
 
+                    //insertamos el movimiento que se hizo en general
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['idEmpleadoR'];
+                    $monitoreo -> accion =  "Alta de compra";
+                    $monitoreo -> folioAnterior = $params_array['idOrd'];
+                    $monitoreo -> folioNuevo =  $Foliocompra;
+                    $monitoreo -> pc =  $pc;
+                    $monitoreo ->save();
+
+                    //Actualizar statuss de una orden de compra
+                    $Ordencompra = OrdenDeCompra::find($params_array['idOrd']);
+                    $Ordencompra -> idStatus = 27;
+                    $Ordencompra->save();
+                    
                     $data = array(
                         'status'    =>  'success',
                         'code'      =>  200,
-                        'message'   =>  'Compra creada pero sin productos'
+                        'message'   =>  'Compra creada pero sin productos',
+                        'compra' => $Compra
                     );
 
-                    //   $Productos_orden = new Productos_ordenes();
-                    //   $Productos_orden->idOrd = $Ordencompra -> idOrd;
-                    //   $Productos_orden-> idProducto = $params_array['idProducto'];
-                    //   $Productos_orden-> cantidad = $params_array['cantidad'];
-
-                    //   $Productos_orden->save();
-
-                    //   $data = array(
-                    //       'status'    =>  'success',
-                    //       'code'      =>  200,
-                    //       'message'   =>  'Orden creada y lista de productos tambien!'
-                    //   );
                     DB::commit();
 
                 } catch(\Exception $e){
                     DB::rollBack();
-                    return response()->json([
-                        'code'      => 400,
-                        'status'    => 'Error',
-                        'message'   =>  'Fallo al crear la compra Rollback!',
-                        'error' => $e
-                    ]);
+                    $data= array(
+                        'code'    => 400,
+                        'status'  => 'Error',
+                        'message' => 'Fallo al crear la compra Rollback!',
+                        'error'   => $e
+                    );
                 }
-                return response()->json([
-                    'code'      =>  200,
-                    'status'    => 'Success!',
-                    'compra'   =>  $Compra
-                ]);
             }
-            
+        } else {
+            $data= array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            );
         }
-        return response()->json([
-            'code'      =>  400,
-            'status'    => 'Error!',
-            'message'   =>  'json vacio'
-        ]);
-
-        
+        return response()->json($data, $data['code']);
     }
 
     public function registerProductosCompra(Request $req){
@@ -216,7 +197,6 @@ class CompraController extends Controller
 
                 //Obtenemos de la ultima compra el idCompra, idOrden y IdEmpleadoRecibe
                 $Foliocompra = Compras::latest('idCompra')->first()->idCompra; 
-                $Foliorden = Compras::latest('idCompra')->first()->idOrd; 
                 $idUsuario = Compras::latest('idCompra')->first()->idEmpleadoR;
                 //obtenemos el nombre de la maquina
                 $pc = gethostname();
@@ -248,33 +228,23 @@ class CompraController extends Controller
                     $moviproduc -> pc =  $pc;
                     $moviproduc ->save();
 
-                    //insertamos el movimiento que se hizo en general
-                    $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $idUsuario;
-                    $monitoreo -> accion =  "Alta de compra";
-                    $monitoreo -> folioAnterior =  $Foliorden;
-                    $monitoreo -> folioNuevo =  $Foliocompra;
-                    $monitoreo -> pc =  $pc;
-                    $monitoreo ->save();
-
-                    
                     //Si todo es correcto mandamos el ultimo producto insertado y el movimiento
                     $data =  array(
                         'status'        => 'success',
                         'code'          =>  200,
-                        'Producto'       =>  $Producto,
+                        'Producto'      =>  $Producto,
                         'Movimiento'    =>  $moviproduc
                     );
                 }
                 DB::commit();
             } catch(\Exception $e){
                 DB::rollBack();
-                return response()->json([
+                $data = array(
                     'code'      => 400,
                     'status'    => 'Error',
                     'message'   =>  'Fallo algo',
                     'error' => $e
-                ]);
+                );
             }
 
         }else{
@@ -330,7 +300,46 @@ class CompraController extends Controller
         return response()->json($data, $data['code']);
     }
 
+    /**
+     * Lista de compras
+     */
+    public function listaComprasRecibidas(){
+        $compra = DB::table('compra')
+        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+        ->where('compra.idStatus','=',1)
+        ->paginate(10);
 
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'compra'   =>  $compra
+        ]);
+    }
+
+    public function searchIdCompra($idCompra){
+        $compra = DB::table('compra')
+        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+        ->where([
+                    ['compra.idStatus','=','1'],
+                    ['idCompra','like','%'.$idCompra.'%']
+                ])
+        ->paginate(10);
+
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'compra'   =>  $compra
+        ]);
+
+    }
 
 }
 
