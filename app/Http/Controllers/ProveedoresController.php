@@ -283,7 +283,7 @@ class ProveedoresController extends Controller
              return response()->json($data,$data['code']);
     }
     /**
-     * Busca a los proveedores por su nombre
+     * Busca a los proveedores por su NOMBRE
      * Solo busca a los proveedores HABILITADOS
      */
     public function searchNombreProveedor($nombreProveedor){
@@ -296,6 +296,29 @@ class ProveedoresController extends Controller
         ->where([
             ['Proveedores.idStatus','=','29'],
             ['Proveedores.nombre','like','%'.$nombreProveedor.'%']
+                ])
+        ->groupBy('proveedores.idProveedor')
+        ->paginate(1);
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'proveedores'   =>  $proveedores
+        ]);
+    }
+    /**
+     * Busca a los proveedores por su RFC
+     * Solo busca a los proveedores HABILITADOS
+     */
+    public function searchRFCProveedor($rfc){
+        $proveedores = DB::table('Proveedores')
+        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
+        ->select('proveedores.*', 
+                 DB::raw('MAX(contactos.nombre) as nombreCon'),
+                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
+                 DB::raw('MAX(contactos.email) as emailCon') )
+        ->where([
+            ['Proveedores.idStatus','=','29'],
+            ['Proveedores.rfc','like','%'.$rfc.'%']
                 ])
         ->groupBy('proveedores.idProveedor')
         ->paginate(1);
