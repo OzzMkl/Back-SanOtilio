@@ -341,5 +341,70 @@ class CompraController extends Controller
 
     }
 
+    public function searchNombreProveedor($nombreProveedor){
+        $compra = DB::table('compra')
+        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+        ->where([
+                    ['compra.idStatus','=','1'],
+                    ['proveedores.nombre','like','%'.$nombreProveedor.'%']
+                ])
+        ->paginate(10);
+
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'compra'   =>  $compra
+        ]);
+
+    } 
+
+    public function searchFolioProveedor($folioProveedor){
+        $compra = DB::table('compra')
+        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+        ->where([
+                    ['compra.idStatus','=','1'],
+                    ['compra.folioProveedor','like','%'.$folioProveedor.'%']
+                ])
+        ->paginate(10);
+
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'compra'   =>  $compra
+        ]);
+
+    } 
+
+    public function searchTotal($total){
+        $compra = DB::table('compra')
+        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+        ->where([
+                    ['compra.idStatus','=','1'],
+                    ['compra.total','like','%'.$total.'%']
+                ])
+        ->paginate(10);
+
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'compra'   =>  $compra
+        ]);
+
+    }
+
+    
+
 }
 

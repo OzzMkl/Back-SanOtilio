@@ -118,6 +118,9 @@ Route::get('/prueba', function(){
     Route::get('/api/compra/index','CompraController@index');
     Route::get('/api/compra/listaComprasRecibidas','CompraController@listaComprasRecibidas');
     Route::get('/api/compra/searchIdCompra/{idCompra}','CompraController@searchIdCompra');
+    Route::get('/api/compra/searchNombreProveedor/{nombreProveedor}','CompraController@searchNombreProveedor');
+    Route::get('/api/compra/searchFolioProveedor/{folioProveedor}','CompraController@searchFolioProveedor');
+    Route::get('/api/compra/searchTotal/{total}','CompraController@searchTotal');
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
     Route::get('/api/clientes/indexTipocliente','ClienteController@indexTipocliente');
@@ -129,6 +132,9 @@ Route::get('/prueba', function(){
     Route::put('/api/clientes/updateCliente/{idCliente}','ClienteController@updateCliente');
     Route::put('/api/clientes/updateCdireccion/{idCliente}','ClienteController@updateCdireccion');
     Route::get('/api/clientes/searchNombreCliente/{nombreCliente}','ClienteController@searchNombreCliente');
+    /***EJEMPLO PDF */
+    Route::get('/api/clientes/generatePDF','ClienteController@generatePDF');
+    /***EJEMPLO PDF */
     /****VENTAS */
     Route::get('/api/ventas/indexTP','VentasController@indexTP');
     Route::get('/api/ventas/indexVentas','VentasController@indexVentas');

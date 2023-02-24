@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Cliente;
 use App\Cdireccion;
 use Validator;
+use TCPDF;
+
 
 class ClienteController extends Controller
 {
@@ -348,4 +350,19 @@ class ClienteController extends Controller
             'clientes'  =>  $clientes
         ]);
     }
+    /***EJEMPLO PDF */
+    public function generatePDF(){
+        $pdf = new TCPDF();
+        $pdf->SetMargins(20, 20, 20); // Establece los márgenes
+        $pdf->AddPage(); // Agrega una nueva página
+        $pdf->SetFont('times', 'BI', 14); // Establece la fuente
+        $pdf->Cell(0, 10, 'Hola mundo!', 0, 1); // Agrega un texto
+        $contenido = $pdf->Output('', 'D'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
+        $nombrepdf = 'mipdf.pdf';
+
+        return response($contenido)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
+    }
+    /***EJEMPLO PDF */
 }
