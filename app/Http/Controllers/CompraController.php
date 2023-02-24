@@ -280,7 +280,8 @@ class CompraController extends Controller
         $productosCompra = DB::table('productos_compra')
         ->join('producto','producto.idProducto','=','productos_compra.idProducto')
         ->join('medidas','medidas.idMedida','=','producto.idMedida')
-        ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
+        ->join('impuesto','impuesto.idImpuesto','=','productos_compra.idImpuesto')
+        ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida','impuesto.nombre as nombreImpuesto','impuesto.valor as valorImpuesto')
         ->where('productos_compra.idCompra','=',$idCompra)
         ->get();
         if(is_object($compra)){
@@ -311,6 +312,7 @@ class CompraController extends Controller
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where('compra.idStatus','=',1)
+        ->orderBy('compra.idCompra','desc')
         ->paginate(10);
 
         return response()->json([
@@ -404,7 +406,7 @@ class CompraController extends Controller
 
     }
 
-    
+
 
 }
 

@@ -13,11 +13,6 @@ use App\ncp;
 
 class ProveedoresController extends Controller
 {
-    /*PRUEBA DE CONTROLADOR*
-    public function pruebas(Request $request){
-        
-    }*/
-    //Buenas
     public function register(Request $request){//registrar proveedor
 
         //Recoger datos
@@ -150,30 +145,40 @@ class ProveedoresController extends Controller
 
         return response()->json($data, $data['code']);//RETORMANOS EL JSON 
     }
+    /**
+     * Listamos los proveedores habilitados con informacion de su contacto
+     * datos paginados
+     */
     public function index(){//FUNCION QUE DEVULEVE LOS PROVEEDORES ACTIVOS CON SU CONTACTO
-        //GENERAMOS CONSULTA
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
         $proveedores = DB::table('Proveedores')
         ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*','contactos.nombre as nombreCon','contactos.telefono as telefonoCon','contactos.email as emailCon')
-        ->where('idStatus',1)
-        //->paginate(2);
+        ->select('proveedores.*', 
+                 DB::raw('MAX(contactos.nombre) as nombreCon'),
+                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
+                 DB::raw('MAX(contactos.email) as emailCon') )
+        ->where('idStatus',29)
         ->groupBy('proveedores.idProveedor')
-        ->get();
+        ->paginate(1);
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
             'proveedores'   =>  $proveedores
         ]);
     }
-    public function proveedoresDes(){//FUNCION QUE DEVULEVE LOS PROVEEDORES INACTIVOS CON SU CONTACTO
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
+    /**
+     * Lista los proveedores Deshabilitados con datos de su contacto
+     * datps paginados
+     */
+    public function proveedoresDes(){
         $proveedores = DB::table('Proveedores')
         ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*','contactos.nombre as nombreCon','contactos.telefono as telefonoCon','contactos.email as emailCon')
-        ->where('idStatus',2)
+        ->select('proveedores.*', 
+                 DB::raw('MAX(contactos.nombre) as nombreCon'),
+                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
+                 DB::raw('MAX(contactos.email) as emailCon') )
+        ->where('idStatus',30)
         ->groupBy('proveedores.idProveedor')
-        ->get();
+        ->paginate(10);
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
@@ -277,47 +282,27 @@ class ProveedoresController extends Controller
             }
              return response()->json($data,$data['code']);
     }
-
-    // public function upstatus( Request $request){
-    //     //recoger datos a actualizar
-    //     $json = $request->input('json', null);
-    //     $params_array = json_decode($json, true);
-
-    //     if(!empty($params_array)){
-
-    //         //quitamos valores que no queremos actualizar
-    //        // unset($params_array['idProveedor']);
-    //         unset($params_array['rfc']);
-    //         unset($params_array['nombre']);
-    //         unset($params_array['pais']);
-    //         unset($params_array['estado']);
-    //         unset($params_array['ciudad']);
-    //         unset($params_array['cpostal']);
-    //         unset($params_array['colonia']);
-    //         unset($params_array['calle']);
-    //         unset($params_array['numero']);
-    //         unset($params_array['telefono']);
-    //         unset($params_array['creditoDias']);
-    //         unset($params_array['creditoCantidad']);
-    //         unset($params_array['created_at']);
-
-    //         //actualizar
-    //         $proveedor = Proveedores::where('idProveedor', $params_array['idProveedor'])->update($params_array);
-    //         $data = [
-    //             'code'      =>  200,
-    //             'status'    =>  'success',
-    //             'proveedor'   =>  $params_array
-    //         ];
-
-    //     }else{
-    //         $data = [
-    //             'code'      =>  400,
-    //             'status'    =>  'error',
-    //             'message'   =>  'No has enviado al proveedor'
-    //         ];
-    //     }
-    //     //devolvemos la respuesta
-    //     return response()->json($data, $data['code']);
-    // }
-
+    /**
+     * Busca a los proveedores por su nombre
+     * Solo busca a los proveedores HABILITADOS
+     */
+    public function searchNombreProveedor($nombreProveedor){
+        $proveedores = DB::table('Proveedores')
+        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
+        ->select('proveedores.*', 
+                 DB::raw('MAX(contactos.nombre) as nombreCon'),
+                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
+                 DB::raw('MAX(contactos.email) as emailCon') )
+        ->where([
+            ['Proveedores.idStatus','=','29'],
+            ['Proveedores.nombre','like','%'.$nombreProveedor.'%']
+                ])
+        ->groupBy('proveedores.idProveedor')
+        ->paginate(1);
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'proveedores'   =>  $proveedores
+        ]);
+    }
 }
