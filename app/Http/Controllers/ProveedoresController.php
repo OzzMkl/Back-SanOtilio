@@ -236,51 +236,54 @@ class ProveedoresController extends Controller
         ]);
     }
 
-    public function updatestatus($idProveedor,Request $request){
-        $json = $request->input('json', null);
-        $params_array = json_decode($json, true);
-        if(!empty($params_array)){
-        //quitamos valores que no queremos actualizar
-             unset($params_array['idProveedor']);
-             unset($params_array['rfc']);
-             unset($params_array['nombre']);
-             unset($params_array['pais']);
-             unset($params_array['estado']);
-             unset($params_array['ciudad']);
-             unset($params_array['cpostal']);
-             unset($params_array['colonia']);
-             unset($params_array['calle']);
-             unset($params_array['numero']);
-             unset($params_array['telefono']);
-             unset($params_array['creditoDias']);
-             unset($params_array['creditoCantidad']);
-             unset($params_array['created_at']);
-             unset($params_array['nombreCon']);
-             unset($params_array['emailCon']);
-             unset($params_array['telefonoCon']);
-             unset($params_array['puestoCon']);
-             unset($params_array['ncuenta']);
-             unset($params_array['idBanco']);
-             unset($params_array['titular']);
-             unset($params_array['clabe']);
-             unset($params_array['updated_at']);
+    public function updatestatus($idProveedor){
+        try{
+            DB::beginTransaction();
 
-             //actualizamos
-             $proveedor = Proveedores::where('idProveedor', $idProveedor)->update($params_array);
-             
-             $data = array(
-                 'code'         =>  200,
-                 'status'       =>  'success',
-                 'proveedor'    =>  $params_array
-             );
-            }else{
-                $data = array(
-                    'code'         =>  200,
-                    'status'       =>  'error',
-                    'message'      =>  'Error al procesar'
-                );
+            $statusProv = Proveedores::find($idProveedor)->idStatus;
+            
+            switch ($statusProv) {
+                case 29:
+                        $proveedor = Proveedores::where('idProveedor', $idProveedor)
+                                                ->update([
+                                                    'idStatus' => 30
+                                                        ]);
+                        $data = array(
+                            'code'      => 200,
+                            'status'    => 'success',
+                            'message'   =>  'Proveedor con id: '.$idProveedor.' actualizado a idStatus: 30'
+                        );
+                    break;
+                case 30:
+                        $proveedor = Proveedores::where('idProveedor', $idProveedor)
+                                                ->update([
+                                                    'idStatus' => 29
+                                                        ]);
+                        $data = array(
+                            'code'      => 200,
+                            'status'    => 'success',
+                            'message'   =>  'Proveedor con id: '.$idProveedor.' actualizado a idStatus: 29'
+                        );
+                    break;
+                default:
+                        $data = array(
+                            'code'      => 400,
+                            'status'    => 'error',
+                            'message'   =>  'Opcion no valida'
+                        );
+                    break;
             }
-             return response()->json($data,$data['code']);
+            DB::commit();
+        } catch(\Exception $e){
+            DB::rollBack();
+                $data = array(
+                    'code'      => 400,
+                    'status'    => 'Error',
+                    'message'   =>  $e->getMessage(),
+                    'error' => $e
+                );
+        }
+        return response()->json($data, $data['code']);
     }
     /**
      * Busca a los proveedores por su NOMBRE
