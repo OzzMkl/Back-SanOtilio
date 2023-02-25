@@ -245,6 +245,9 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
+    /**
+     * CONSULTA MAL ECHA REVISAR EL WHERE
+     */
     public function show($idProducto){
 
         $producto = DB::table('producto as allproducts')
@@ -259,9 +262,9 @@ class ProductoController extends Controller
         ->select('producto.*','allproducts.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca',
                  'departamentos.nombre as nombreDep','categoria.nombre as nombreCat',
                  'almacenes.nombre as nombreAlmacen','producto.claveEx as claveExProductoSiguiente')
-        ->where('allproducts.idProducto',$idProducto)
+        ->where('allproducts.idProducto','=',$idProducto)
         ->get();
-        var_dump($producto);
+
         if(is_object($producto)){
             $data = [
                 'code'          => 200,
