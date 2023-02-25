@@ -10,6 +10,7 @@ use Validator;
 use App\Proveedores;
 use App\Contacto;
 use App\ncp;
+use App\models\Monitoreo;
 
 class ProveedoresController extends Controller
 {
@@ -236,18 +237,38 @@ class ProveedoresController extends Controller
         ]);
     }
 
-    public function updatestatus($idProveedor){
+    /**
+     * Actualiza unicamente el status del proveedor
+     * de HABILITADO -> DESHABILITADO  y viceversa
+     */
+    public function updatestatus($idProveedor, Request $request){
+        $json = $request->input('json', null);
+        $params_array = json_decode($json, true);
         try{
             DB::beginTransaction();
 
+            //Traemos el status del proveedor a actualizar
             $statusProv = Proveedores::find($idProveedor)->idStatus;
+            //obtenemos el nombre de la maquina
+            $pc = gethostname();
             
             switch ($statusProv) {
                 case 29:
+                        //Si esta habilitado lo deshabilitamos
                         $proveedor = Proveedores::where('idProveedor', $idProveedor)
                                                 ->update([
                                                     'idStatus' => 30
                                                         ]);
+
+                        //insertamos el movimiento que se hizo
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario = $params_array['sub'] ;
+                        $monitoreo -> accion =  "Actualizacion de status a deshabilitado al proveedor";
+                        $monitoreo -> folioNuevo =  $idProveedor;
+                        $monitoreo -> pc =  $pc;
+                        $monitoreo ->save();
+
+                        //generamos respuesta del movimiento que se hizo
                         $data = array(
                             'code'      => 200,
                             'status'    => 'success',
@@ -255,10 +276,21 @@ class ProveedoresController extends Controller
                         );
                     break;
                 case 30:
+                        //Si esta deshabilitado lo habilitamos
                         $proveedor = Proveedores::where('idProveedor', $idProveedor)
                                                 ->update([
                                                     'idStatus' => 29
                                                         ]);
+
+                        //insertamos el movimiento que se hizo
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario = $params_array['sub'] ;
+                        $monitoreo -> accion =  "Actualizacion de status a habilitado al proveedor";
+                        $monitoreo -> folioNuevo =  $idProveedor;
+                        $monitoreo -> pc =  $pc;
+                        $monitoreo ->save();
+
+                        //generamos respuesta del movimiento que se hizo
                         $data = array(
                             'code'      => 200,
                             'status'    => 'success',
@@ -266,6 +298,7 @@ class ProveedoresController extends Controller
                         );
                     break;
                 default:
+                        //Si recibimos otra cosa generamos mensaje de error
                         $data = array(
                             'code'      => 400,
                             'status'    => 'error',
