@@ -236,14 +236,5 @@ class CajasController extends Controller
             'caja'  => $caja
         ]);
     }
-    // public function indexTipoMovimiento(){
-    //     $tipo_movimiento = DB::table('tipo_movimiento')
-    //     ->get();
-    //     return response()->json([
-    //         'code'  => 200,
-    //         'status'    => 'success',
-    //         'tipo_movimiento'   => $tipo_movimiento
-    //     ]);
-    // }
 }
 /********************* */
