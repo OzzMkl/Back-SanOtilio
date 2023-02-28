@@ -47,6 +47,7 @@ Route::get('/prueba', function(){
     Route::get('/api/PermissionsByRol/{idRol}/{idModulo}/{idSubModulo}','UserController@PermissionsByRol');
     
     /****** RUTAS DE CONTROLADOR DE PROVEEDORES ******/
+    Route::get('/api/proveedor/ObtenerLista','ProveedoresController@ObtenerLista');
     Route::post('/api/proveedor/register','ProveedoresController@register');
     Route::get('/api/proveedor/index','ProveedoresController@index');//mostrar proveedores activos
     Route::get('/api/proveedor/proveedoresDes','ProveedoresController@proveedoresDes');//mostrar proveedores deshabilitados
@@ -57,7 +58,9 @@ Route::get('/prueba', function(){
     Route::get('/api/proveedor/searchRFCProveedor/{rfc}','ProveedoresController@searchRFCProveedor');//Buscar proveedores por RFC - HABILITADOS
     Route::get('/api/proveedor/searchNombreProveedorI/{nombreProveedor}','ProveedoresController@searchNombreProveedorI');//Buscar proveedores por NOMBRE - HABILITADOS
     Route::get('/api/proveedor/searchRFCProveedorI/{rfc}','ProveedoresController@searchRFCProveedorI');//Buscar proveedores por RFC - HABILITADOS
+    
     Route::put('/api/proveedor/updatestatus/{proveedor}', 'ProveedoresController@updatestatus');//actualizacion de Status del proveedor
+    
     
     /*******bancos */
     Route::get('/api/banco/index','BancoController@index');//mostrar BANcos

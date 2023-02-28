@@ -166,6 +166,15 @@ class ProveedoresController extends Controller
             'proveedores'   =>  $proveedores
         ]);
     }
+    public function ObtenerLista(){
+        $provedores = DB::table('proveedores')->where('idStatus','=','29')->get();
+        return response()->json([
+            'code'  => 200,
+            'status'    => 'success',
+            'provedores' => $provedores
+        ]);
+    }
+
     /**
      * Lista los proveedores Deshabilitados con datos de su contacto
      * datps paginados
