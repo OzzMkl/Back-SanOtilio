@@ -81,6 +81,8 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/searchClaveExInactivos/{claveex}', 'ProductoController@searchClaveExInactivos');//buscar por clave externa productos con status 2
     Route::get('/api/productos/searchCodbarI/{codbar}', 'ProductoController@searchCodbarI');//buscar por codigo de barras productos con status 2
     Route::get('/api/productos/searchDescripcionI/{descripcion}', 'ProductoController@searchDescripcionI');//buscar por descripcion productos con status 2
+
+    Route::get('/api/productos/searchProductoMedida/{idProducto}', 'ProductoController@searchProductoMedida');//buscar por descripcion productos con status 2
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos

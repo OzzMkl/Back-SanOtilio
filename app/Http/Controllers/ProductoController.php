@@ -14,18 +14,14 @@ class ProductoController extends Controller
 {
     public function index(){
         //GENERAMOS CONSULTA
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
-        ini_set('memory_limit', '-1');// Se agrega para eliminar el limite de memoria asignado
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
-        //->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca',
-                 'departamentos.nombre as nombreDep','categoria.nombre as nombreCat')
-        ->where('statuss',1)
-        ->paginate(10);
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                    'categoria.nombre as nombreCat')
+        ->where('statuss',31)
+        ->paginate(5);
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -36,9 +32,9 @@ class ProductoController extends Controller
     //Trae la informacion de los productos para el modulo de punto de venta
     public function indexPV(){
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('productos_medidas','productos_medidas.idProducto','=','producto.idProducto')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion','producto.existenciaG','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion','producto.existenciaG','marca.nombre as nombreMarca')
         ->where('statuss',1)
         ->paginate(10);
         return response()->json([
@@ -48,14 +44,13 @@ class ProductoController extends Controller
         ]);
     }
     public function productoDes(){
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
+        ->join('productos_medidas','productos_medidas.idProducto','=','producto.idProducto')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
-        ->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca','departamentos.nombre as nombreDep','categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                    'categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat')
         ->where('statuss',2)
         ->get();
         return response()->json([
@@ -643,6 +638,33 @@ class ProductoController extends Controller
             'status'        => 'success',
             'productos'   =>  $productos
         ]);
+    }
+
+    public function searchProductoMedida($idProducto){
+        try{
+            $productoMedida = DB::table('productos_medidas')
+                                ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
+                                ->select('productos_medidas.*','medidas.nombre as nombreMedida')
+                                ->where('productos_medidas.idProducto','=',$idProducto)
+                                ->get();
+                                
+            $imagen = Producto::findOrFail($idProducto)->imagen;
+            $data = [
+                'code'          =>  200,
+                'status'        => 'success',
+                'productoMedida'   =>  $productoMedida,
+                'imagen'        => $imagen
+            ];
+        } catch(\Exception $e){
+            $data = [
+                'code' => 200,
+                'status' => 'success',
+                "message_system" => 'Test',
+                'message_Error' => $e->getMessage()
+            ];
+        }
+
+        return response()->json($data, $data['code']);
     }
     
 }
