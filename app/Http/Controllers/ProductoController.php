@@ -8,10 +8,15 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Validator;
 use App\Producto;
-use App\Productos_precios;
+use App\Productos_medidas;
 
 class ProductoController extends Controller
 {
+    /**
+     * Trae todo los datos del producto, nombre de la marca
+     * nombre de la categoria y nomnbre del departamento
+     * Solo para productos con status 31 HABILITADOS
+     */
     public function index(){
         //GENERAMOS CONSULTA
         $productos = DB::table('producto')
@@ -29,13 +34,17 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
-    //Trae la informacion de los productos para el modulo de punto de venta
+
+    /**
+     * REVISAR
+     * Trae la informacion de los productos para el modulo de punto de venta
+     * 
+     */
     public function indexPV(){
         $productos = DB::table('producto')
-        ->join('productos_medidas','productos_medidas.idProducto','=','producto.idProducto')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion','producto.existenciaG','marca.nombre as nombreMarca')
-        ->where('statuss',1)
+        ->where('statuss',31)
         ->paginate(10);
         return response()->json([
             'code'          =>  200,
@@ -43,22 +52,32 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
+
+    /**
+     * Trae todo los datos del producto, nombre de la marca
+     * nombre de la categoria y nombre del departamento
+     * Solo para productos con status 32 DESHABILITADOS
+     */
     public function productoDes(){
         $productos = DB::table('producto')
-        ->join('productos_medidas','productos_medidas.idProducto','=','producto.idProducto')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
         ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
-                    'categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat')
-        ->where('statuss',2)
-        ->get();
+                    'categoria.nombre as nombreCat')
+        ->where('statuss',32)
+        ->paginate(5);
+        //->get();
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
             'productos'   =>  $productos
         ]);
     }
+
+    /**
+     * Funcion para guardar imagen del modulo producto-agregar
+     */
     public function uploadimage(Request $request){
         //recoger la imagen de la peticion
         $image = $request->file('file0');
@@ -89,6 +108,12 @@ class ProductoController extends Controller
         //devolver datos
         return response()->json($data, $data['code']);
     }
+
+    /**
+     * Busca el nombre de la imagen en la carpeta
+     * Si existe devuelve la imagen y si no 
+     * regresa un mensaje 
+     */
     public function getImageProduc($filename){
         //comprobar si existe la imagen
         $isset = \Storage::disk('imageproductos')->exists($filename);
@@ -106,14 +131,15 @@ class ProductoController extends Controller
            
             return new Response($file);
           //return new Response(base64_encode($file));
-            }else{
+        } else{
             $data = array(
                 'code'      =>  404,
                 'status'    =>  'error',
                 'message'   =>  'La imagen no existe'
             );
+
             return response()->json($data, $data['code']);
-                }
+        }
     }
 
     /**
@@ -135,24 +161,18 @@ class ProductoController extends Controller
             $params_array = array_map('trim', $params_array);
             //validamos los datos que llegaron
             $validate = Validator::make($params_array, [
-                'idMedida'          =>  'required',
                 'idMarca'           =>  'required',
                 'idDep'             =>  'required',
                 'idCat'             =>  'required',
-                //'idSubCat'          =>  'required',
                 'claveEx'           =>  'required',
-                //'cbarras'           =>  'required',
                 'descripcion'       =>  'required',
                 'stockMin'          =>  'required',
                 'stockMax'          =>  'required',
-                //'imagen'            =>  'required',
                 'statuss'           =>  'required',
                 'ubicacion'         =>  'required',
                 //'claveSat'          =>  'required',
                 'tEntrega'          =>  'required',
                 'idAlmacen'         =>  'required',
-                //'idProductoS'       =>  'required',
-                'factorConv'        =>  'required',
                 'existenciaG'       =>  'required'
             ]);
             //si falla creamos la respuesta a enviar
@@ -160,7 +180,8 @@ class ProductoController extends Controller
                 $data = array(
                     'status'    =>  'error',
                     'code'      =>  '404',
-                    'message'   =>  'Fallo la validacion de los datos del producto',
+                    'message_system'   =>  'Fallo la validacion de los datos del producto',
+                    'message_validation' => $validate->getMessage(),
                     'errors'    =>  $validate->errors()
                 );
             }else{
@@ -174,11 +195,9 @@ class ProductoController extends Controller
 
                     //creamos el producto a ingresar
                     $producto = new Producto();
-                    $producto -> idMedida = $params_array['idMedida'];
                     $producto -> idMarca = $params_array['idMarca'];
                     $producto -> idDep = $params_array['idDep'];
                     $producto -> idCat = $params_array['idCat'];
-                    //$producto -> idSubCat = $params_array['idSubCat'];
                     $producto -> claveEx = $params_array['claveEx'];
                     $producto -> cbarras = $ultimoCbarras;//aqui ingresamos el codigo de barras consultado
                     $producto -> descripcion = $params_array['descripcion'];
@@ -192,16 +211,12 @@ class ProductoController extends Controller
                     $producto -> claveSat = $params_array['claveSat'];
                     $producto -> tEntrega = $params_array['tEntrega'];
                     $producto -> idAlmacen = $params_array['idAlmacen'];
-                    if( $params_array['idProductoS'] != '' || $params_array['idProductoS'] != null){
-                        $producto -> idProductoS = $params_array['idProductoS'];
-                    }
-                    $producto -> factorConv = $params_array['factorConv'];
                     $producto -> existenciaG = $params_array['existenciaG'];
                     //guardamos
                     $producto->save();
                     //una vez guardado mandamos mensaje de OK
 
-                    return $this->registraPrecioProducto($request);
+                    $this->registraPrecioProducto($request);
 
                     // $data = array(
                     //     'status'    =>  'success',
@@ -216,7 +231,7 @@ class ProductoController extends Controller
                     $data = array(
                         'code'      => 400,
                         'status'    => 'Error',
-                        'message'   => 'Algo salio mal rollback',
+                        'message'   => $e->getMessage(),
                         'error'     => $e
                     );
                 }
@@ -226,11 +241,79 @@ class ProductoController extends Controller
             $data =  array(
                 'code'          =>  400,
                 'status'        => 'error',
-                'message'       =>  'Un campo viene vacio'
+                'message'       =>  'Los valores no se recibieron correctamente'
             );
         }
         return response()->json($data, $data['code']);
     }
+
+    public function registraProductoMedida(Request $request){
+
+        $json = $request -> input('json', null);
+        $params_array = json_decode($json, true);
+
+        if(!empty($params_array)){
+            try{
+                DB::beginTransaction();
+                    //consultamos el ultimo ingresado para obtener su id
+                    $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
+
+                    foreach($params_array AS $param => $paramdata){
+
+                        $productos_medidas = new Productos_medidas();
+                        $productos_medidas -> idProducto = $ultimoProducto;
+                        $productos_medidas -> idMedida = $paramdata['idMedida'];
+                        $productos_medidas -> unidad = $paramdata['unidad'];
+                        $productos_medidas -> precioCompra = $paramdata['precioCompra'];
+
+                        $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
+                        $productos_medidas -> precio1 = $paramdata['precio1'];
+
+                        $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
+                        $productos_medidas -> precio2 = $paramdata['precio2'];
+
+                        $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
+                        $productos_medidas -> precio3 = $paramdata['precio3'];
+
+                        $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
+                        $productos_medidas -> precio4 = $paramdata['precio4'];
+
+                        $productos_medidas -> precio5 = $paramdata['precio5'];
+                        $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
+
+                        $productos_medidas -> save();
+                    }
+                    $dataPM = array(
+                        'precios_message'   => 'precios registrados correctamente'
+                    );
+
+                    // $data = array(
+                    //     'code' => 200,
+                    //     'status' => 'success',
+                    //     'message' => 'Precios registrados correctamente',
+                    //     'precios' => $precios
+                    // );
+                
+                DB::commit();
+            } catch(\Exception $e){
+                DB::rollback();
+                $dataPM = array(
+                    'code' => 400,
+                    'status' => 'error',
+                    'message' => 'Algo salio mal rollback',
+                    'errors' => $e
+                );
+            }
+        } else {
+            $data = array(
+                'code' => 400,
+                'status' => 'error',
+                'message' => 'Un campo viene vacio / mal'
+            );
+        }
+        return $dataPM;
+    }
+
     public function getLastProduct(){
         $productos = Producto::latest('idProducto')->first()->cbarras;
         $productos = $productos+1;
@@ -417,99 +500,7 @@ class ProductoController extends Controller
             'producto'   =>  $producto
         ]);
     }
-    public function registraPrecioProducto(Request $request){
-
-        $json = $request -> input('json', null);
-        //echo $json;
-        $params = json_decode($json);
-        $params_array = json_decode($json, true);
-
-        if(!empty($params) && !empty($params_array)){
-            $params_array = array_map('trim', $params_array);
-
-            $validate = Validator::make($params_array, [
-                'preciocompra'      =>  'required',
-                'precio5'           =>  'required',
-                'porcentaje5'       =>  'required',
-                'precio4'           =>  'required',
-                'porcentaje4'       =>  'required',
-                'precio3'           =>  'required',
-                'porcentaje3'       =>  'required',
-            ]);
-
-            if($validate->fails()){
-                $data = array(
-                    'status'    =>  'error',
-                    'code'      =>  '404',
-                    'message'   =>  'Fallo la validacion de los datos del producto',
-                    'errors'    =>  $validate->errors()
-                );
-            } else{
-                try{
-                    DB::beginTransaction();
-
-                    if($params_array['precio5'] <= 0 || $params_array['precio4']  <= 0 || $params_array['precio3'] <= 0){
-
-                        $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
-
-                        $precios = new Productos_precios();
-                        $precios -> idProducto = $ultimoProducto;
-                        $precios -> preciocompra = $params_array['preciocompra'];
-                        $precios -> precio5 = $params_array['precio5'];
-                        $precios -> porcentaje5 = $params_array['porcentaje5'];
-                        $precios -> precio4 = $params_array['precio4'];
-                        $precios -> porcentaje4 = $params_array['porcentaje4'];
-                        $precios -> precio3 = $params_array['precio3'];
-                        $precios -> porcentaje3 = $params_array['porcentaje3'];
-                        if( isset($params_array['precio2'])){
-                            $precios -> precio2 = $params_array['precio2'];
-                        }
-                        if( isset($params_array['porcentaje2'])){
-                            $precios -> porcentaje2 = $params_array['porcentaje2'];
-                        }
-                        if( isset($params_array['precio1'])){
-                            $precios -> precio1 = $params_array['precio1'];
-                        }
-                        if( isset($params_array['porcentaje1'])){
-                            $precios -> porcentaje1 = $params_array['porcentaje1'];
-                        }
-                        $precios -> save();
-                        
-                        $data = array(
-                            'code' => 200,
-                            'status' => 'success',
-                            'message' => 'Precios registrados correctamente',
-                            'precios' => $precios
-                        );
-                    } else {
-                        $data = array(
-                            'code' => 400,
-                            'status' => 'error',
-                            'message' => 'Los precios de venta no pueden ser menores o iguales a cero',
-                        );
-                    }
-                    
-                    DB::commit();
-                } catch(\Exception $e){
-                    DB::rollback();
-                    $data = array(
-                        'code' => 400,
-                        'status' => 'error',
-                        'message' => 'Algo salio mal rollback',
-                        'errors' => $e
-                    );
-                }
-
-            }
-        } else {
-            $data = array(
-                'code' => 400,
-                'status' => 'error',
-                'message' => 'Un campo viene vacio / mal'
-            );
-        }
-        return response()->json($data, $data['code']);
-    }
+    
     /* MODULO INVENTARIO->PRODUCTOS */
 
     /**
