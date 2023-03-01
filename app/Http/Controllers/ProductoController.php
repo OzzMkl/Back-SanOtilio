@@ -436,22 +436,28 @@ class ProductoController extends Controller
     }
     public function showTwo($idProducto){
         $producto = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
         ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
         //->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
         ->join('almacenes','almacenes.idAlmacen','=','producto.idAlmacen')
         //->join('pelote','pelote.idProducto','=','producto.idProducto')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
                  'categoria.nombre as nombreCat','almacenes.nombre as nombreAlmacen')
         ->where('producto.idProducto',$idProducto)
         ->get();
+        $productos_medidas = DB::table('productos_medidas')
+        ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+        ->select('productos_medidas.*','medidas.nombre as nombreMedida')
+        ->where('idProducto','=',$idProducto)
+        ->get();
+
         if(is_object($producto)){
             $data = [
                 'code'          => 200,
                 'status'        => 'success',
-                'producto'   =>  $producto
+                'producto'   =>  $producto,
+                'productos_medidas'   =>  $productos_medidas
             ];
         }else{
             $data = [

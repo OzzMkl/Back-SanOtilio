@@ -103,7 +103,7 @@ class OrdendecompraController extends Controller
         ]);
 
     }
-     public function registerProductosOrden(Request $req){
+    public function registerProductosOrden(Request $req){
          $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
          $params_array = json_decode($json,true);//decodifiamos el json
          if(!empty($params_array)){
@@ -114,6 +114,7 @@ class OrdendecompraController extends Controller
                             $Productos_orden = new Productos_ordenes();//creamos el modelo
                             $Productos_orden->idOrd = $Orden -> idOrd;//asignamos el ultimo idOrd para todos los productos
                             $Productos_orden-> idProducto = $paramdata['idProducto'];
+                            $Productos_orden-> idProdMedida = $paramdata['idProdMedida'];
                             $Productos_orden-> cantidad = $paramdata['cantidad'];
                             
                             $Productos_orden->save();//guardamos el modelo
@@ -173,7 +174,9 @@ class OrdendecompraController extends Controller
         ->get();
         $productosOrden = DB::table('productos_ordenes')
         ->join('producto','producto.idProducto','=','productos_ordenes.idProducto')
-        ->join('medidas','medidas.idMedida','=','producto.idMedida')
+        // ->join('productos_medidas','productos_medidas.idProducto','=','producto.idProducto')
+        ->join('productos_medidas','productos_medidas.idProdMedida','=','productos_ordenes.idProdMedida')
+        ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
         ->select('productos_ordenes.*','producto.claveEx as claveEx','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
         ->where('productos_ordenes.idOrd','=',$idOrd)
         ->get();
@@ -257,4 +260,20 @@ class OrdendecompraController extends Controller
         }
         return response()->json($data, $data['code']);
      }
+
+        /***EJEMPLO PDF */
+    public function generatePDF(){
+        $pdf = new TCPDF();
+        $pdf->SetMargins(20, 20, 20); // Establece los márgenes
+        $pdf->AddPage(); // Agrega una nueva página
+        $pdf->SetFont('times', 'BI', 14); // Establece la fuente
+        $pdf->Cell(0, 10, 'Hola mundo!', 0, 1); // Agrega un texto
+        $contenido = $pdf->Output('', 'D'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
+        $nombrepdf = 'mipdf.pdf';
+
+        return response($contenido)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
+    }
+    /***EJEMPLO PDF */
 }
