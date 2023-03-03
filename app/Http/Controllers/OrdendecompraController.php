@@ -17,6 +17,7 @@ class OrdendecompraController extends Controller
          $ordencompra = DB::table('ordendecompra')
          ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
          ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+        ->orderBy('ordendecompra.idOrd','desc')
          ->get();
          return response()->json([
             'code'         =>  200,
@@ -262,18 +263,18 @@ class OrdendecompraController extends Controller
      }
 
         /***EJEMPLO PDF */
-    public function generatePDF(){
-        $pdf = new TCPDF();
-        $pdf->SetMargins(20, 20, 20); // Establece los márgenes
-        $pdf->AddPage(); // Agrega una nueva página
-        $pdf->SetFont('times', 'BI', 14); // Establece la fuente
-        $pdf->Cell(0, 10, 'Hola mundo!', 0, 1); // Agrega un texto
-        $contenido = $pdf->Output('', 'D'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
-        $nombrepdf = 'mipdf.pdf';
+    // public function generatePDF(){
+    //     $pdf = new TCPDF();
+    //     $pdf->SetMargins(20, 20, 20); // Establece los márgenes
+    //     $pdf->AddPage(); // Agrega una nueva página
+    //     $pdf->SetFont('times', 'BI', 14); // Establece la fuente
+    //     $pdf->Cell(0, 10, 'Hola mundo!', 0, 1); // Agrega un texto
+    //     $contenido = $pdf->Output('', 'D'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
+    //     $nombrepdf = 'mipdf.pdf';
 
-        return response($contenido)
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
-    }
+    //     return response($contenido)
+    //         ->header('Content-Type', 'application/pdf')
+    //         ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
+    // }
     /***EJEMPLO PDF */
 }
