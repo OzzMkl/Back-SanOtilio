@@ -138,10 +138,13 @@ class CompraController extends Controller
                            $Productos_compra = new Productos_compra();//creamos el modelo
                            $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idCompra para todos los productos
                            $Productos_compra-> idProducto = $paramdata['idProducto'];
+                           $Productos_compra-> idProdMedida = $paramdata['idProdMedida'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
-                           if( $paramdata['idImpuesto'] != 0){
-                               $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                           if( $paramdata['idImpuesto'] == 0 || $paramdata['idImpuesto'] == null){
+                               $Productos_compra-> idImpuesto = 3;
+                           }else{
+                            $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
                            }
                            
                            $Productos_compra->save();//guardamos el modelo
@@ -272,14 +275,16 @@ class CompraController extends Controller
         $compra = DB::table('compra')
         ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
         ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
-        ->select('compra.*','proveedores.nombre as nombreProveedor', 
+        ->select('compra.*','proveedores.idProveedor','proveedores.nombre','proveedores.rfc','proveedores.telefono', 
+                    DB::raw("CONCAT(proveedores.pais,' ',proveedores.estado,' ',proveedores.ciudad,' ',proveedores.colonia,' ',proveedores.calle,' ',proveedores.numero) as provDireccion"),
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where('compra.idCompra','=',$idCompra)
         ->get();
         $productosCompra = DB::table('productos_compra')
         ->join('producto','producto.idProducto','=','productos_compra.idProducto')
-        ->join('medidas','medidas.idMedida','=','producto.idMedida')
+        ->join('productos_medidas','productos_medidas.idProdMedida','=','productos_compra.idProdMedida')
+        ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
         ->join('impuesto','impuesto.idImpuesto','=','productos_compra.idImpuesto')
         ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida','impuesto.nombre as nombreImpuesto','impuesto.valor as valorImpuesto')
         ->where('productos_compra.idCompra','=',$idCompra)
@@ -311,7 +316,7 @@ class CompraController extends Controller
         ->select('compra.*','proveedores.nombre as nombreProveedor', 
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
-        ->where('compra.idStatus','=',1)
+        ->where('compra.idStatus','=',28)
         ->orderBy('compra.idCompra','desc')
         ->paginate(10);
 
@@ -330,7 +335,7 @@ class CompraController extends Controller
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where([
-                    ['compra.idStatus','=','1'],
+                    ['compra.idStatus','=','28'],
                     ['idCompra','like','%'.$idCompra.'%']
                 ])
         ->paginate(10);
@@ -351,7 +356,7 @@ class CompraController extends Controller
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where([
-                    ['compra.idStatus','=','1'],
+                    ['compra.idStatus','=','28'],
                     ['proveedores.nombre','like','%'.$nombreProveedor.'%']
                 ])
         ->paginate(10);
@@ -372,7 +377,7 @@ class CompraController extends Controller
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where([
-                    ['compra.idStatus','=','1'],
+                    ['compra.idStatus','=','28'],
                     ['compra.folioProveedor','like','%'.$folioProveedor.'%']
                 ])
         ->paginate(10);
@@ -393,7 +398,7 @@ class CompraController extends Controller
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where([
-                    ['compra.idStatus','=','1'],
+                    ['compra.idStatus','=','28'],
                     ['compra.total','like','%'.$total.'%']
                 ])
         ->paginate(10);
