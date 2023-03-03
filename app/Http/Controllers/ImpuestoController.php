@@ -13,7 +13,9 @@ class ImpuestoController extends Controller
     public function index(){
         //generamos consulta
         $impuestos = DB::table('impuesto')
-        ->get();
+         ->select('impuesto.*')
+         ->where('impuesto.idImpuesto','!=',3)
+         ->get();
         return response()->json([
             'code'      => 200,
             'status'    => 'success',
