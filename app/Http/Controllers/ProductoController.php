@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Validator;
 use App\Producto;
 use App\Productos_medidas;
+use App\models\Monitoreo;
 
 class ProductoController extends Controller
 {
@@ -144,19 +145,20 @@ class ProductoController extends Controller
 
     /**
      * Da de alta el producto
-     * Recibe los datos del objeto junto con las cabeceras
+     * 
+     * Recibe los datos del producto + datos empleado
      */
     public function register(Request $request){
         
         //tomamos solo el json
         $json = $request -> input('json', null);
-        //lo codificamos como json
+        //lo decodificamos como json
         $params = json_decode($json);
         //se separa y se ponen como array
         $params_array = json_decode($json, true);
 
             //revisamos que no vengan vacios
-        if( !empty($params_array) && !empty($params)){
+        if( !empty($params_array)){
             //limpiamos los datos
             $params_array = array_map('trim', $params_array);
             //validamos los datos que llegaron
@@ -168,7 +170,7 @@ class ProductoController extends Controller
                 'descripcion'       =>  'required',
                 'stockMin'          =>  'required',
                 'stockMax'          =>  'required',
-                'statuss'           =>  'required',
+                //'statuss'           =>  'required',
                 'ubicacion'         =>  'required',
                 //'claveSat'          =>  'required',
                 'tEntrega'          =>  'required',
@@ -206,7 +208,7 @@ class ProductoController extends Controller
                     if( isset($params_array['imagen'])){
                         $producto -> imagen = $params_array['imagen'];
                     }
-                    $producto -> statuss = $params_array['statuss'];
+                    $producto -> statuss = 31;
                     $producto -> ubicacion = $params_array['ubicacion'];
                     $producto -> claveSat = $params_array['claveSat'];
                     $producto -> tEntrega = $params_array['tEntrega'];
@@ -215,16 +217,27 @@ class ProductoController extends Controller
                     //guardamos
                     $producto->save();
                     //una vez guardado mandamos mensaje de OK
+                    
+                    //consultamos el ultimo producto ingresado
+                    $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
 
-                    $this->registraPrecioProducto($request);
+                    //obtenemos el nombre de la maquina
+                    $pc = gethostname();
+                    //insertamos el movimiento realizado
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> accion =  "Alta de producto";
+                    $monitoreo -> folioNuevo =  $ultimoProducto;
+                    $monitoreo -> pc =  $pc;
+                    $monitoreo ->save();
 
-                    // $data = array(
-                    //     'status'    =>  'success',
-                    //     'code'      =>  '200',
-                    //     'message'   =>  'El producto se a guardado correctamente',
-                    //     'producto'  =>  $producto
-                    //     //'precios'   =>  $precios
-                    // );
+                    //generamos respuesta
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  '200',
+                        'message'   =>  'El producto se a guardado correctamente',
+                        'producto'  =>  $producto
+                    );
                     DB::commit();
                 } catch (\Exception $e){
                     DB::rollBack();
@@ -247,16 +260,32 @@ class ProductoController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    public function registraProductoMedida(Request $request){
-
+    /**
+     * Guarda las medidas por producto
+     * 
+     * Recibe los datos de las medidas a ingresar + datos empleado
+     */
+    public function registraPrecioProducto(Request $request){
+        //capturamos el parametro json
         $json = $request -> input('json', null);
+        //lo transformamos en un array
         $params_array = json_decode($json, true);
 
+        //verificamos que no venga vacio
         if(!empty($params_array)){
             try{
                 DB::beginTransaction();
                     //consultamos el ultimo ingresado para obtener su id
                     $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
+
+                    //obtemos el id del usuario
+                    $idEmpleado = $params_array['sub'];
+                    //obtenemos el nombre de la maquina
+                    $pc = gethostname();
+
+                    //eliminamos los datos del empleado
+                    //o algo mas tecnico: eliminamos los elementos que no son arrays
+                    $params_array = array_filter($params_array, function($item) { return is_array($item); });
 
                     foreach($params_array AS $param => $paramdata){
 
@@ -264,7 +293,7 @@ class ProductoController extends Controller
                         $productos_medidas -> idProducto = $ultimoProducto;
                         $productos_medidas -> idMedida = $paramdata['idMedida'];
                         $productos_medidas -> unidad = $paramdata['unidad'];
-                        $productos_medidas -> precioCompra = $paramdata['precioCompra'];
+                        $productos_medidas -> precioCompra = $paramdata['preciocompra'];
 
                         $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
                         $productos_medidas -> precio1 = $paramdata['precio1'];
@@ -282,25 +311,35 @@ class ProductoController extends Controller
                         $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
 
                         $productos_medidas -> save();
-                    }
-                    $dataPM = array(
-                        'precios_message'   => 'precios registrados correctamente'
-                    );
 
-                    // $data = array(
-                    //     'code' => 200,
-                    //     'status' => 'success',
-                    //     'message' => 'Precios registrados correctamente',
-                    //     'precios' => $precios
-                    // );
+                        //consulta la ultima medida ingresada
+                        $ultimaMedida = Productos_medidas::latest('idProdMedida')->first()->idProdMedida;
+
+                        //insertamos el movimiento realizado
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario =  $idEmpleado;
+                        $monitoreo -> accion =  "Alta de medida ".$ultimaMedida." para el producto";
+                        $monitoreo -> folioNuevo =  $ultimoProducto;
+                        $monitoreo -> pc =  $pc;
+                        $monitoreo ->save();
+
+                    }//fin foreach
+
+                     $data = array(
+                         'code' => 200,
+                         'status' => 'success',
+                         'message' => 'Precios registrados correctamente',
+                         'productos_medidas' => $productos_medidas
+                     );
                 
                 DB::commit();
             } catch(\Exception $e){
                 DB::rollback();
-                $dataPM = array(
+                $data = array(
                     'code' => 400,
                     'status' => 'error',
-                    'message' => 'Algo salio mal rollback',
+                    'message_system' => 'Algo salio mal rollback precios',
+                    'messsage_exception' => $e->getMessage(),
                     'errors' => $e
                 );
             }
@@ -311,7 +350,7 @@ class ProductoController extends Controller
                 'message' => 'Un campo viene vacio / mal'
             );
         }
-        return $dataPM;
+        return response()->json($data, $data['code']);
     }
 
     public function getLastProduct(){
