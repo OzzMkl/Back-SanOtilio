@@ -556,12 +556,16 @@ class ProductoController extends Controller
     public function searchClaveEx($claveExterna){
         //GENERAMOS CONSULTA
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
-        ->where('claveEx','like','%'.$claveExterna.'%')
-        ->where('statuss',1)
-        ->paginate(10);
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->join('categoria', 'categoria.idCat','=','producto.idCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat')
+        ->where([
+            ['claveEx','like','%'.$claveExterna.'%'],
+            ['statuss','=',31]
+                ])
+        ->paginate(5);
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -577,12 +581,16 @@ class ProductoController extends Controller
     public function searchCodbar($codbar){
         //GENERAMOS CONSULTA
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
-        ->where('cbarras','like','%'.$codbar.'%')
-        ->where('statuss',1)
-        ->paginate(10);
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->join('categoria', 'categoria.idCat','=','producto.idCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat')
+        ->where([
+            ['cbarras','like','%'.$codbar.'%'],
+            ['statuss','=',31]
+                ])
+        ->paginate(5);
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -598,12 +606,16 @@ class ProductoController extends Controller
     public function searchDescripcion($descripcion){
         //GENERAMOS CONSULTA
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
-        ->where('descripcion','like','%'.$descripcion.'%')
-        ->where('statuss',1)
-        ->paginate(10);
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->join('categoria', 'categoria.idCat','=','producto.idCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat')
+        ->where([
+            ['descripcion','like','%'.$descripcion.'%'],
+            ['statuss','=',31]
+                ])
+        ->paginate(5);
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -619,12 +631,18 @@ class ProductoController extends Controller
     public function searchClaveExInactivos($claveExterna){
         //GENERAMOS CONSULTA
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->join('categoria', 'categoria.idCat','=','producto.idCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat')
         ->where('claveEx','like','%'.$claveExterna.'%')
         ->where('statuss',2)
-        ->paginate(10);
+        ->where([
+            ['claveEx','like','%'.$claveExterna.'%'],
+            ['statuss','=',32]
+                ])
+        ->paginate(5);
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -638,16 +656,18 @@ class ProductoController extends Controller
      * que tengan estatus 2 (inactivos)
      */
     public function searchCodbarI($codbar){
-        //GENERAMOS CONSULTA
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->join('categoria', 'categoria.idCat','=','producto.idCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat')
         ->where([
-            ['statuss','=','2'],
-            ['cbarras','like','%'.$codbar.'%']
+            ['cbarras','like','%'.$codbar.'%'],
+            ['statuss','=',32]
                 ])
-        ->paginate(10);
+        ->paginate(5);
+        //->get();
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
@@ -660,14 +680,17 @@ class ProductoController extends Controller
      * que tengan estatus 2 (inactivos)
      */
     public function searchDescripcionI($descripcion){
-        //GENERAMOS CONSULTA
         $productos = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca')
-        ->where('descripcion','like','%'.$descripcion.'%')
-        ->where('statuss',2)
-        ->paginate(10);
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->join('categoria', 'categoria.idCat','=','producto.idCat')
+        ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
+                 'categoria.nombre as nombreCat')
+        ->where([
+            ['descripcion','like','%'.$descripcion.'%'],
+            ['statuss','=',32]
+                ])
+        ->paginate(5);
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -695,8 +718,10 @@ class ProductoController extends Controller
             $data = [
                 'code' => 200,
                 'status' => 'success',
-                "message_system" => 'Test',
-                'message_Error' => $e->getMessage()
+                'message_system' => 'Test',
+                'message_Error' => $e->getMessage(),
+                'error' => $e
+
             ];
         }
 
