@@ -483,6 +483,9 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);       
     }
+    /**
+     * Muestra los detalles del producto con sus medidas
+     */
     public function showTwo($idProducto){
         $producto = DB::table('producto')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
@@ -497,8 +500,9 @@ class ProductoController extends Controller
         ->get();
         $productos_medidas = DB::table('productos_medidas')
         ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
-        ->select('productos_medidas.*','medidas.nombre as nombreMedida')
+        ->select('productos_medidas.*','medidas.nombre as nombreMedida','productos_medidas.precioCompra as preciocompra')
         ->where('idProducto','=',$idProducto)
+        ->orderBy('productos_medidas.idProdMedida','asc')
         ->get();
 
         if(is_object($producto)){
