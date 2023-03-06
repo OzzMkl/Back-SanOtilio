@@ -208,10 +208,46 @@ class CompraController extends Controller
                 //Actualizar Producto -> ExistenciaG
                 foreach($params_array AS $param => $paramdata){
                 
-                    //antes de actualizar el producto obtenemos su existencia
+                    //antes de actualizar el producto obtenemos su existencia-
                     $stockanterior = Producto::find($paramdata['idProducto'])->existenciaG;
                     //Buscamos el producto a actualizar y actualizamos
                     $Producto = Producto::find($paramdata['idProducto']);
+                    /**
+                     * 
+                     * CONVERSION A MEDIDA MENOR
+                     * 
+                     * idProductoC,idProdMedidaC,cantidadC
+                     * 
+                     * igualMedidaMenor = 0
+                     * count = count-1
+                     * lugar = 0
+                     * i=1
+                     * listaPM = select productos_medidas where productos_medidas.idProducto = idProductoC
+                     * 
+                     * idProdMedidaC ? = listaPM[0].idProdMedida //Es la medida mas alta?
+                     *      SI
+                     *          cantidadC*listaPM[lugar].unidad;//[0]
+                     *          i++
+                     *          lugar++
+                     *          while(i<count){
+                     *              igualMedidaMenor = igualMedidaMenor*listaPM[lugar].unidad;
+                     *              i++
+                     *              lugar++
+                     *          }
+                     *      NO{
+                     *          while(idProdMedidaC!=listaPM[lugar].unidad){lugar++} //encontrar lugar
+                     *          lugar+1 == count?  //es el ultimo lugar? 
+                     *          SI  cantidadC*listaPM[lugar].unidad
+                     *          NO  
+                     *          while(){
+                     *              
+                     *          }
+                     *       
+                     * 
+                     */
+                    
+                    
+                    
                     $Producto -> existenciaG = $Producto -> existenciaG + $paramdata['cantidad'];
                     $Producto->save();//guardamos el modelo
 
