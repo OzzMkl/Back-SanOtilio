@@ -296,19 +296,29 @@ class ProductoController extends Controller
                         $productos_medidas -> precioCompra = $paramdata['preciocompra'];
 
                         $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
-                        $productos_medidas -> precio1 = $paramdata['precio1'];
+                        if($paramdata['precio1'] > 0 ){
+                            $productos_medidas -> precio1 = $paramdata['precio1'];
+                        }
 
                         $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
-                        $productos_medidas -> precio2 = $paramdata['precio2'];
+                        if($paramdata['precio2'] > 0){
+                            $productos_medidas -> precio2 = $paramdata['precio2'];
+                        }
 
                         $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
-                        $productos_medidas -> precio3 = $paramdata['precio3'];
+                        if($paramdata['precio3'] > 0){
+                            $productos_medidas -> precio3 = $paramdata['precio3'];
+                        }
 
                         $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
-                        $productos_medidas -> precio4 = $paramdata['precio4'];
+                        if($paramdata['precio4'] > 0){
+                            $productos_medidas -> precio4 = $paramdata['precio4'];
+                        }
 
-                        $productos_medidas -> precio5 = $paramdata['precio5'];
                         $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
+                        if($paramdata['precio5'] > 0){
+                            $productos_medidas -> precio5 = $paramdata['precio5'];
+                        }
 
                         $productos_medidas -> save();
 
