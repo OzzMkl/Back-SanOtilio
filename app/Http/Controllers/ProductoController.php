@@ -453,32 +453,114 @@ class ProductoController extends Controller
              return response()->json($data,$data['code']);
     }
     public function updateProduct($idProducto, Request $request){
+        
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
+
         if(!empty($params_array)){
-            unset($params_array['idProducto']);
-            unset($params_array['created_at']);
-            unset($params_array['statuss']);
-            unset($params_array['imagen']);
 
-            if($params_array['idProductoS'] == null){//algo curiso paso aqui pero es que si no se le asigna desde aqui el null, la Api muestra error
-                $params_array['idProductoS'] =null;//ya que no mandanada xd
+            //limpiamos los datos
+            $params_array = array_map('trim', $params_array);
+            //validamos los datos que llegaron
+            $validate = Validator::make($params_array, [
+                'idMarca'           =>  'required',
+                'idDep'             =>  'required',
+                'idCat'             =>  'required',
+                'claveEx'           =>  'required',
+                'descripcion'       =>  'required',
+                'stockMin'          =>  'required',
+                'stockMax'          =>  'required',
+                //'statuss'           =>  'required',
+                'ubicacion'         =>  'required',
+                //'claveSat'          =>  'required',
+                'tEntrega'          =>  'required',
+                'idAlmacen'         =>  'required',
+                'existenciaG'       =>  'required'
+            ]);
+            //si falla creamos la respuesta a enviar
+            if($validate->fails()){
+                $data = array(
+                    'status'    =>  'error',
+                    'code'      =>  '404',
+                    'message_system'   =>  'Fallo la validacion de los datos del producto',
+                    'message_validation' => $validate->getMessage(),
+                    'errors'    =>  $validate->errors()
+                );
+            }else{
+                try{
+                    DB::beginTransaction();
+                    //consultamos el producto antes de actualizarlo
+                    $antProducto= Producto::where('idProducto',$params_array['idProducto'])->get();
+                    //actualizamos
+                    $producto = Producto::where('idProducto',$params_array['idProducto'])->update([
+                                    'idMarca' => $params_array['idMarca'],
+                                    'idDep' => $params_array['idDep'],
+                                    'idCat' => $params_array['idCat'],
+                                    'claveEx' => $params_array['claveEx'],
+                                    'cbarras' => $params_array['cbarras'],
+                                    'descripcion' => $params_array['descripcion'],
+                                    'stockMin' => $params_array['stockMin'],
+                                    'stockMax' => $params_array['stockMax'],
+                                    'imagen' => $params_array['imagen'],
+                                    //'statuss' => $params_array['statuss'],
+                                    'ubicacion' => $params_array['ubicacion'],
+                                    'claveSat' => $params_array['claveSat'],
+                                    'tEntrega' => $params_array['tEntrega'],
+                                    'idAlmacen' => $params_array['idAlmacen'],
+                                ]);
+                    //consultamos el producto que se actualizo                                
+                    $producto = Producto::where('idProducto',$params_array['idProducto'])->get();
+                    
+                    //obtenemos el nombre de la maquina
+                    $pc = gethostname();
+                    
+                    //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
+                     foreach($antProducto[0]['attributes'] as $clave => $valor){
+                         foreach($producto[0]['attributes'] as $clave2 => $valor2){
+                            //verificamos que la clave sea igua ejem: claveEx == claveEx
+                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                            if($clave == $clave2 && $valor !=  $valor2){
+                                //insertamos el movimiento realizado
+                                $monitoreo = new Monitoreo();
+                                $monitoreo -> idUsuario =  $params_array['sub'];
+                                $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." del producto";
+                                $monitoreo -> folioNuevo =  $params_array['idProducto'];
+                                $monitoreo -> pc =  $pc;
+                                $monitoreo ->save();
+                            }
+                         }
+                     }
+                    //insertamos el movimiento realizado en general del producto modificado
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> accion =  "Modificacion de producto";
+                    $monitoreo -> folioNuevo =  $params_array['idProducto'];
+                    $monitoreo -> pc =  $pc;
+                    $monitoreo ->save();
+                    //generamos respuesta
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  '200',
+                        'message'   =>  'El producto se a guardado correctamente',
+                        'producto'  =>  $producto
+                    );
+                    DB::commit();
+                }catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
             }
-
-            //actualizamos
-            $producto = Producto::where('idProducto', $idProducto)->update($params_array);
-             
-            $data = array(
-                'code'         =>  200,
-                'status'       =>  'success',
-                'producto'    =>  $params_array
-            );
         }
         else{
             $data = array(
                 'code'      =>  400,
                 'status'    =>  'error',
-                'message'   =>  'Error al procesar'
+                'message'   =>  'Los valores no se recibieron correctamente'
             );
         }
         return response()->json($data, $data['code']);       
@@ -743,4 +825,3 @@ class ProductoController extends Controller
     }
     
 }
-/**** */
