@@ -10,6 +10,7 @@ use Validator;
 use App\Producto;
 use App\Productos_medidas;
 use App\models\Monitoreo;
+use App\models\historialproductos_medidas;
 
 class ProductoController extends Controller
 {
@@ -450,8 +451,11 @@ class ProductoController extends Controller
                     'message'      =>  'Error al procesar'
                 );
             }
-             return response()->json($data,$data['code']);
+            return response()->json($data,$data['code']);
     }
+    /**
+     * Actualizacion del producto
+     */
     public function updateProduct($idProducto, Request $request){
         
         $json = $request -> input('json',null);
@@ -564,6 +568,71 @@ class ProductoController extends Controller
             );
         }
         return response()->json($data, $data['code']);       
+    }
+    public function updatePrecioProducto($idProducto, Request $request){
+        $json = $request->input('json', null);
+        $params_array = json_decode($json, true);
+        
+        if(!empty($params_array)){
+            try{
+                DB::beginTransaction();
+                $antListaPrecio = Productos_medidas::select('productos_medidas.*','medidas.nombre as nombreMedida')
+                                    ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+                                    ->where('idProducto','=',$idProducto)
+                                    ->orderBy('productos_medidas.idProdMedida','asc')
+                                    ->get();                                               
+                //obtemos el id del usuario
+                $idEmpleado = $params_array['sub'];
+                //obtenemos el nombre de la maquina
+                $pc = gethostname();
+                //eliminamos los datos del empleado
+                //o algo mas tecnico: eliminamos los elementos que no son arrays
+                $params_array = array_filter($params_array, function($item) { return is_array($item); });
+
+                //actualizamos precios
+                foreach($params_array AS $param => $paramdata){
+                    $productos_medidas = Productos_medidas::where('idProdMedida', $paramdata['idProdMedida'])->update($paramdata);
+                }
+
+                //insertamos en historial de precios
+                $listaPrecioArray = $antListaPrecio->toArray();
+
+                DB::table('historialproductos_medidas')->insert($listaPrecioArray);
+
+                //insertamos el movimiento realizado en general del producto modificado
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario =  $idEmpleado;
+                $monitoreo -> accion =  "Actualizacion de precios del producto";
+                $monitoreo -> folioNuevo =  $idProducto;
+                $monitoreo -> pc =  $pc;
+                $monitoreo ->save();
+
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Precios actualizados correctamente',
+                    'productos_medidas' => $productos_medidas
+                );
+                DB::commit();
+            } catch(\Exception $e){
+                DB::rollback();
+                $data = array(
+                    'code' => 400,
+                    'status' => 'error',
+                    'message_system' => 'Algo salio mal rollback',
+                    'messsage_exception' => $e->getMessage(),
+                    'errors' => $e
+                );
+            }
+        } else{
+            $data = array(
+                'code' => 400,
+                'status' => 'error',
+                'message' => 'Un campo viene vacio / mal'
+            );
+        }
+        return response()->json($data,$data['code']);
     }
     /**
      * Muestra los detalles del producto con sus medidas
