@@ -320,6 +320,7 @@ class ProductoController extends Controller
                         if($paramdata['precio5'] > 0){
                             $productos_medidas -> precio5 = $paramdata['precio5'];
                         }
+                        $productos_medidas -> idStatus = 31;
 
                         $productos_medidas -> save();
 
@@ -576,28 +577,148 @@ class ProductoController extends Controller
         if(!empty($params_array)){
             try{
                 DB::beginTransaction();
-                $antListaPrecio = Productos_medidas::select('productos_medidas.*','medidas.nombre as nombreMedida')
-                                    ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
-                                    ->where('idProducto','=',$idProducto)
-                                    ->orderBy('productos_medidas.idProdMedida','asc')
-                                    ->get();                                               
+
                 //obtemos el id del usuario
                 $idEmpleado = $params_array['sub'];
+
                 //obtenemos el nombre de la maquina
                 $pc = gethostname();
+
                 //eliminamos los datos del empleado
                 //o algo mas tecnico: eliminamos los elementos que no son arrays
                 $params_array = array_filter($params_array, function($item) { return is_array($item); });
 
-                //actualizamos precios
+                //eliminamos los registros que tengan ese idProdcuto
+                Productos_medidas::where('idProducto',$idProducto)->delete();
+
+                //insertamos las nuevas medidas
                 foreach($params_array AS $param => $paramdata){
-                    $productos_medidas = Productos_medidas::where('idProdMedida', $paramdata['idProdMedida'])->update($paramdata);
-                }
+
+                    $productos_medidas = new Productos_medidas();
+                    $productos_medidas -> idProducto = $idProducto;
+                    $productos_medidas -> idMedida = $paramdata['idMedida'];
+                    $productos_medidas -> unidad = $paramdata['unidad'];
+                    $productos_medidas -> precioCompra = $paramdata['preciocompra'];
+
+                    $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
+                    if($paramdata['precio1'] > 0 ){
+                        $productos_medidas -> precio1 = $paramdata['precio1'];
+                    }
+
+                    $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
+                    if($paramdata['precio2'] > 0){
+                        $productos_medidas -> precio2 = $paramdata['precio2'];
+                    }
+
+                    $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
+                    if($paramdata['precio3'] > 0){
+                        $productos_medidas -> precio3 = $paramdata['precio3'];
+                    }
+
+                    $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
+                    if($paramdata['precio4'] > 0){
+                        $productos_medidas -> precio4 = $paramdata['precio4'];
+                    }
+
+                    $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
+                    if($paramdata['precio5'] > 0){
+                        $productos_medidas -> precio5 = $paramdata['precio5'];
+                    }
+                    $productos_medidas -> idStatus = 31;
+
+                    $productos_medidas -> save();
+
+                    //consulta la ultima medida ingresada
+                    $ultimaMedida = Productos_medidas::latest('idProdMedida')->first()->idProdMedida;
+
+                    //insertamos el movimiento realizado
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $idEmpleado;
+                    $monitoreo -> accion =  "Alta de medida ".$ultimaMedida." para el producto";
+                    $monitoreo -> folioNuevo =  $idProducto;
+                    $monitoreo -> pc =  $pc;
+                    $monitoreo ->save();
+
+                }//fin foreach
+
+                //Obtenemos la lista de precios actualizada
+                $actListaPrecio = Productos_medidas::select('productos_medidas.*','medidas.nombre as nombreMedida')
+                                    ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+                                    ->where('idProducto','=',$idProducto)
+                                    ->orderBy('productos_medidas.idProdMedida','asc')
+                                    ->get();
 
                 //insertamos en historial de precios
-                $listaPrecioArray = $antListaPrecio->toArray();
-
+                $listaPrecioArray = $actListaPrecio->toArray();
                 DB::table('historialproductos_medidas')->insert($listaPrecioArray);
+
+                // $a = array();
+                // //actualizamos precios
+                // foreach($params_array AS $param => $paramdata){
+                //     $productos_medidas = Productos_medidas::where('idProdMedida', $paramdata['idProdMedida'])->update($paramdata);//actualiza
+                //     array_push($a,$paramdata['idProdMedida']);
+                //     //si no existe se crea la nueva medida
+                //     if($paramdata['idProdMedida'] == 0){
+                //         $productos_medidas = new Productos_medidas();
+                //         $productos_medidas -> idProducto = $idProducto;
+                //         $productos_medidas -> idMedida = $paramdata['idMedida'];
+                //         $productos_medidas -> unidad = $paramdata['unidad'];
+                //         $productos_medidas -> precioCompra = $paramdata['preciocompra'];
+
+                //         $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
+                //         if($paramdata['precio1'] > 0 ){
+                //             $productos_medidas -> precio1 = $paramdata['precio1'];
+                //         }
+
+                //         $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
+                //         if($paramdata['precio2'] > 0){
+                //             $productos_medidas -> precio2 = $paramdata['precio2'];
+                //         }
+
+                //         $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
+                //         if($paramdata['precio3'] > 0){
+                //             $productos_medidas -> precio3 = $paramdata['precio3'];
+                //         }
+
+                //         $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
+                //         if($paramdata['precio4'] > 0){
+                //             $productos_medidas -> precio4 = $paramdata['precio4'];
+                //         }
+
+                //         $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
+                //         if($paramdata['precio5'] > 0){
+                //             $productos_medidas -> precio5 = $paramdata['precio5'];
+                //         }
+                //         $productos_medidas -> idStatus = 31;
+
+                //         $productos_medidas -> save();
+                //     }//fin if()
+                // }//fin foreach
+                // var_dump($a);
+                // die();
+                // $actualizaStatus = Productos_medidas::where('idProducto', 6)
+                //                                     ->whereNotIn('idProdMedida', $a)
+                //                                     ->update([
+                //                                         'idStatus' => 32
+                //                                     ]);
+                // for($i = 0; $i< count($antListaPrecio); $i++){
+                //     foreach($antListaPrecio[$i]['attributes'] as $clave => $valor){
+                //         for($i2 = 0; $i2< count($params_array); $i2++){
+                //             foreach($params_array[$i2] as $clave2 => $valor2){
+                //                 if($clave == 'idProdMedida' && $clave2 == 'idProdMedida' && $valor != $valor2){
+                //                     array_push($a,$valor);
+                //                     $productoMedida = Productos_medidas::where('idProdMedida',$valor)->update([
+                //                         'idStatus' => 32
+                //                     ]);
+                //                 } 
+                //             }
+                //         }
+                //     }
+                // }
+                // var_dump($a);
+                // die();
+
+                
 
                 //insertamos el movimiento realizado en general del producto modificado
                 $monitoreo = new Monitoreo();
@@ -652,7 +773,10 @@ class ProductoController extends Controller
         $productos_medidas = DB::table('productos_medidas')
         ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
         ->select('productos_medidas.*','medidas.nombre as nombreMedida','productos_medidas.precioCompra as preciocompra')
-        ->where('idProducto','=',$idProducto)
+        ->where([
+            ['idStatus','=','31'],
+            ['idProducto','=',$idProducto]
+        ])
         ->orderBy('productos_medidas.idProdMedida','asc')
         ->get();
 
@@ -869,7 +993,10 @@ class ProductoController extends Controller
             $productoMedida = DB::table('productos_medidas')
                                 ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
                                 ->select('productos_medidas.*','medidas.nombre as nombreMedida')
-                                ->where('productos_medidas.idProducto','=',$idProducto)
+                                ->where([
+                                    ['idStatus','=',31],
+                                    ['idProducto','=',$idProducto]
+                                ])
                                 ->get();
                                 
             $imagen = Producto::findOrFail($idProducto)->imagen;
