@@ -409,51 +409,98 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    /************ */
+
+    /**
+     * Actualiza unicamente el status del producto
+     * de HABILITADO -> DESHABILITADO  y viceversa
+     */
     public function updateStatus($idProducto, Request $request){
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
-        if(!empty($params_array)){
-        //quitamos valores que no queremos actualizar
-             unset($params_array['idProducto']);
-             unset($params_array['idMedida']);
-             unset($params_array['idMarca']);
-             unset($params_array['idDep']);
-             unset($params_array['idCat']);
-             unset($params_array['idSubCat']);
-             unset($params_array['claveEx']);
-             unset($params_array['cbarras']);
-             unset($params_array['descripcion']);
-             unset($params_array['stockMin']);
-             unset($params_array['stockMax']);
-             unset($params_array['imagen']);
-             unset($params_array['ubicacion']);
-             unset($params_array['claveSat']);
-             unset($params_array['tEntrega']);
-             unset($params_array['idAlmacen']);
-             unset($params_array['precioR']);
-             unset($params_array['precioS']);
-             unset($params_array['idProductoS']);
-             unset($params_array['factorConv']);
-             unset($params_array['existenciaG']);
-             unset($params_array['created_at']);
 
-             //actualizamos
-             $producto = Producto::where('idProducto', $idProducto)->update($params_array);
-             
-             $data = array(
-                 'code'         =>  200,
-                 'status'       =>  'success',
-                 'producto'    =>  $params_array
-             );
-            }else{
-                $data = array(
-                    'code'         =>  200,
-                    'status'       =>  'error',
-                    'message'      =>  'Error al procesar'
-                );
+        if(!empty($params_array)){
+            try{
+                DB::beginTransaction();
+
+                //traemos el status del producto a actualizar
+                $statusProd = Producto::find($idProducto)->statuss;
+                //obtenemos el nombre de la maquina
+                $pc = gethostname();
+
+                switch($statusProd){
+                    case 31:
+                            //Si esta habilitado lo deshabilitamos
+                            $producto = Producto::where('idProducto',$idProducto)
+                                                    ->update([
+                                                        'statuss' => 32
+                                                    ]);
+                            //insertamos el movimiento que se hizo
+                            $monitoreo = new Monitoreo();
+                            $monitoreo -> idUsuario = $params_array['sub'] ;
+                            $monitoreo -> accion =  "Actualizacion de status a deshabilitado del producto";
+                            $monitoreo -> folioNuevo =  $idProducto;
+                            $monitoreo -> pc =  $pc;
+                            $monitoreo ->save();
+
+                            //generamos respuesta del movimiento que se hizo
+                            $data = array(
+                                'code'      => 200,
+                                'status'    => 'success',
+                                'message'   =>  'Producto con id: '.$idProducto.' actualizado a idStatus: 32'
+                            );                        
+                        break;
+                    case 32:
+                            //Si esta habilitado lo deshabilitamos
+                            $producto = Producto::where('idProducto',$idProducto)
+                                                    ->update([
+                                                        'statuss' => 31
+                                                    ]);
+                            //insertamos el movimiento que se hizo
+                            $monitoreo = new Monitoreo();
+                            $monitoreo -> idUsuario = $params_array['sub'] ;
+                            $monitoreo -> accion =  "Actualizacion de status a habilitado del producto";
+                            $monitoreo -> folioNuevo =  $idProducto;
+                            $monitoreo -> pc =  $pc;
+                            $monitoreo ->save();
+
+                            //generamos respuesta del movimiento que se hizo
+                            $data = array(
+                                'code'      => 200,
+                                'status'    => 'success',
+                                'message'   =>  'Producto con id: '.$idProducto.' actualizado a idStatus: 31'
+                            );       
+                        break;
+                    default:
+                        //Si recibimos otra cosa generamos mensaje de error
+                        $data = array(
+                            'code'      => 400,
+                            'status'    => 'error',
+                            'message'   =>  'Opcion no valida'
+                        );
+                    break;
+                }
+
+                DB::commit();
+            } catch(\Exception $e){
+                DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   =>  $e->getMessage(),
+                        'error' => $e
+                    );
             }
-            return response()->json($data,$data['code']);
+        } else{
+            $data = array(
+                'code'         =>  200,
+                'status'       =>  'error',
+                'message'      =>  'Error al procesar'
+            );
+        }
+        return response()->json($data,$data['code']);
     }
+
     /**
      * Actualizacion del producto
      */
@@ -570,6 +617,12 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);       
     }
+
+    /**
+     * Actualiza las medidas por producto
+     * 
+     * Recibe los datos de las medidas a actualizar + datos empleado
+     */
     public function updatePrecioProducto($idProducto, Request $request){
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
@@ -755,6 +808,7 @@ class ProductoController extends Controller
         }
         return response()->json($data,$data['code']);
     }
+
     /**
      * Muestra los detalles del producto con sus medidas
      */
@@ -796,6 +850,8 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
+    //REVISAR SI SE OCUPA///////////////////////////////////
     public function getProductClaveex($claveExterna){
         $producto = DB::table('producto')
         ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
@@ -823,6 +879,11 @@ class ProductoController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    ///////////////////////////////////////////////////////
+
+    /**
+     * Trae la existencia del producto
+     */
     public function getExistenciaG($idProducto){
         $producto = DB::table('producto')
         ->select('idProducto','existenciaG')
