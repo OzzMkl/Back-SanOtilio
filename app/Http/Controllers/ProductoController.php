@@ -742,7 +742,7 @@ class ProductoController extends Controller
                     'code' => 400,
                     'status' => 'error',
                     'message_system' => 'Algo salio mal rollback',
-                    'messsage_exception' => $e->getMessage(),
+                    'messsage' => $e->getMessage(),
                     'errors' => $e
                 );
             }
@@ -914,6 +914,42 @@ class ProductoController extends Controller
     }
 
     /**
+     * Busca las medidas del producto habilitado
+     * Busca la imagen del prducto
+     */
+    public function searchProductoMedida($idProducto){
+        try{
+            $productoMedida = DB::table('productos_medidas')
+                                ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
+                                ->select('productos_medidas.*','medidas.nombre as nombreMedida')
+                                ->where([
+                                    ['idStatus','=',31],
+                                    ['idProducto','=',$idProducto]
+                                ])
+                                ->get();
+                                
+            $imagen = Producto::findOrFail($idProducto)->imagen;
+            $data = [
+                'code'          =>  200,
+                'status'        => 'success',
+                'productoMedida'   =>  $productoMedida,
+                'imagen'        => $imagen
+            ];
+        } catch(\Exception $e){
+            $data = [
+                'code' => 200,
+                'status' => 'success',
+                'message_system' => 'Test',
+                'message_Error' => $e->getMessage(),
+                'error' => $e
+
+            ];
+        }
+
+        return response()->json($data, $data['code']);
+    }
+
+    /**
      * Busca a partir de la clave externa de los productos
      * que tengan estatus 2 (inactivos)
      */
@@ -925,8 +961,6 @@ class ProductoController extends Controller
         ->join('categoria', 'categoria.idCat','=','producto.idCat')
         ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep',
                  'categoria.nombre as nombreCat')
-        ->where('claveEx','like','%'.$claveExterna.'%')
-        ->where('statuss',2)
         ->where([
             ['claveEx','like','%'.$claveExterna.'%'],
             ['statuss','=',32]
@@ -988,13 +1022,17 @@ class ProductoController extends Controller
         ]);
     }
 
-    public function searchProductoMedida($idProducto){
+    /**
+     * Busca las medidas del producto deshabilitado
+     * Busca la imagen del prducto
+     */
+    public function searchProductoMedidaI($idProducto){
         try{
             $productoMedida = DB::table('productos_medidas')
                                 ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
                                 ->select('productos_medidas.*','medidas.nombre as nombreMedida')
                                 ->where([
-                                    ['idStatus','=',31],
+                                    ['idStatus','=',32],
                                     ['idProducto','=',$idProducto]
                                 ])
                                 ->get();
@@ -1019,5 +1057,7 @@ class ProductoController extends Controller
 
         return response()->json($data, $data['code']);
     }
+
+    
     
 }
