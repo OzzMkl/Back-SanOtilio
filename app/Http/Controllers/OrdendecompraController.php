@@ -25,7 +25,8 @@ class OrdendecompraController extends Controller
             'ordencompra'   => $ordencompra
         ]);
 
-     }
+    }
+
     public function registerOrdencompra(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -104,6 +105,7 @@ class OrdendecompraController extends Controller
         ]);
 
     }
+
     public function registerProductosOrden(Request $req){
          $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
          $params_array = json_decode($json,true);//decodifiamos el json
@@ -135,38 +137,18 @@ class OrdendecompraController extends Controller
             );
         }
         return response()->json($data, $data['code']);
-     }
-     public function getLastOrder(){
+    }
+
+    public function getLastOrder(){
          $ordencompra = OrdenDeCompra::latest('idOrd')->first();
          return response()->json([
              'code'         =>  200,
              'status'       => 'success',
              'ordencompra'   => $ordencompra
          ]);
-     }
-    //  public function show($idOrd){
-    //     $ordencompra = DB::table('ordendecompra')
-    //     ->join('productos_ordenes','productos_ordenes.idOrd','=','ordendecompra.idOrd')
-    //     ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
-    //     ->select('ordendecompra.*','productos_ordenes.*','proveedores.nombre as nombreProveedor')
-    //     ->where('ordendecompra.idOrd','=',$idOrd)
-    //     ->get();
-    //     if(is_object($ordencompra)){
-    //         $data = [
-    //             'code'          => 200,
-    //             'status'        => 'success',
-    //             'ordencompra'   =>  $ordencompra
-    //         ];
-    //     }else{
-    //         $data = [
-    //             'code'          => 400,
-    //             'status'        => 'error',
-    //             'message'       => 'El producto no existe'
-    //         ];
-    //     }
-    //     return response()->json($data, $data['code']);
-    //  }
-     public function showMejorado($idOrd){
+    }
+    
+    public function showMejorado($idOrd){
         $ordencompra = DB::table('ordendecompra')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
         ->join('empleado','empleado.idEmpleado','=','ordendecompra.idEmpleado')
@@ -175,12 +157,13 @@ class OrdendecompraController extends Controller
         ->get();
         $productosOrden = DB::table('productos_ordenes')
         ->join('producto','producto.idProducto','=','productos_ordenes.idProducto')
-        // ->join('productos_medidas','productos_medidas.idProducto','=','producto.idProducto')
-        ->join('productos_medidas','productos_medidas.idProdMedida','=','productos_ordenes.idProdMedida')
-        ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
-        ->select('productos_ordenes.*','producto.claveEx as claveEx','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
-        ->where('productos_ordenes.idOrd','=',$idOrd)
+        ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ordenes.idProdMedida')
+        ->select('productos_ordenes.*','producto.claveEx as claveEx','producto.descripcion as descripcion','historialproductos_medidas.nombreMedida as nombreMedida')
+        ->where([
+                    ['productos_ordenes.idOrd','=',$idOrd]
+                ])
         ->get();
+
         if(is_object($ordencompra)){
             $data = [
                 'code'          => 200,
@@ -196,9 +179,9 @@ class OrdendecompraController extends Controller
             ];
         }
         return response()->json($data, $data['code']);
-     }
+    }
 
-     public function updateOrder($idOrd, Request $request){
+    public function updateOrder($idOrd, Request $request){
 
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
@@ -225,9 +208,9 @@ class OrdendecompraController extends Controller
                 'message'   =>  'json vacio'
             ]);   
          }
-     }
+    }
 
-     public function updateProductsOrder($idOrd,Request $req){
+    public function updateProductsOrder($idOrd,Request $req){
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){//verificamos que no este vacio
@@ -260,21 +243,5 @@ class OrdendecompraController extends Controller
             );
         }
         return response()->json($data, $data['code']);
-     }
-
-        /***EJEMPLO PDF */
-    // public function generatePDF(){
-    //     $pdf = new TCPDF();
-    //     $pdf->SetMargins(20, 20, 20); // Establece los márgenes
-    //     $pdf->AddPage(); // Agrega una nueva página
-    //     $pdf->SetFont('times', 'BI', 14); // Establece la fuente
-    //     $pdf->Cell(0, 10, 'Hola mundo!', 0, 1); // Agrega un texto
-    //     $contenido = $pdf->Output('', 'D'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
-    //     $nombrepdf = 'mipdf.pdf';
-
-    //     return response($contenido)
-    //         ->header('Content-Type', 'application/pdf')
-    //         ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
-    // }
-    /***EJEMPLO PDF */
+    }
 }

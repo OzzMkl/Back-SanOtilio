@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Validator;
 use App\OrdenDeCompra;
 use App\Productos_compra;
+use App\Productos_medidas;
 use App\Compras;
 use App\Producto;
 use App\lote;
@@ -212,43 +213,82 @@ class CompraController extends Controller
                     $stockanterior = Producto::find($paramdata['idProducto'])->existenciaG;
                     //Buscamos el producto a actualizar y actualizamos
                     $Producto = Producto::find($paramdata['idProducto']);
+                    
                     /**
-                     * 
                      * CONVERSION A MEDIDA MENOR
                      * 
-                     * idProductoC,idProdMedidaC,cantidadC
+                     * lugar - count
+                     *   [0] - 1
+                     *   [1] - 2
+                     *   [2] - 3
+                     *   [3] - 4
+                     *   [4] - 5
                      * 
-                     * igualMedidaMenor = 0
-                     * count = count-1
-                     * lugar = 0
-                     * i=1
-                     * listaPM = select productos_medidas where productos_medidas.idProducto = idProductoC
-                     * 
-                     * idProdMedidaC ? = listaPM[0].idProdMedida //Es la medida mas alta?
-                     *      SI
-                     *          cantidadC*listaPM[lugar].unidad;//[0]
-                     *          i++
-                     *          lugar++
-                     *          while(i<count){
-                     *              igualMedidaMenor = igualMedidaMenor*listaPM[lugar].unidad;
-                     *              i++
-                     *              lugar++
-                     *          }
-                     *      NO{
-                     *          while(idProdMedidaC!=listaPM[lugar].unidad){lugar++} //encontrar lugar
-                     *          lugar+1 == count?  //es el ultimo lugar? 
-                     *          SI  cantidadC*listaPM[lugar].unidad
-                     *          NO  
-                     *          while(){
-                     *              
-                     *          }
-                     *       
-                     * 
+                     * Variables para almacenar los datos recibidos
+                     * Consulta para saber cuantas medidas tiene un producto
+                     * Consulta para obtener la lista de productos_medidas de un producto
+                     * Verificar si el producto tiene una sola medida
+                     * Si tiene una sola medida agrega directo la existencia ( count == 1 )
+                     * Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
+                     * Se hace un cilo que recorre listaPM
+                     * Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
+                     * Medida mas alta, multiplicar desde el principio ( lugar == 0)
+                     * Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
+                     *  
                      */
+                    //Variables para almacenar los datos recibidos
+                    $idProductoC = $paramdata['idProducto'];
+                    $idProdMedidaC = $paramdata['idProdMedida'];
+                    $cantidadC = $paramdata['cantidad'];
+                    //Variables para el calculo
+                    $igualMedidaMenor = 0;
+                    $lugar = 0; 
+                    //Consulta para saber cuantas medidas tiene un producto
+                    $count = Productos_medidas::where([
+                                                        ['productos_medidas.idProducto','=',$paramdata['idProducto']],
+                                                        ['productos_medidas.idStatus','=','31']
+                                                      ])->count();
+                    //Consulta para obtener la lista de productos_medidas de un producto
+                    $listaPM = Productos_medidas::where([
+                                                            ['productos_medidas.idProducto','=',$paramdata['idProducto']],
+                                                            ['productos_medidas.idStatus','=','31']
+                                                        ])->get();
+                    //var_dump($count);
+                    //var_dump($listaPM);
+                    //Verificar si el producto tiene una sola medida
+                    if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
+                        $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                    }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
+                        //Se hace un cilo que recorre listaPM
+                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
+                            echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                            $lugar++;
+                        }
+                        if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
+                            $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                        }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
+                            $igualMedidaMenor = $cantidadC;
+                            while($lugar < $count ){
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $lugar++;
+                                echo $igualMedidaMenor;
+                            }
+                            $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
+                        }elseif($lugar>0 && $lugar<$count-1){//Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
+                            $igualMedidaMenor = $cantidadC;
+                            while($lugar < $count ){
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $lugar++;
+                            }
+                        }else{
+
+                        }
+                    }
                     
+
                     
+
                     
-                    $Producto -> existenciaG = $Producto -> existenciaG + $paramdata['cantidad'];
                     $Producto->save();//guardamos el modelo
 
                     //obtenemos la existencia del producto actualizado
@@ -272,7 +312,9 @@ class CompraController extends Controller
                         'status'        => 'success',
                         'code'          =>  200,
                         'Producto'      =>  $Producto,
-                        'Movimiento'    =>  $moviproduc
+                        'Movimiento'    =>  $moviproduc,
+                        'count'         =>  $count,
+                        'listaPM'       =>  $listaPM
                     );
                 }
                 DB::commit();
@@ -282,6 +324,7 @@ class CompraController extends Controller
                     'code'      => 400,
                     'status'    => 'Error',
                     'message'   =>  'Fallo algo',
+                    'messageError' => $e -> getMessage(),
                     'error' => $e
                 );
             }
@@ -319,10 +362,9 @@ class CompraController extends Controller
         ->get();
         $productosCompra = DB::table('productos_compra')
         ->join('producto','producto.idProducto','=','productos_compra.idProducto')
-        ->join('productos_medidas','productos_medidas.idProdMedida','=','productos_compra.idProdMedida')
-        ->join('medidas','medidas.idMedida','=','productos_medidas.idMedida')
+        ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_compra.idProdMedida')
         ->join('impuesto','impuesto.idImpuesto','=','productos_compra.idImpuesto')
-        ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','medidas.nombre as nombreMedida','impuesto.nombre as nombreImpuesto','impuesto.valor as valorImpuesto')
+        ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','historialproductos_medidas.nombreMedida as nombreMedida','impuesto.nombre as nombreImpuesto','impuesto.valor as valorImpuesto')
         ->where('productos_compra.idCompra','=',$idCompra)
         ->get();
         if(is_object($compra)){
