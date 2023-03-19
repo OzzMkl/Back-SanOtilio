@@ -14,6 +14,9 @@ use TCPDF;
 
 class ClienteController extends Controller
 {
+    /**
+     * Litado de clientes
+     */
     public function index(){
         $clientes = DB::table('cliente')
         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
@@ -27,6 +30,9 @@ class ClienteController extends Controller
         ]);
     }
 
+    /**
+     * Listado de los tipos de clientes
+     */
     public function indexTipocliente(){
         $tipocliente = DB::table('tipocliente')
         ->get();
@@ -37,6 +43,9 @@ class ClienteController extends Controller
         ]);
     }
 
+    /**
+     * Regitro de cliente nuevo
+     */
     public function registerCliente(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -66,8 +75,10 @@ class ClienteController extends Controller
                     $Cliente = new Cliente();
 
                     $Cliente->nombre = $params_array['nombre'];
-                    if( isset($params_array['aPaterno']) && isset($params_array['aMaterno'])){
+                    if( isset($params_array['aPaterno'])){
                         $Cliente->aPaterno = $params_array['aPaterno'];
+                    }
+                    if(isset($params_array['aMaterno'])){
                         $Cliente->aMaterno = $params_array['aMaterno'];
                     }
                     $Cliente->rfc = $params_array['rfc'];
@@ -89,7 +100,7 @@ class ClienteController extends Controller
                     $data = array(
                         'code'      => 400,
                         'status'    => 'Error',
-                        'message'   =>  'Algo salio mal rollbak',
+                        'message'   =>  $e->getMessage(),
                         'error' => $e
                     );
                 }
@@ -106,6 +117,9 @@ class ClienteController extends Controller
         return response()->json($data, $data['code']);
     }
 
+    /**
+     * 
+     */
     public function registerCdireccion(Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json,true);
@@ -119,7 +133,7 @@ class ClienteController extends Controller
                  'colonia'   => 'required',
                  'calle'   => 'required',
                  'numExt'   => 'required',
-                 //'cp'   => 'required',
+                 'cp'   => 'required',
                  'referencia'   => 'required',
                  'telefono'   => 'required',
                  'idZona'   => 'required'
@@ -129,14 +143,14 @@ class ClienteController extends Controller
                  $data = array(
                      'status'    => 'error',
                      'code'      => 404,
-                     'message'   => 'Fallo la validacion de los datos del cliente',
+                     'message'   => 'Datos incorrectos en la direccion',
                      'errors'    => $validate->errors()
                  );
              }else{
                   //consuktamos el ultimo insertado
-                    $Cliente = Cliente::latest('idCliente')->first();
+                    $idCliente = Cliente::latest('idCliente')->first()->idCliente;
                     $cdireccion = new Cdireccion();
-                    $cdireccion->idCliente = $Cliente->idCliente;
+                    $cdireccion->idCliente = $idCliente;
                     $cdireccion->pais = $params_array['pais'];
                     $cdireccion->estado = $params_array['estado'];
                     $cdireccion->ciudad = $params_array['ciudad'];
