@@ -10,6 +10,7 @@ use App\Cliente;
 use App\Cdireccion;
 use Validator;
 use TCPDF;
+use App\models\Monitoreo;
 
 
 class ClienteController extends Controller
@@ -46,10 +47,11 @@ class ClienteController extends Controller
     /**
      * Regitro de cliente nuevo
      */
-    public function registerCliente(Request $request){
+    public function registerCliente(Request $request){ 
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
         $params_array = json_decode($json,true);
+
         if(!empty($params) && !empty($params_array)){
             $params_array = array_map('trim',$params_array);
 
@@ -87,6 +89,18 @@ class ClienteController extends Controller
                     $Cliente->idStatus = $params_array['idStatus'];
                     $Cliente->idTipo = $params_array['idTipo'];
                     $Cliente->save();
+
+                    //Obtenemos el ultimo cliente registrado
+                    $idCliente = Cliente::latest('idCliente')->first()->idCliente;
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+                    //insertamos movimiento en monitoreo
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> accion =  "Alta de cliente";
+                    $monitoreo -> folioNuevo =  $idCliente;
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
                     
                     DB::commit();
 
@@ -118,7 +132,7 @@ class ClienteController extends Controller
     }
 
     /**
-     * 
+     * Registro de direccion de cliente nuevo
      */
     public function registerCdireccion(Request $request){
         $json = $request -> input('json',null);
@@ -164,6 +178,16 @@ class ClienteController extends Controller
                     $cdireccion->telefono = $params_array['telefono'];
                     $cdireccion->idZona = $params_array['idZona'];
                     $cdireccion->save();
+
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+                    //insertamos movimiento en monitoreo
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> accion =  "Alta de direcion de cliente";
+                    $monitoreo -> folioNuevo =  $idCliente;
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
 
                     $data = array(
                         'code'      =>  200,
@@ -279,11 +303,53 @@ class ClienteController extends Controller
     public function updateCliente($idCliente, Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
+        
         if(!empty($params_array)){
              //eliminar espacios vacios
              $params_array = array_map('trim', $params_array);
-             //actualizamos
-             $cliente = Cliente::where('idCliente',$idCliente)->update($params_array);
+
+            //obtenemos la informacion antes de actualizar
+            $antCliente = Cliente::where('idCliente',$idCliente)->get();
+            //actualizamos
+            $cliente = Cliente::where('idCliente',$idCliente)->update([
+                'nombre' => $params_array['nombre'],
+                'aPaterno' => $params_array['aPaterno'],
+                'aMaterno' => $params_array['aMaterno'],
+                'rfc' => $params_array['rfc'],
+                'correo' => $params_array['correo'],
+                'credito' => $params_array['credito'],
+                //'idStatus' => $params_array['nombre'],
+                'idTipo' => $params_array['idTipo']
+            ]);
+            //consultamos el cliente ya actualizado
+            $newCliente = Cliente::where('idCliente',$idCliente)->get();
+
+            //obtenemos direccion ip
+            $ip = $_SERVER['REMOTE_ADDR'];
+            /******* agregar codigo que verifica que se modifico */
+            foreach($antCliente[0]['attributes'] as $clave => $valor){
+                foreach($newCliente[0]['attributes'] as $clave2 => $valor2){
+
+                    if($clave == $clave2 && $valor != $valor2){
+
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario = $params_array['sub'];
+                        $monitoreo -> accion = "Modificacion de ".$clave." anterior: ".$valor." nuevo: ".$valor2." del cliente";
+                        $monitoreo -> folioNuevo = $idCliente;
+                        $monitoreo -> pc = $ip;
+                        $monitoreo ->save();
+                    }
+                }
+
+            }
+            /******* */
+            //insertamos movimiento en monitoreo
+            $monitoreo = new Monitoreo();
+            $monitoreo -> idUsuario =  $params_array['sub'];
+            $monitoreo -> accion =  "Modificacion de cliente";
+            $monitoreo -> folioNuevo =  $idCliente;
+            $monitoreo -> pc =  $ip;
+            $monitoreo ->save();
 
              $data = array(
                 'code'         =>  200,
@@ -306,11 +372,10 @@ class ClienteController extends Controller
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){//verificamos que no este vacio
 
-            //eliminamos los registros que tengab ese idOrd
+            //eliminamos los registros que tenga el cliente
             Cdireccion::where('idCliente',$idCliente)->delete();
-            //recorremos el array para asignar todos los productos
-            //Cdireccion::where('idCliente',$idCliente)->update($params_array);
-
+            
+            //realimos la alta de las direcciones
             foreach($params_array AS $param => $paramdata){
                 $cdireccion = new Cdireccion();//creamos el modelo
                 $cdireccion-> idCliente = $idCliente;//asignamos el id desde el parametro que recibimos
@@ -330,6 +395,15 @@ class ClienteController extends Controller
                 $cdireccion->save();//guardamos el modelo
                 //Si todo es correcto mandamos el ultimo producto insertado
                 }
+                
+            //insertamos movimiento
+            $monitoreo = new Monitoreo();
+            $monitoreo -> idUsuario = $params_array['sub'];
+            $monitoreo -> accion = "Modificacion de direcion del cliente";
+            $monitoreo -> folioNuevo = $idCliente;
+            $monitoreo -> pc = $ip;
+            $monitoreo ->save();
+
             $data =  array(
                 'status'            => 'success',
                 'code'              =>  200,

@@ -82,8 +82,8 @@ class CompraController extends Controller
                     
                     //Obtenemos de la ultima compra el idCompra, idOrden y IdEmpleadoRecibe
                     $Foliocompra = Compras::latest('idCompra')->first()->idCompra; 
-                    //obtenemos el nombre de la maquina
-                    $pc = gethostname();
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
 
                     //insertamos el movimiento que se hizo en general
                     $monitoreo = new Monitoreo();
@@ -91,7 +91,7 @@ class CompraController extends Controller
                     $monitoreo -> accion =  "Alta de compra";
                     $monitoreo -> folioAnterior = $params_array['idOrd'];
                     $monitoreo -> folioNuevo =  $Foliocompra;
-                    $monitoreo -> pc =  $pc;
+                    $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
 
                     //Actualizar statuss de una orden de compra
@@ -202,8 +202,8 @@ class CompraController extends Controller
                 //Obtenemos de la ultima compra el idCompra, idOrden y IdEmpleadoRecibe
                 $Foliocompra = Compras::latest('idCompra')->first()->idCompra; 
                 $idUsuario = Compras::latest('idCompra')->first()->idEmpleadoR;
-                //obtenemos el nombre de la maquina
-                $pc = gethostname();
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
 
                 //Recorremos el array para asignar todos los productos
                 //Actualizar Producto -> ExistenciaG
@@ -261,7 +261,8 @@ class CompraController extends Controller
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
                         while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                            echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                            //echo $lugar;
                             $lugar++;
                         }
                         if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
@@ -271,15 +272,18 @@ class CompraController extends Controller
                             while($lugar < $count ){
                                 $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
                                 $lugar++;
-                                echo $igualMedidaMenor;
+                                //echo $igualMedidaMenor;
                             }
                             $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
                         }elseif($lugar>0 && $lugar<$count-1){//Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
                             $igualMedidaMenor = $cantidadC;
+                            $count--;
+                            //echo $count;
                             while($lugar < $count ){
                                 $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
                                 $lugar++;
                             }
+                            $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
                         }else{
 
                         }
@@ -304,7 +308,7 @@ class CompraController extends Controller
                     $moviproduc -> stockanterior =  $stockanterior;
                     $moviproduc -> stockactualizado =  $stockactualizado;
                     $moviproduc -> idUsuario =  $idUsuario;
-                    $moviproduc -> pc =  $pc;
+                    $moviproduc -> pc =  $ip;
                     $moviproduc ->save();
 
                     //Si todo es correcto mandamos el ultimo producto insertado y el movimiento
