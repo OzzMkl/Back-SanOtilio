@@ -68,6 +68,7 @@ class ProveedoresController extends Controller
                 $proveedor -> telefono = $params_array['telefono'];
                 $proveedor -> creditoDias = $params_array['creditoDias'];
                 $proveedor -> creditoCantidad = $params_array['creditoCantidad'];
+                $proveedor -> idStatus = $params_array['idStatus'];
 
                 //guardamos el usuario
                 $proveedor->save();
@@ -80,7 +81,7 @@ class ProveedoresController extends Controller
                 );
                 if($data['status']== 'success'){//Comprobamos si esta OK y asignamos los datos de NCP
                     //Consultamos al ultimo proveedor insertado y tomamos su id para asignarlo al ncp
-                    $proveedores = DB::table('Proveedores')->where('idStatus',1)->orderBy('idProveedor','desc')->first();
+                    $proveedores = DB::table('Proveedores')->where('idStatus',29)->orderBy('idProveedor','desc')->first();
                     $ncp = new ncp();//creamos el objeto y asignamos
                     $ncp -> idProveedor =$proveedor->idProveedor;
                     $ncp -> ncuenta = $params_array['ncuenta'];
@@ -110,7 +111,7 @@ class ProveedoresController extends Controller
                             'message'   =>  'El proveedor y contacto se ha creado correctamente'
                         );
                     }else{//SI SI TRAE DATOS ASIGNAMOS LOS VALORES  REGISTRADOS
-                        $proveedores = DB::table('Proveedores')->where('idStatus',1)->orderBy('idProveedor','des')->first();
+                        $proveedores = DB::table('Proveedores')->where('idStatus',29)->orderBy('idProveedor','des')->first();
                         $contacto = new Contacto();
                         $contacto -> idProveedor = $proveedores->idProveedor;
                         $contacto -> nombre = $params_array['nombreCon'];
