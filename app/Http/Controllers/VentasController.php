@@ -23,6 +23,9 @@ use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 
 class VentasController extends Controller
 {
+    /**
+     * TIPO PAGO
+     */
     public function indexTP(){
         //GENERAMOS CONSULTA
         $tp = DB::table('tipo_pago')
@@ -33,6 +36,7 @@ class VentasController extends Controller
             'tipo_pago'   =>  $tp
         ]);
     }
+
     /****** COTIZACIONES *****/
     public function indexCotiza(){
         $Cotizaciones = DB::table('cotizaciones')
@@ -50,6 +54,7 @@ class VentasController extends Controller
             'Cotizaciones'  => $Cotizaciones
         ]);
     }
+
     public function guardarCotizacion(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -107,6 +112,7 @@ class VentasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function guardarProductosCotiza(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
@@ -144,6 +150,7 @@ class VentasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function consultaUltimaCotiza(){
         $Cotiza = Cotizacion::latest('idCotiza')->first();
         return response()->json([
@@ -152,6 +159,7 @@ class VentasController extends Controller
             'Cotizacion'    => $Cotiza
         ]);
     }
+
     public function detallesCotizacion($idCotiza){
         $Cotiza = DB::table('cotizaciones')
         ->join('cliente','cliente.idCliente','=','cotizaciones.idCliente')
@@ -165,8 +173,8 @@ class VentasController extends Controller
         ->get();
         $productosCotiza = DB::table('productos_cotizaciones')
         ->join('producto','producto.idProducto','=','productos_cotizaciones.idProducto')
-        ->join('medidas','medidas.idMedida','=','producto.idMedida')
-        ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion','medidas.nombre as nombreMedida')
+        //->join('medidas','medidas.idMedida','=','producto.idMedida')
+        ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion')
         ->where('productos_cotizaciones.idCotiza','=',$idCotiza)
         ->get();
         if(is_object($Cotiza)){
@@ -267,6 +275,7 @@ class VentasController extends Controller
             'Ventas'    => $ventas
         ]);
     }
+
     public function getDetallesVenta($idVenta){
         $venta = DB::table('ventasg')
         ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
@@ -303,6 +312,7 @@ class VentasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function guardarVenta(Request $request){
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
@@ -359,6 +369,7 @@ class VentasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function guardarProductosVenta(Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json,true);
@@ -401,6 +412,7 @@ class VentasController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     public function generaTicket(){
         /************** */
             //$nombreImpresora = "EPSON TM-U220 Receipt";
@@ -497,6 +509,7 @@ class VentasController extends Controller
             }
             
     }
+    
     /****ENTREGAS */
     public function indexEntregas(){
         $ventas = DB::table('ventasg')
