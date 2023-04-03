@@ -101,7 +101,7 @@ class ProveedoresController extends Controller
                 $monitoreo = new Monitoreo();
                 $monitoreo -> idUsuario = $params_array['sub'] ;
                 $monitoreo -> accion =  "Alta de proveedor";
-                $monitoreo -> folioNuevo =  $idProv;
+                $monitoreo -> folioNuevo =  $idProv->idProveedor;
                 $monitoreo -> pc =  $ip;
                 $monitoreo ->save();
 
