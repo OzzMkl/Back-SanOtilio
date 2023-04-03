@@ -54,6 +54,9 @@ class ProveedoresController extends Controller
                 );
             }else{
 
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
                 //crear proveedor y asignamos valores
                 $proveedor = new Proveedores();
                 $proveedor -> rfc = $params_array['rfc'];
@@ -73,68 +76,44 @@ class ProveedoresController extends Controller
                 //guardamos el usuario
                 $proveedor->save();
 
+                //consultamos el proveedor ingresado
+                $idProv = DB::table('Proveedores')->where('idStatus',29)->orderBy('idProveedor','desc')->first();
+
+                //insertamos su Numero de cuentra del proveedor
+                $ncp = new ncp();//creamos el objeto y asignamos
+                $ncp -> idProveedor =$idProv->idProveedor;
+                $ncp -> ncuenta = $params_array['ncuenta'];
+                $ncp -> idBanco = $params_array['idBanco'];
+                $ncp -> titular = $params_array['titular'];
+                $ncp -> clabe  = $params_array['clabe'];
+                $ncp -> save();//guardamos
+
+                //insertamos su contacto
+                $contacto = new Contacto();
+                $contacto -> idProveedor = $idProv->idProveedor;
+                $contacto -> nombre = $params_array['nombreCon'];
+                $contacto -> email  = $params_array['emailCon'];
+                $contacto -> telefono = $params_array['telefonoCon'];
+                $contacto -> puesto = $params_array['puestoCon'];
+                $contacto->save();
+
+                //Insertamos movimiento en monitoreo
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario = $params_array['sub'] ;
+                $monitoreo -> accion =  "Alta de proveedor";
+                $monitoreo -> folioNuevo =  $idProv;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
+
                 $data = array(//una vez guardado mandamos mensaje de OK
                     'status'    =>  'success',
                     'code'      =>  '200',
                     'message'   =>  'El proveedor se ha creado correctamente',
-                    'proveedor' =>  $proveedor
+                    'proveedor' =>  $proveedor,
+                    'ncp' =>  $ncp,
+                    'contacto' =>  $contacto
+
                 );
-                if($data['status']== 'success'){//Comprobamos si esta OK y asignamos los datos de NCP
-                    //Consultamos al ultimo proveedor insertado y tomamos su id para asignarlo al ncp
-                    $proveedores = DB::table('Proveedores')->where('idStatus',29)->orderBy('idProveedor','desc')->first();
-                    $ncp = new ncp();//creamos el objeto y asignamos
-                    $ncp -> idProveedor =$proveedor->idProveedor;
-                    $ncp -> ncuenta = $params_array['ncuenta'];
-                    $ncp -> idBanco = $params_array['idBanco'];
-                    $ncp -> titular = $params_array['titular'];
-                    $ncp -> clabe  = $params_array['clabe'];
-                    $ncp -> save();//guardamos
-                    $data = array(//mandamos mensaje de OK
-                        'status'    =>  'success',
-                        'code'      =>  '200',
-                        'message'   =>  'El proveedor y su NCP se ha creado correctamente'
-                    );
-                    //verificamos que este OK y vemos si vienen con datos de contacto si no trae rellenamos por default en XXXX
-                    if($data['status']== 'success' && $params_array['nombreCon']=='' && $params_array['emailCon']=='' && $params_array['telefonoCon']=='' && $params_array['puestoCon']=='' ){
-                        $proveedores = DB::table('Proveedores')->where('idStatus',1)->orderBy('idProveedor','des')->first();
-                        $contacto = new Contacto();
-                        $contacto -> idProveedor = $proveedores->idProveedor;
-                        $contacto -> nombre = 'XXXXX';
-                        $contacto -> email  = 'XXXXX';
-                        $contacto -> telefono = 'XXXXX';
-                        $contacto -> puesto = 'XXXXX';
-    
-                        $contacto->save();
-                        $data = array(
-                            'status'    =>  'success',
-                            'code'      =>  '200',
-                            'message'   =>  'El proveedor y contacto se ha creado correctamente'
-                        );
-                    }else{//SI SI TRAE DATOS ASIGNAMOS LOS VALORES  REGISTRADOS
-                        $proveedores = DB::table('Proveedores')->where('idStatus',29)->orderBy('idProveedor','des')->first();
-                        $contacto = new Contacto();
-                        $contacto -> idProveedor = $proveedores->idProveedor;
-                        $contacto -> nombre = $params_array['nombreCon'];
-                        $contacto -> email  = $params_array['emailCon'];
-                        $contacto -> telefono = $params_array['telefonoCon'];
-                        $contacto -> puesto = $params_array['puestoCon'];
-
-                        $contacto->save();//GUARDAMOS Y TERMINAMOS
-                        $data = array(
-                            'status'    =>  'success',
-                            'code'      =>  '200',
-                            'message'   =>  'El proveedor y contacto se ha creado correctamente'
-                        );
-
-                    }
-                }else{
-                    $data = array(
-                        'status'    =>  'error',
-                        'code'      =>  '404',
-                        'message'   =>  'El Numero de Cuenta del proveedor no se ha registrado correctamente'
-                    ); 
-                }
-
             }
         }else{
             $data = array(
@@ -160,13 +139,17 @@ class ProveedoresController extends Controller
                  DB::raw('MAX(contactos.email) as emailCon') )
         ->where('idStatus',29)
         ->groupBy('proveedores.idProveedor')
-        ->paginate(1);
+        ->paginate(10);
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
             'proveedores'   =>  $proveedores
         ]);
     }
+
+    /**
+     * Esta funcion se utiliza para listar proveedores dentro de un select en el front
+     */
     public function ObtenerLista(){
         $provedores = DB::table('proveedores')->where('idStatus','=','29')->get();
         return response()->json([
@@ -196,34 +179,36 @@ class ProveedoresController extends Controller
             'proveedores'   =>  $proveedores
         ]);
     }
-     public function show($idProveedor){
-        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
-         //FUNCION QUE DEVULEVE LOS PROVEEDOr DE ACUERDO A SU ID
-         $proveedores = DB::table('Proveedores')
-         ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-         ->join('ncp', 'proveedores.idProveedor', '=', 'ncp.idProveedor')
-         ->join('bancos', 'ncp.idBanco','=', 'bancos.idBanco')
-         ->select('proveedores.*',
-                     'contactos.nombre as nombreCon','contactos.telefono as telefonoCon','contactos.email as emailCon','contactos.puesto as puestoCon',
-                     'ncp.ncuenta as ncuenta', 'bancos.banco as idBanco', 'ncp.titular as titular', 'ncp.clabe as clabe')
-         ->where('Proveedores.idProveedor',$idProveedor)
-         ->groupBy('proveedores.idProveedor')
-         ->get();
-         if(is_object($proveedores)){
-             $data = [
-                 'code'          => 200,
-                 'status'        => 'success',
-                 'proveedores'   =>  $proveedores
-             ];
-         }else{
-             $data = [
-                 'code'          => 400,
-                 'status'        => 'error',
-                 'message'       => 'El proveedor no existe'
-             ];
-         }
-         return response()->json($data, $data['code']);
-     }
+
+    public function show($idProveedor){
+       config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
+        //FUNCION QUE DEVULEVE LOS PROVEEDOr DE ACUERDO A SU ID
+        $proveedores = DB::table('Proveedores')
+        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
+        ->join('ncp', 'proveedores.idProveedor', '=', 'ncp.idProveedor')
+        ->join('bancos', 'ncp.idBanco','=', 'bancos.idBanco')
+        ->select('proveedores.*',
+                    'contactos.nombre as nombreCon','contactos.telefono as telefonoCon','contactos.email as emailCon','contactos.puesto as puestoCon',
+                    'ncp.ncuenta as ncuenta', 'bancos.banco as idBanco', 'ncp.titular as titular', 'ncp.clabe as clabe')
+        ->where('Proveedores.idProveedor',$idProveedor)
+        ->groupBy('proveedores.idProveedor')
+        ->get();
+        if(is_object($proveedores)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'proveedores'   =>  $proveedores
+            ];
+        }else{
+            $data = [
+                'code'          => 400,
+                'status'        => 'error',
+                'message'       => 'El proveedor no existe'
+            ];
+        }
+        return response()->json($data, $data['code']);
+    }
+
     public function provContactos($idProveedor){
         $contactos = DB::table('Contactos')
         ->where('idProveedor',$idProveedor)
@@ -234,6 +219,7 @@ class ProveedoresController extends Controller
             'contactos'   =>  $contactos
         ]);
     }
+
     public function getNCP($idProveedor){
         $ncp = DB::table('ncp')
         ->select('ncp.*','bancos.banco')
@@ -328,6 +314,7 @@ class ProveedoresController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+
     /**
      * Busca a los proveedores por su NOMBRE
      * Solo busca a los proveedores HABILITADOS
@@ -351,6 +338,7 @@ class ProveedoresController extends Controller
             'proveedores'   =>  $proveedores
         ]);
     }
+
     /**
      * Busca a los proveedores por su RFC
      * Solo busca a los proveedores HABILITADOS
@@ -374,6 +362,7 @@ class ProveedoresController extends Controller
             'proveedores'   =>  $proveedores
         ]);
     }
+
     /**
      * Busca a los proveedores por su NOMBRE
      * Solo busca a los proveedores INHABILITADOS
@@ -397,6 +386,7 @@ class ProveedoresController extends Controller
             'proveedores'   =>  $proveedores
         ]);
     }
+
     /**
      * Busca a los proveedores por su RFC
      * Solo busca a los proveedores INHABILITADOS
