@@ -245,8 +245,8 @@ class ProveedoresController extends Controller
 
             //Traemos el status del proveedor a actualizar
             $statusProv = Proveedores::find($idProveedor)->idStatus;
-            //obtenemos el nombre de la maquina
-            $pc = gethostname();
+            //obtenemos direccion ip
+            $ip = $_SERVER['REMOTE_ADDR'];
             
             switch ($statusProv) {
                 case 29:
@@ -261,7 +261,7 @@ class ProveedoresController extends Controller
                         $monitoreo -> idUsuario = $params_array['sub'] ;
                         $monitoreo -> accion =  "Actualizacion de status a deshabilitado al proveedor";
                         $monitoreo -> folioNuevo =  $idProveedor;
-                        $monitoreo -> pc =  $pc;
+                        $monitoreo -> pc =  $ip;
                         $monitoreo ->save();
 
                         //generamos respuesta del movimiento que se hizo
@@ -283,7 +283,7 @@ class ProveedoresController extends Controller
                         $monitoreo -> idUsuario = $params_array['sub'] ;
                         $monitoreo -> accion =  "Actualizacion de status a habilitado al proveedor";
                         $monitoreo -> folioNuevo =  $idProveedor;
-                        $monitoreo -> pc =  $pc;
+                        $monitoreo -> pc =  $ip;
                         $monitoreo ->save();
 
                         //generamos respuesta del movimiento que se hizo
