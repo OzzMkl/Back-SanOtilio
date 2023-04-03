@@ -222,14 +222,14 @@ class ProductoController extends Controller
                     //consultamos el ultimo producto ingresado
                     $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
 
-                    //obtenemos el nombre de la maquina
-                    $pc = gethostname();
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
                     //insertamos el movimiento realizado
                     $monitoreo = new Monitoreo();
                     $monitoreo -> idUsuario =  $params_array['sub'];
                     $monitoreo -> accion =  "Alta de producto";
                     $monitoreo -> folioNuevo =  $ultimoProducto;
-                    $monitoreo -> pc =  $pc;
+                    $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
 
                     //generamos respuesta
@@ -281,8 +281,8 @@ class ProductoController extends Controller
 
                     //obtemos el id del usuario
                     $idEmpleado = $params_array['sub'];
-                    //obtenemos el nombre de la maquina
-                    $pc = gethostname();
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
 
                     //eliminamos los datos del empleado
                     //o algo mas tecnico: eliminamos los elementos que no son arrays
@@ -332,7 +332,7 @@ class ProductoController extends Controller
                         $monitoreo -> idUsuario =  $idEmpleado;
                         $monitoreo -> accion =  "Alta de medida ".$ultimaMedida." para el producto";
                         $monitoreo -> folioNuevo =  $ultimoProducto;
-                        $monitoreo -> pc =  $pc;
+                        $monitoreo -> pc =  $ip;
                         $monitoreo ->save();
 
                     }//fin foreach
@@ -425,8 +425,8 @@ class ProductoController extends Controller
 
                 //traemos el status del producto a actualizar
                 $statusProd = Producto::find($idProducto)->statuss;
-                //obtenemos el nombre de la maquina
-                $pc = gethostname();
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
 
                 switch($statusProd){
                     case 31:
@@ -440,7 +440,7 @@ class ProductoController extends Controller
                             $monitoreo -> idUsuario = $params_array['sub'] ;
                             $monitoreo -> accion =  "Actualizacion de status a deshabilitado del producto";
                             $monitoreo -> folioNuevo =  $idProducto;
-                            $monitoreo -> pc =  $pc;
+                            $monitoreo -> pc =  $ip;
                             $monitoreo ->save();
 
                             //generamos respuesta del movimiento que se hizo
@@ -461,7 +461,7 @@ class ProductoController extends Controller
                             $monitoreo -> idUsuario = $params_array['sub'] ;
                             $monitoreo -> accion =  "Actualizacion de status a habilitado del producto";
                             $monitoreo -> folioNuevo =  $idProducto;
-                            $monitoreo -> pc =  $pc;
+                            $monitoreo -> pc =  $ip;
                             $monitoreo ->save();
 
                             //generamos respuesta del movimiento que se hizo
@@ -563,8 +563,8 @@ class ProductoController extends Controller
                     //consultamos el producto que se actualizo                                
                     $producto = Producto::where('idProducto',$params_array['idProducto'])->get();
                     
-                    //obtenemos el nombre de la maquina
-                    $pc = gethostname();
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
                     
                     //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
                      foreach($antProducto[0]['attributes'] as $clave => $valor){
@@ -577,7 +577,7 @@ class ProductoController extends Controller
                                 $monitoreo -> idUsuario =  $params_array['sub'];
                                 $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." del producto";
                                 $monitoreo -> folioNuevo =  $params_array['idProducto'];
-                                $monitoreo -> pc =  $pc;
+                                $monitoreo -> pc =  $ip;
                                 $monitoreo ->save();
                             }
                          }
@@ -587,7 +587,7 @@ class ProductoController extends Controller
                     $monitoreo -> idUsuario =  $params_array['sub'];
                     $monitoreo -> accion =  "Modificacion de producto";
                     $monitoreo -> folioNuevo =  $params_array['idProducto'];
-                    $monitoreo -> pc =  $pc;
+                    $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
                     //generamos respuesta
                     $data = array(
@@ -634,8 +634,8 @@ class ProductoController extends Controller
                 //obtemos el id del usuario
                 $idEmpleado = $params_array['sub'];
 
-                //obtenemos el nombre de la maquina
-                $pc = gethostname();
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
 
                 //eliminamos los datos del empleado
                 //o algo mas tecnico: eliminamos los elementos que no son arrays
@@ -689,7 +689,7 @@ class ProductoController extends Controller
                     $monitoreo -> idUsuario =  $idEmpleado;
                     $monitoreo -> accion =  "Alta de medida ".$ultimaMedida." para el producto";
                     $monitoreo -> folioNuevo =  $idProducto;
-                    $monitoreo -> pc =  $pc;
+                    $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
 
                 }//fin foreach
@@ -778,7 +778,7 @@ class ProductoController extends Controller
                 $monitoreo -> idUsuario =  $idEmpleado;
                 $monitoreo -> accion =  "Actualizacion de precios del producto";
                 $monitoreo -> folioNuevo =  $idProducto;
-                $monitoreo -> pc =  $pc;
+                $monitoreo -> pc =  $ip;
                 $monitoreo ->save();
 
 
