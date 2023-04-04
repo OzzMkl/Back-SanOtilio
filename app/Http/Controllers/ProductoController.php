@@ -326,6 +326,35 @@ class ProductoController extends Controller
 
                         //consulta la ultima medida ingresada
                         $ultimaMedida = Productos_medidas::latest('idProdMedida')->first()->idProdMedida;
+                        $nomMedida = DB::table('medidas')->where('idMedida',$paramdata['idMedida'])->get();
+
+                        /**hisotiroa*/
+                        $historialPM = new historialproductos_medidas();
+                        $historialPM -> idProdMedida = $ultimaMedida;
+                        $historialPM -> idProducto = $ultimoProducto;
+                        $historialPM -> idMedida = $paramdata['idMedida'];
+                        $historialPM -> nombreMedida = $nomMedida[0]->nombre;
+                        $historialPM -> unidad = $paramdata['unidad'];
+                        $historialPM -> precioCompra = $paramdata['preciocompra'];
+
+                        $historialPM -> porcentaje1 = $paramdata['porcentaje1'];
+                        $historialPM -> precio1 = $paramdata['precio1'];
+
+                        $historialPM -> porcentaje2 = $paramdata['porcentaje2'];
+                        $historialPM -> precio2 = $paramdata['precio2'];
+                        
+                        $historialPM -> porcentaje3 = $paramdata['porcentaje3'];
+                        $historialPM -> precio3 = $paramdata['precio3'];
+
+                        $historialPM -> porcentaje4 = $paramdata['porcentaje4'];
+                        $historialPM -> precio4 = $paramdata['precio4'];
+
+                        $historialPM -> porcentaje5 = $paramdata['porcentaje5'];
+                        $historialPM -> precio5 = $paramdata['precio5'];
+
+                        $historialPM -> idStatus = 31;
+                        $historialPM -> save();
+                        /** */
 
                         //insertamos el movimiento realizado
                         $monitoreo = new Monitoreo();
@@ -705,74 +734,6 @@ class ProductoController extends Controller
                 $listaPrecioArray = $actListaPrecio->toArray();
                 DB::table('historialproductos_medidas')->insert($listaPrecioArray);
 
-                // $a = array();
-                // //actualizamos precios
-                // foreach($params_array AS $param => $paramdata){
-                //     $productos_medidas = Productos_medidas::where('idProdMedida', $paramdata['idProdMedida'])->update($paramdata);//actualiza
-                //     array_push($a,$paramdata['idProdMedida']);
-                //     //si no existe se crea la nueva medida
-                //     if($paramdata['idProdMedida'] == 0){
-                //         $productos_medidas = new Productos_medidas();
-                //         $productos_medidas -> idProducto = $idProducto;
-                //         $productos_medidas -> idMedida = $paramdata['idMedida'];
-                //         $productos_medidas -> unidad = $paramdata['unidad'];
-                //         $productos_medidas -> precioCompra = $paramdata['preciocompra'];
-
-                //         $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
-                //         if($paramdata['precio1'] > 0 ){
-                //             $productos_medidas -> precio1 = $paramdata['precio1'];
-                //         }
-
-                //         $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
-                //         if($paramdata['precio2'] > 0){
-                //             $productos_medidas -> precio2 = $paramdata['precio2'];
-                //         }
-
-                //         $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
-                //         if($paramdata['precio3'] > 0){
-                //             $productos_medidas -> precio3 = $paramdata['precio3'];
-                //         }
-
-                //         $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
-                //         if($paramdata['precio4'] > 0){
-                //             $productos_medidas -> precio4 = $paramdata['precio4'];
-                //         }
-
-                //         $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
-                //         if($paramdata['precio5'] > 0){
-                //             $productos_medidas -> precio5 = $paramdata['precio5'];
-                //         }
-                //         $productos_medidas -> idStatus = 31;
-
-                //         $productos_medidas -> save();
-                //     }//fin if()
-                // }//fin foreach
-                // var_dump($a);
-                // die();
-                // $actualizaStatus = Productos_medidas::where('idProducto', 6)
-                //                                     ->whereNotIn('idProdMedida', $a)
-                //                                     ->update([
-                //                                         'idStatus' => 32
-                //                                     ]);
-                // for($i = 0; $i< count($antListaPrecio); $i++){
-                //     foreach($antListaPrecio[$i]['attributes'] as $clave => $valor){
-                //         for($i2 = 0; $i2< count($params_array); $i2++){
-                //             foreach($params_array[$i2] as $clave2 => $valor2){
-                //                 if($clave == 'idProdMedida' && $clave2 == 'idProdMedida' && $valor != $valor2){
-                //                     array_push($a,$valor);
-                //                     $productoMedida = Productos_medidas::where('idProdMedida',$valor)->update([
-                //                         'idStatus' => 32
-                //                     ]);
-                //                 } 
-                //             }
-                //         }
-                //     }
-                // }
-                // var_dump($a);
-                // die();
-
-                
-
                 //insertamos el movimiento realizado en general del producto modificado
                 $monitoreo = new Monitoreo();
                 $monitoreo -> idUsuario =  $idEmpleado;
@@ -1117,6 +1078,30 @@ class ProductoController extends Controller
         }
 
         return response()->json($data, $data['code']);
+    }
+
+    public function existencia($idProducto){
+        $producto = Producto::find($idProducto);
+        $existencia = $producto->existenciaG;
+
+        $productos_medidas = DB::table('productos_medidas')
+        ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+        ->select('productos_medidas.*','medidas.nombre as nombreMedida','productos_medidas.precioCompra as preciocompra')
+        ->where([
+            ['idStatus','=','31'],
+            ['idProducto','=',$idProducto]
+        ])
+        ->orderBy('productos_medidas.idProdMedida','asc')
+        ->get();
+
+        
+        //->get();
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $p,
+            'medidas' => $productos_medidas
+        ]);
     }
 
     
