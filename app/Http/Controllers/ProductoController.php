@@ -1081,8 +1081,8 @@ class ProductoController extends Controller
     }
 
     public function existencia($idProducto){
-        $producto = Producto::find($idProducto);
-        $existencia = $producto->existenciaG;
+        $existencia = Producto::find($idProducto)->existenciaG;
+        $medidaMenor= 1;
 
         $productos_medidas = DB::table('productos_medidas')
         ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
@@ -1094,12 +1094,14 @@ class ProductoController extends Controller
         ->orderBy('productos_medidas.idProdMedida','asc')
         ->get();
 
+        count();
+
         
         //->get();
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
-            'productos'   =>  $p,
+            'productos'   =>  $producto,
             'medidas' => $productos_medidas
         ]);
     }

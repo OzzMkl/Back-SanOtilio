@@ -81,8 +81,8 @@ class VentasController extends Controller
             }else{
                 $cotizacion = new Cotizacion();
                 $cotizacion->idCliente = $params_array['idCliente'];
-                if(isset($params_array['dirCliente'])){
-                    $cotizacion->cdireccion = $params_array['dirCliente'];
+                if(isset($params_array['cdireccion'])){
+                    $cotizacion->cdireccion = $params_array['cdireccion'];
                 }
                 $cotizacion->idEmpleado = $params_array['idEmpleado'];
                 $cotizacion->idStatus = $params_array['idStatus'];
@@ -113,7 +113,7 @@ class VentasController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    public function guardarProductosCotiza(Request $request){
+    public function guardarProductosCotiza(Request $request){   
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params_array = json_decode($json,true);//decodifiamos el json
         if(!empty($params_array)){
@@ -124,7 +124,6 @@ class VentasController extends Controller
                 $productos_cotizacion = new Productos_cotizaciones();
                 $productos_cotizacion->idCotiza = $Cotizacion->idCotiza;
                 $productos_cotizacion->idProducto = $paramdata['idProducto'];
-                //$productos_cotizacion->descripcion = $paramdata['descripcion'];
                 $productos_cotizacion->precio = $paramdata['precio'];
                 $productos_cotizacion->cantidad = $paramdata['cantidad'];
                 if(isset($paramdata['descuento'])){
@@ -173,8 +172,8 @@ class VentasController extends Controller
         ->get();
         $productosCotiza = DB::table('productos_cotizaciones')
         ->join('producto','producto.idProducto','=','productos_cotizaciones.idProducto')
-        //->join('medidas','medidas.idMedida','=','producto.idMedida')
-        ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion')
+        ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_cotizaciones.idProdMedida')
+        ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion', 'historialproductos_medidas.nombreMedida as nombreMedida')
         ->where('productos_cotizaciones.idCotiza','=',$idCotiza)
         ->get();
         if(is_object($Cotiza)){

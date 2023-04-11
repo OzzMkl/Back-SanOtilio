@@ -45,7 +45,7 @@ class OrdendecompraController extends Controller
             if($validate->fails()){//si el json esta mal mandamos esto (falta algun dato)
                 $data = array(
                     'status'    => 'error',
-                    'code'      => 404,
+                    'code'      => 404, 
                     'message'   => 'Fallo! La orden de compra no se ha creado',
                     'errors'    => $validate->errors()
                 );
@@ -164,6 +164,7 @@ class OrdendecompraController extends Controller
                 ])
         ->get();
 
+
         if(is_object($ordencompra)){
             $data = [
                 'code'          => 200,
@@ -222,6 +223,7 @@ class OrdendecompraController extends Controller
                 $Productos_orden = new Productos_ordenes();//creamos el modelo
                 $Productos_orden->idOrd = $idOrd;//asignamos el id desde el parametro que recibimos
                 $Productos_orden-> idProducto = $paramdata['idProducto'];//asginamos segun el recorrido
+                $Productos_orden-> idProdMedida = $paramdata['idProdMedida'];
                 $Productos_orden-> cantidad = $paramdata['cantidad'];
                 
                 $Productos_orden->save();//guardamos el modelo

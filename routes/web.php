@@ -78,6 +78,9 @@ Route::get('/prueba', function(){
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
     Route::put('/api/productos/updatePrecioProducto/{idProducto}', 'ProductoController@updatePrecioProducto');//actualizacion de los datos del producto
+
+
+    Route::get('/api/productos/existencia/{idProducto}', 'ProductoController@existencia');
     
     Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
     Route::get('/api/productos/getExistenciaG/{producto}', 'ProductoController@getExistenciaG');
