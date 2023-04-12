@@ -10,6 +10,6 @@ class Empresa extends Model
     protected $fillable = [
         'nombreCorto','nombreLargo','calle','numero',
         'colonia','cp','ciudad','estado','pais',
-        'telefono','rfc','correo1','correo2'
+        'telefono','telefono2','rfc','correo1','correo2'
     ];
 }

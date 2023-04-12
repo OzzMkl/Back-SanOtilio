@@ -10,6 +10,10 @@ class Proveedores extends Model
     protected $table = 'proveedores';
     protected $primaryKey = 'idProveedor';
     protected $fillable = [
-        'rfc','nombre','pais','estado','estado','ciudad','cpostal','colonia','calle','numero','telefono',
+        'rfc','nombre','pais',
+        'estado','ciudad','cpostal',
+        'colonia','calle','numero',
+        'telefono','creditoDias','creditoCantidad',
+        'idStatus'
     ];
 }

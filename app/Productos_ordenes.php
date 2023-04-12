@@ -8,6 +8,6 @@ class Productos_ordenes extends Model
 {
     protected $table = 'productos_ordenes';
     protected $fillable = [
-        'idOrd','idProducto','cantidad'
+        'idOrd','idProducto','idProdMedida','cantidad'
     ];
 }

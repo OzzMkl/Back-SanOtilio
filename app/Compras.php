@@ -13,6 +13,6 @@ class Compras extends Model
         'idOrd','idProveedor',
         'folioProveedor','subtotal',
         'total','idEmpleadoR','idStatus',
-        'fechaRecibo','observaciones'
+        'fechaRecibo','observaciones','facturable'
     ];
 }

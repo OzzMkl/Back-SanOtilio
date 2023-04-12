@@ -9,6 +9,6 @@ class impuesto extends Model
     protected $table = 'impuesto';
     protected $primaryKey = 'idImpuesto';
     protected $fillable = [
-        'nombre', 'valors'
+        'nombre', 'valor'
     ];
 }

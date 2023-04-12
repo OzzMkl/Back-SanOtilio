@@ -9,6 +9,6 @@ class OrdenDeCompra extends Model
     protected $table = 'ordendecompra';
     protected $primaryKey = 'idOrd';
     protected  $fillable = [
-        'idOrd','idProveedor','observaciones','fecha','idEmpleado','idStatus'
+        'idReq','idProveedor','observaciones','fecha','idEmpleado','idStatus'
     ];
 }

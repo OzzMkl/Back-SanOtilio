@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Productos_medidas extends Model
 {
     protected $table = 'productos_medidas';
-    protected $primaryKey = 'idProductoMedida';
+    protected $primaryKey = 'idProdMedida';
     protected $fillable = [
         'idProducto',
         'idMedida',
@@ -18,5 +18,6 @@ class Productos_medidas extends Model
         'porcentaje3','precio3',
         'porcentaje4','precio4',
         'porcentaje5','precio5',
+        'idStatus'
     ];
 }

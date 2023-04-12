@@ -9,7 +9,7 @@ class Ventasg extends Model
     protected $table = 'ventasg';
     protected $primaryKey = 'idVenta';
     protected $fillable = [
-        'idCliente','idTipoVenta','observaciones','idStatus',
+        'idCliente','idTipoVenta','cdireccion','observaciones','idStatus',
         'idEmpleado','subtotal','descuento','total' 
     ];
 }

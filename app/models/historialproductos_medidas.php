@@ -11,6 +11,7 @@ class historialproductos_medidas extends Model
         'idProductoMedida',
         'idProducto',
         'idMedida',
+        'nombreMedida',
         'unidad',
         'precioCompra',
         'porcentaje1','precio1',
@@ -18,5 +19,6 @@ class historialproductos_medidas extends Model
         'porcentaje3','precio3',
         'porcentaje4','precio4',
         'porcentaje5','precio5',
+        'idStatus'
     ];
 }

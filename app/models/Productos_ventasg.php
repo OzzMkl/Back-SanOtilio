@@ -8,7 +8,8 @@ class Productos_ventasg extends Model
 {
     protected $table = 'productos_ventasg';
     protected $fillable = [
-        'idVenta','idProducto','precio','cantidad',
-        'descripcion','descuento','subtotal'
+        'idVenta','idProducto','descripcion',
+        'idProdMedida','precio','cantidad',
+        'descuento','subtotal'
     ];
 }

@@ -9,6 +9,6 @@ class lote extends Model
     protected $table = 'lote';
     protected $primaryKey = 'idLote';
     protected $fillable = [
-        'codigo'
+        'idOrigen','codigo'
     ];
 }
