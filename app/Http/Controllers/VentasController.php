@@ -13,6 +13,7 @@ use App\models\Productos_cotizaciones;
 use App\models\Ventasg;
 use App\models\Productos_ventasg;
 use App\models\Empresa;
+use App\models\Monitoreo;
 
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
@@ -97,6 +98,19 @@ class VentasController extends Controller
 
                 $cotizacion->save();
 
+                //consultamos la cotizacion ingresada
+                $idCotiza = Cotizacion::latest('idCotiza')->first()->idCotiza;
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                //insertamos el movimiento realizado
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                $monitoreo -> accion =  "Alta de cotizacion";
+                $monitoreo -> folioNuevo =  $idCotiza;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
+
                 $data = array(
                     'status'    =>  'success',
                     'code'      =>  200,
@@ -124,6 +138,7 @@ class VentasController extends Controller
                 $productos_cotizacion = new Productos_cotizaciones();
                 $productos_cotizacion->idCotiza = $Cotizacion->idCotiza;
                 $productos_cotizacion->idProducto = $paramdata['idProducto'];
+                $productos_cotizacion->idProdMedida = $paramdata['idProdMedida'];
                 $productos_cotizacion->precio = $paramdata['precio'];
                 $productos_cotizacion->cantidad = $paramdata['cantidad'];
                 if(isset($paramdata['descuento'])){
