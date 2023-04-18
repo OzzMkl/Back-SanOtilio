@@ -190,6 +190,7 @@ class ProductoController extends Controller
             }else{
                 try{
                     DB::beginTransaction();
+                    DB::enableQueryLog();
 
                     //consultamos el ultimo producto registrado y extraemos su codigo de barras
                     $ultimoCbarras = Producto::latest('idProducto')->first()->cbarras;
@@ -239,6 +240,26 @@ class ProductoController extends Controller
                         'message'   =>  'El producto se a guardado correctamente',
                         'producto'  =>  $producto
                     );
+
+
+
+                    /******GUARDACONSULTA */
+                    $file = fopen('queries.txt', 'a');
+                    fwrite($file, "--REGISTRA PRODUCTO" . ";\n");
+                    $queries = \DB::getQueryLog();
+                    foreach($queries as $query) {
+                        $bindings = $query['bindings'];
+                        $sql = $query['query'];
+                        foreach($bindings as $binding) {
+                            $value = is_numeric($binding) ? $binding : "'".$binding."'";
+                            $sql = preg_replace('/\?/', $value, $sql, 1);
+                        }
+                        fwrite($file, $sql . ";\n");
+                    }
+                    fclose($file);
+                    /****** */
+
+
                     DB::commit();
                 } catch (\Exception $e){
                     DB::rollBack();
@@ -276,6 +297,7 @@ class ProductoController extends Controller
         if(!empty($params_array)){
             try{
                 DB::beginTransaction();
+                DB::enableQueryLog();
                     //consultamos el ultimo ingresado para obtener su id
                     $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
 
@@ -372,6 +394,23 @@ class ProductoController extends Controller
                          'message' => 'Precios registrados correctamente',
                          'productos_medidas' => $productos_medidas
                      );
+
+
+                     /******GUARDACONSULTA */
+                    $file = fopen('queries.txt', 'a');
+                    fwrite($file, "--REGISTRA PRECIOS PRODUCTO" . ";\n");
+                    $queries = \DB::getQueryLog();
+                    foreach($queries as $query) {
+                        $bindings = $query['bindings'];
+                        $sql = $query['query'];
+                        foreach($bindings as $binding) {
+                            $value = is_numeric($binding) ? $binding : "'".$binding."'";
+                            $sql = preg_replace('/\?/', $value, $sql, 1);
+                        }
+                        fwrite($file, $sql . ";\n");
+                    }
+                    fclose($file);
+                    /****** */
                 
                 DB::commit();
             } catch(\Exception $e){
@@ -570,6 +609,7 @@ class ProductoController extends Controller
             }else{
                 try{
                     DB::beginTransaction();
+                    DB::enableQueryLog();
                     //consultamos el producto antes de actualizarlo
                     $antProducto= Producto::where('idProducto',$params_array['idProducto'])->get();
                     //actualizamos
@@ -625,6 +665,22 @@ class ProductoController extends Controller
                         'message'   =>  'El producto se a guardado correctamente',
                         'producto'  =>  $producto
                     );
+
+                    /******GUARDACONSULTA */
+                    $file = fopen('queries.txt', 'a');
+                    fwrite($file, "--MODIFICACION DE PRODUCTO" . ";\n");
+                    $queries = \DB::getQueryLog();
+                    foreach($queries as $query) {
+                        $bindings = $query['bindings'];
+                        $sql = $query['query'];
+                        foreach($bindings as $binding) {
+                            $value = is_numeric($binding) ? $binding : "'".$binding."'";
+                            $sql = preg_replace('/\?/', $value, $sql, 1);
+                        }
+                        fwrite($file, $sql . ";\n");
+                    }
+                    fclose($file);
+                    /****** */
                     DB::commit();
                 }catch (\Exception $e){
                     DB::rollBack();
@@ -659,7 +715,7 @@ class ProductoController extends Controller
         if(!empty($params_array)){
             try{
                 DB::beginTransaction();
-
+                DB::enableQueryLog();
                 //obtemos el id del usuario
                 $idEmpleado = $params_array['sub'];
 
@@ -749,6 +805,22 @@ class ProductoController extends Controller
                     'message' => 'Precios actualizados correctamente',
                     'productos_medidas' => $productos_medidas
                 );
+
+                /******GUARDACONSULTA */
+                $file = fopen('queries.txt', 'a');
+                fwrite($file, "--MODIFICACION DE PRECIOS PRODUCTO" . ";\n");
+                $queries = \DB::getQueryLog();
+                foreach($queries as $query) {
+                    $bindings = $query['bindings'];
+                    $sql = $query['query'];
+                    foreach($bindings as $binding) {
+                        $value = is_numeric($binding) ? $binding : "'".$binding."'";
+                        $sql = preg_replace('/\?/', $value, $sql, 1);
+                    }
+                    fwrite($file, $sql . ";\n");
+                }
+                fclose($file);
+                /****** */
                 DB::commit();
             } catch(\Exception $e){
                 DB::rollback();
