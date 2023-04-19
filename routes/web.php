@@ -129,6 +129,7 @@ Route::get('/prueba', function(){
     Route::post('/api/compra/registerLista','CompraController@registerProductosCompra');
     Route::post('/api/compra/registerLote','CompraController@registerLote');
     Route::post('/api/compra/updateExistencia','CompraController@updateExistencia');
+    Route::post('/api/compra/updateExistenciaFacturable','CompraController@updateExistenciaFacturable');
     Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
     Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
     Route::get('/api/compra/index','CompraController@index');
@@ -137,6 +138,7 @@ Route::get('/prueba', function(){
     Route::get('/api/compra/searchNombreProveedor/{nombreProveedor}','CompraController@searchNombreProveedor');
     Route::get('/api/compra/searchFolioProveedor/{folioProveedor}','CompraController@searchFolioProveedor');
     Route::get('/api/compra/searchTotal/{total}','CompraController@searchTotal');
+
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
     Route::get('/api/clientes/indexTipocliente','ClienteController@indexTipocliente');

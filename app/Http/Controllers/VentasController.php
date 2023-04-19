@@ -48,6 +48,7 @@ class VentasController extends Controller
         DB::raw("CONCAT(cliente.nombre,' ',cliente.Apaterno,' ',cliente.Amaterno) as nombreCliente"),
         DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
         'statuss.nombre as nombreStatus')
+        ->orderBy('cotizaciones.idCotiza','desc')
         ->get();
         return response()->json([
             'code'          => 200,
@@ -282,6 +283,7 @@ class VentasController extends Controller
                  DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                  DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
         ->where('ventasg.idStatus',3)
+        ->orderBy('ventasg.idVenta','desc')
         ->get();
         return response()->json([
             'code'      => 200,
@@ -392,16 +394,19 @@ class VentasController extends Controller
             $ventasg = Ventasg::latest('idVenta')->first();
             //recorremos la lista de productos
             foreach($params_array as $param => $paramdata){
+
                 $productos_ventasg = new Productos_ventasg();
-                $productos_ventasg->idVenta = $ventasg->idVenta;
+                $productos_ventasg-> idVenta = $ventasg->idVenta;
                 $productos_ventasg-> idProducto = $paramdata['idProducto'];
                 $productos_ventasg-> descripcion = $paramdata['descripcion'];
+                $productos_ventasg-> idProdMedida = $paramdata['idProdMedida'];
                 $productos_ventasg-> cantidad = $paramdata['cantidad'];
                 $productos_ventasg-> precio = $paramdata['precio'];
                 if(isset($paramdata['descuento'])){
                     $productos_ventasg-> descuento = $paramdata['descuento'];
                 }
                 $productos_ventasg-> total = $paramdata['subtotal'];
+                $productos_ventasg-> igualMedidaMenor = $paramdata['igualMedidaMenor'];
                 //guardamos el producto
                 $productos_ventasg->save();
                 //Si todo es correcto mandamos el ultimo producto insertado

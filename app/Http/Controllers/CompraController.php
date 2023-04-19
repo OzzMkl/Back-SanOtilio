@@ -15,7 +15,9 @@ use App\Producto;
 use App\lote;
 use App\Pelote;
 use App\models\moviproduc;
+use App\models\Moviproducfacturables;
 use App\models\Monitoreo;
+use App\models\Productos_facturables;
 
 
 class CompraController extends Controller
@@ -77,6 +79,8 @@ class CompraController extends Controller
                     if(isset($params_array['idOrd'])){
                         $Compra->idOrd = $params_array['idOrd'];
                     }
+                    $Compra->facturable = $params_array['facturable'];                    
+
 
                     $Compra->save();
                     
@@ -142,6 +146,7 @@ class CompraController extends Controller
                            $Productos_compra-> idProdMedida = $paramdata['idProdMedida'];
                            $Productos_compra-> cantidad = $paramdata['cantidad'];
                            $Productos_compra-> precio = $paramdata['precio'];
+                           $Productos_compra-> subtotal = $paramdata['subtotal'];
                            if( $paramdata['idImpuesto'] == 0 || $paramdata['idImpuesto'] == null){
                                $Productos_compra-> idImpuesto = 3;
                            }else{
@@ -168,7 +173,7 @@ class CompraController extends Controller
     }
 
     public function registerLote(){
-        $Compra = Compras::latest('idCompra')->first();
+        //$Compra = Compras::latest('idCompra')->first();
 
         //idLote -> idCompra
         //idOrigen -> 3
@@ -176,11 +181,11 @@ class CompraController extends Controller
 
         
 
-        return response()->json([
-            'code'         =>  200,
-            'status'       => 'success',
-            'Lote'   => $Compra
-        ]);
+        // return response()->json([
+        //     'code'         =>  200,
+        //     'status'       => 'success',
+        //     'Lote'   => $Compra
+        // ]);
     }
 
     /**
@@ -213,6 +218,180 @@ class CompraController extends Controller
                     $stockanterior = Producto::find($paramdata['idProducto'])->existenciaG;
                     //Buscamos el producto a actualizar y actualizamos
                     $Producto = Producto::find($paramdata['idProducto']);
+                    
+                    /**
+                     * CONVERSION A MEDIDA MENOR
+                     * 
+                     * lugar - count
+                     *   [0] - 1
+                     *   [1] - 2
+                     *   [2] - 3
+                     *   [3] - 4
+                     *   [4] - 5
+                     * 
+                     * Variables para almacenar los datos recibidos
+                     * Consulta para saber cuantas medidas tiene un producto
+                     * Consulta para obtener la lista de productos_medidas de un producto
+                     * Verificar si el producto tiene una sola medida
+                     * Si tiene una sola medida agrega directo la existencia ( count == 1 )
+                     * Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
+                     * Se hace un cilo que recorre listaPM
+                     * Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
+                     * Medida mas alta, multiplicar desde el principio ( lugar == 0)
+                     * Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
+                     *  
+                     */
+                    //Variables para almacenar los datos recibidos
+                    $idProductoC = $paramdata['idProducto'];
+                    $idProdMedidaC = $paramdata['idProdMedida'];
+                    $cantidadC = $paramdata['cantidad'];
+                    //Variables para el calculo
+                    $igualMedidaMenor = 0;
+                    $lugar = 0; 
+                    //Consulta para saber cuantas medidas tiene un producto
+                    $count = Productos_medidas::where([
+                                                        ['productos_medidas.idProducto','=',$paramdata['idProducto']],
+                                                        ['productos_medidas.idStatus','=','31']
+                                                      ])->count();
+                    //Consulta para obtener la lista de productos_medidas de un producto
+                    $listaPM = Productos_medidas::where([
+                                                            ['productos_medidas.idProducto','=',$paramdata['idProducto']],
+                                                            ['productos_medidas.idStatus','=','31']
+                                                        ])->get();
+                    //var_dump($count);
+                    //var_dump($listaPM);
+                    //Verificar si el producto tiene una sola medida
+                    if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
+                        $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                    }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
+                        //Se hace un cilo que recorre listaPM
+                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
+                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                            //echo $lugar;
+                            $lugar++;
+                        }
+                        if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
+                            $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                        }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
+                            $igualMedidaMenor = $cantidadC;
+                            while($lugar < $count ){
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $lugar++;
+                                //echo $igualMedidaMenor;
+                            }
+                            $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
+                        }elseif($lugar>0 && $lugar<$count-1){//Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
+                            $igualMedidaMenor = $cantidadC;
+                            $count--;
+                            //echo $count;
+                            while($lugar < $count ){
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $lugar++;
+                            }
+                            $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
+                        }else{
+
+                        }
+                    }
+                    
+
+                    
+
+                    
+                    $Producto->save();//guardamos el modelo
+
+                    //obtenemos la existencia del producto actualizado
+                    $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+
+                    //insertamos el movimiento de existencia del producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $paramdata['claveEx'];
+                    $moviproduc -> accion =  "Alta de compra";
+                    $moviproduc -> folioAccion =  $Foliocompra;
+                    $moviproduc -> cantidad =  $paramdata['cantidad'];
+                    $moviproduc -> stockanterior =  $stockanterior;
+                    $moviproduc -> stockactualizado =  $stockactualizado;
+                    $moviproduc -> idUsuario =  $idUsuario;
+                    $moviproduc -> pc =  $ip;
+                    $moviproduc ->save();
+
+                    //Si todo es correcto mandamos el ultimo producto insertado y el movimiento
+                    $data =  array(
+                        'status'        => 'success',
+                        'code'          =>  200,
+                        'Producto'      =>  $Producto,
+                        'Movimiento'    =>  $moviproduc,
+                        'count'         =>  $count,
+                        'listaPM'       =>  $listaPM
+                    );
+                }
+                DB::commit();
+            } catch(\Exception $e){
+                DB::rollBack();
+                $data = array(
+                    'code'      => 400,
+                    'status'    => 'Error',
+                    'message'   =>  'Fallo algo',
+                    'messageError' => $e -> getMessage(),
+                    'error' => $e
+                );
+            }
+
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
+
+    public function updateExistenciaFacturable(Request $request){
+        //recogemos los datos enviados por post en formato json
+        $json = $request -> input('json',null);
+        //decodifiamos el json
+        $params_array = json_decode($json,true);
+
+        //revisamos que no venga vacio
+        if(!empty($params_array)){
+            try{//comenzamos transaccion
+                DB::beginTransaction();
+
+                //Obtenemos de la ultima compra el idCompra, idOrden y IdEmpleadoRecibe
+                $Foliocompra = Compras::latest('idCompra')->first()->idCompra; 
+                $idUsuario = Compras::latest('idCompra')->first()->idEmpleadoR;
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                //Recorremos el array para asignar todos los productos
+                //Actualizar Producto -> ExistenciaG
+                foreach($params_array AS $param => $paramdata){
+                    $Producto = Productos_facturables::find($paramdata['idProducto']);
+                    if(!is_object($Producto)){
+                        $Productos_facturables = new Productos_facturables();
+                        $Productos_facturables -> idProducto =  $paramdata['idProducto'];
+                        $Productos_facturables -> existenciaG = 0;
+                        $Productos_facturables ->save();
+
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario =  $idUsuario;
+                        $monitoreo -> accion =  "Alta de producto ".$paramdata['idProducto']." como facturable";
+                        $monitoreo -> folioNuevo =  $Foliocompra;
+                        $monitoreo -> pc =  $ip;
+                        $monitoreo ->save();
+
+                    }else{
+
+                    }
+
+                
+                    //antes de actualizar el producto obtenemos su existencia-
+                    $stockanterior = Productos_facturables::find($paramdata['idProducto'])->existenciaG;
+                    //Buscamos el producto a actualizar y actualizamos
+                    $Producto = Productos_facturables::find($paramdata['idProducto']);
                     
                     /**
                      * CONVERSION A MEDIDA MENOR
