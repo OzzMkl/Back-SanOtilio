@@ -1153,28 +1153,72 @@ class ProductoController extends Controller
     }
 
     public function existencia($idProducto){
-        $existencia = Producto::find($idProducto)->existenciaG;
+        $producto = Producto::find($idProducto);
+        $existencia = $producto->existenciaG; 
         $medidaMenor= 1;
+        $lugar = 0;
+
+        //Consulta para saber cuantas medidas tiene un producto
+        $count = Productos_medidas::where([
+            ['productos_medidas.idProducto','=',$idProducto],
+            ['productos_medidas.idStatus','=','31']
+            ])->count();
 
         $productos_medidas = DB::table('productos_medidas')
-        ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
-        ->select('productos_medidas.*','medidas.nombre as nombreMedida','productos_medidas.precioCompra as preciocompra')
-        ->where([
-            ['idStatus','=','31'],
-            ['idProducto','=',$idProducto]
-        ])
-        ->orderBy('productos_medidas.idProdMedida','asc')
-        ->get();
+            ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+            ->select('productos_medidas.*','medidas.nombre as nombreMedida','productos_medidas.precioCompra as preciocompra')
+            ->where([
+                ['idStatus','=','31'],
+                ['idProducto','=',$idProducto]
+            ])
+            ->orderBy('productos_medidas.idProdMedida','asc')
+            ->get();
 
-        count();
+        $existencia_por_med = array();
+
+        if($count == 1){
+            foreach ($productos_medidas as $producto_medida) {
+                $existencia_por_med[$producto_medida->nombreMedida] = $existencia;
+            }
+        } else{
+            //obtenemos la medida menor
+            foreach ($productos_medidas as $producto_medida) {
+                $medidaMenor = $producto_medida->unidad * $medidaMenor;
+            }
+
+            while($lugar < $count){
+
+    
+                $calculaE = intval($existencia / $medidaMenor);
+                $existencia_por_med[$productos_medidas[$lugar]->nombreMedida] = $calculaE;
+                $existencia = $existencia % $medidaMenor;
+
+                if($lugar+1 < $count){
+                    $medidaMenor = $medidaMenor / $productos_medidas[$lugar+1]->unidad;
+                    echo $medidaMenor;
+                } else{
+                    $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
+                }
+                
+
+                $lugar++;
+                
+            }
+
+            
+            //$existencia_por_med = array("nombre_medida" => 0);
+        }
+
 
         
         //->get();
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
-            'productos'   =>  $producto,
-            'medidas' => $productos_medidas
+            'count'        => $count,
+            'Producto_cl'   => $producto->claveEx,
+            //'medidas' => $productos_medidas,
+            'exis' => $existencia_por_med
         ]);
     }
 
