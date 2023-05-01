@@ -140,26 +140,94 @@ class CompraController extends Controller
                $Compra = Compras::latest('idCompra')->first();//la guardamos en compra
                //recorremos el array para asignar todos los productos
                foreach($params_array AS $param => $paramdata){
-                           $Productos_compra = new Productos_compra();//creamos el modelo
-                           $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idCompra para todos los productos
-                           $Productos_compra-> idProducto = $paramdata['idProducto'];
-                           $Productos_compra-> idProdMedida = $paramdata['idProdMedida'];
-                           $Productos_compra-> cantidad = $paramdata['cantidad'];
-                           $Productos_compra-> precio = $paramdata['precio'];
-                           $Productos_compra-> subtotal = $paramdata['subtotal'];
-                           if( $paramdata['idImpuesto'] == 0 || $paramdata['idImpuesto'] == null){
-                               $Productos_compra-> idImpuesto = 3;
-                           }else{
-                            $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
-                           }
-                           
-                           $Productos_compra->save();//guardamos el modelo
-                           //Si todo es correcto mandamos el ultimo producto insertado
-                           $data =  array(
-                               'status'        => 'success',
-                               'code'          =>  200,
-                               'Productos_compra'       =>  $Productos_compra
-                           );
+
+                    $Productos_compra = new Productos_compra();//creamos el modelo
+                    $Productos_compra->idCompra = $Compra -> idCompra;//asignamos el ultimo idCompra para todos los productos
+                    $Productos_compra-> idProducto = $paramdata['idProducto'];
+                    $Productos_compra-> idProdMedida = $paramdata['idProdMedida'];
+                    $Productos_compra-> cantidad = $paramdata['cantidad'];
+                    $Productos_compra-> precio = $paramdata['precio'];
+                    $Productos_compra-> subtotal = $paramdata['subtotal'];
+                    if( $paramdata['idImpuesto'] == 0 || $paramdata['idImpuesto'] == null){
+                        $Productos_compra-> idImpuesto = 3;
+                    }else{
+                        $Productos_compra-> idImpuesto = $paramdata['idImpuesto'];
+                    }
+
+                    $stockanterior = 0;
+                    $idProductoC = $paramdata['idProducto'];
+                    $idProdMedidaC = $paramdata['idProdMedida'];
+                    $cantidadC = $paramdata['cantidad'];
+                    $igualMedidaMenor = 0;
+                    $lugar = 0; 
+
+                    //Consulta para saber cuantas medidas tiene un producto
+                    $count = Productos_medidas::where([
+                        ['productos_medidas.idProducto','=',$paramdata['idProducto']],
+                        ['productos_medidas.idStatus','=','31']
+                      ])->count();
+                    //Consulta para obtener la lista de productos_medidas de un producto
+                    $listaPM = Productos_medidas::where([
+                            ['productos_medidas.idProducto','=',$paramdata['idProducto']],
+                            ['productos_medidas.idStatus','=','31']
+                        ])->get();
+
+                    if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
+                        $Productos_compra-> igualMedidaMenor = $cantidadC;
+                    }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
+                        //Se hace un cilo que recorre listaPM
+                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
+                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                            //echo $lugar;
+                            $lugar++;
+                        }
+                        if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
+                            $Productos_compra-> igualMedidaMenor = $cantidadC;
+                        }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
+                            $igualMedidaMenor = $cantidadC;
+                            while($lugar < $count ){
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $lugar++;
+                                //echo $igualMedidaMenor;
+                            }
+                            $Productos_compra-> igualMedidaMenor = $igualMedidaMenor;
+                        }elseif($lugar>0 && $lugar<$count-1){//Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
+                            $igualMedidaMenor = $cantidadC;
+                            $count--;
+                            //echo $count;
+                            while($lugar < $count ){
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $lugar++;
+                            }
+                            $Productos_compra-> igualMedidaMenor = $igualMedidaMenor;
+                        }else{
+
+                        }
+                    }
+
+
+                    $Productos_compra->save();//guardamos el modelo
+
+                    //insertamos el movimiento de existencia del producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $paramdata['claveEx'];
+                    $moviproduc -> accion =  "Alta de compra";
+                    $moviproduc -> folioAccion =  $Foliocompra;
+                    $moviproduc -> cantidad =  $igualMedidaMenor;
+                    $moviproduc -> stockanterior =  $stockanterior;
+                    $moviproduc -> stockactualizado =  $stockactualizado;
+                    $moviproduc -> idUsuario =  $idUsuario;
+                    $moviproduc -> pc =  $ip;
+                    $moviproduc ->save();
+
+
+                    //Si todo es correcto mandamos el ultimo producto insertado
+                    $data =  array(
+                        'status'        => 'success',
+                        'code'          =>  200,
+                        'Productos_compra'       =>  $Productos_compra
+                            );
                }
         }else{
            //Si el array esta vacio o mal echo mandamos mensaje de error
@@ -263,6 +331,7 @@ class CompraController extends Controller
                     //Verificar si el producto tiene una sola medida
                     if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
                         $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                        $igualMedidaMenor = $cantidadC;
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
                         while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
@@ -271,7 +340,8 @@ class CompraController extends Controller
                             $lugar++;
                         }
                         if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
-                            $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                            $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC; 
+                            $igualMedidaMenor = $cantidadC;
                         }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                             $igualMedidaMenor = $cantidadC;
                             while($lugar < $count ){
@@ -309,7 +379,7 @@ class CompraController extends Controller
                     $moviproduc -> claveEx =  $paramdata['claveEx'];
                     $moviproduc -> accion =  "Alta de compra";
                     $moviproduc -> folioAccion =  $Foliocompra;
-                    $moviproduc -> cantidad =  $paramdata['cantidad'];
+                    $moviproduc -> cantidad =  $igualMedidaMenor;
                     $moviproduc -> stockanterior =  $stockanterior;
                     $moviproduc -> stockactualizado =  $stockactualizado;
                     $moviproduc -> idUsuario =  $idUsuario;
@@ -437,6 +507,7 @@ class CompraController extends Controller
                     //Verificar si el producto tiene una sola medida
                     if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
                         $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                        $igualMedidaMenor = $Producto -> existenciaG + $cantidadC;
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
                         while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
@@ -446,6 +517,7 @@ class CompraController extends Controller
                         }
                         if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
                             $Producto -> existenciaG = $Producto -> existenciaG + $cantidadC;
+                            $igualMedidaMenor = $Producto -> existenciaG + $cantidadC;
                         }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                             $igualMedidaMenor = $cantidadC;
                             while($lugar < $count ){
@@ -475,20 +547,20 @@ class CompraController extends Controller
                     $Producto->save();//guardamos el modelo
 
                     //obtenemos la existencia del producto actualizado
-                    $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+                    $stockactualizado = Productos_facturables::find($paramdata['idProducto'])->existenciaG;
 
                     //insertamos el movimiento de existencia del producto
-                    $moviproduc = new moviproduc();
-                    $moviproduc -> idProducto =  $paramdata['idProducto'];
-                    $moviproduc -> claveEx =  $paramdata['claveEx'];
-                    $moviproduc -> accion =  "Alta de compra";
-                    $moviproduc -> folioAccion =  $Foliocompra;
-                    $moviproduc -> cantidad =  $paramdata['cantidad'];
-                    $moviproduc -> stockanterior =  $stockanterior;
-                    $moviproduc -> stockactualizado =  $stockactualizado;
-                    $moviproduc -> idUsuario =  $idUsuario;
-                    $moviproduc -> pc =  $ip;
-                    $moviproduc ->save();
+                    $Moviproducfacturables = new Moviproducfacturables();
+                    $Moviproducfacturables -> idProducto =  $paramdata['idProducto'];
+                    $Moviproducfacturables -> claveEx =  $paramdata['claveEx'];
+                    $Moviproducfacturables -> accion =  "Alta de compra";
+                    $Moviproducfacturables -> folioAccion =  $Foliocompra;
+                    $Moviproducfacturables -> cantidad =  $igualMedidaMenor;
+                    $Moviproducfacturables -> stockanterior =  $stockanterior;
+                    $Moviproducfacturables -> stockactualizado =  $stockactualizado;
+                    $Moviproducfacturables -> idUsuario =  $idUsuario;
+                    $Moviproducfacturables -> pc =  $ip;
+                    $Moviproducfacturables ->save();
 
                     //Si todo es correcto mandamos el ultimo producto insertado y el movimiento
                     $data =  array(

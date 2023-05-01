@@ -872,6 +872,7 @@ class ProductoController extends Controller
         $medidaMenor= 1;
         $lugar = 0;
         $existencia_por_med = array();
+        $existencia_por_med2 = array();
         foreach($producto as $p){
             $existencia = $p->existenciaG;
         }
@@ -884,8 +885,10 @@ class ProductoController extends Controller
         //Si el producto contiene una sola medida se asigna direcamente la existencia
         if($count == 1){
             foreach ($productos_medidas as $producto_medida) {
-                $existencia_por_med[$producto_medida->nombreMedida] = $existencia;
+                $existencia_por_med['nombreMedida'] = $producto_medida->nombreMedida;
+                $existencia_por_med['exisCal'] = $existencia;
             }
+            $existencia_por_med2[$lugar] = $existencia_por_med;
             //sino
         } else{
             //obtenemos la medida menor multiplicando todas las unidades de las medidas
@@ -897,21 +900,24 @@ class ProductoController extends Controller
             while($lugar < $count){
 
                 //calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                //y asignamos solo el valor entero, tampoco se redondea
-                $calculaE = intval($existencia / $medidaMenor);
-                //asignamos al array el nomnre de la medida y su existencia
-                $existencia_por_med[$productos_medidas[$lugar]->nombreMedida] = $calculaE;
-                //reasignamos la existencia el residuo
-                $existencia = $existencia % $medidaMenor;
+                    //y asignamos solo el valor entero, tampoco se redondea
+                    $calculaE = intval($existencia / $medidaMenor);
+                    //asignamos al array el nomnre de la medida y su existencia
+                    $existencia_por_med['nombreMedida'] = $productos_medidas[$lugar]->nombreMedida;
+                    $existencia_por_med['exisCal'] = $calculaE;
 
-                //verificamos si contiene mas medidas para dividirlos entre la unidad
-                if($lugar+1 < $count){
-                    $medidaMenor = $medidaMenor / $productos_medidas[$lugar+1]->unidad;
-                } else{
-                    $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
-                }
-                
-                $lugar++;
+                    $existencia_por_med2[$lugar] = $existencia_por_med;
+                    //reasignamos la existencia el residuo
+                    $existencia = $existencia % $medidaMenor;
+
+                    //verificamos si contiene mas medidas para dividirlos entre la unidad
+                    if($lugar+1 < $count){
+                        $medidaMenor = $medidaMenor / $productos_medidas[$lugar+1]->unidad;
+                    } else{
+                        $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
+                    }
+                    
+                    $lugar++;
             }
 
             
@@ -926,7 +932,7 @@ class ProductoController extends Controller
                 'status'        => 'success',
                 'producto'   =>  $producto,
                 'productos_medidas'   =>  $productos_medidas,
-                'existencia_por_med' => $existencia_por_med
+                'existencia_por_med' => $existencia_por_med2
             ];
         }else{
             $data = [
