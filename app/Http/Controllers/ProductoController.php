@@ -45,7 +45,10 @@ class ProductoController extends Controller
     public function indexPV(){
         $productos = DB::table('producto')
         ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion','producto.existenciaG','marca.nombre as nombreMarca')
+        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+        ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion',
+                    'producto.existenciaG','marca.nombre as nombreMarca',
+                    'departamentos.nombre as nombreDep')
         ->where('statuss',31)
         ->paginate(10);
         return response()->json([
