@@ -42,6 +42,19 @@ class VentasController extends Controller
         ]);
     }
 
+    /**
+     * TIPO VENTA
+     */
+    public function indexTipoVenta(){
+        $tipo_venta = DB::table('tiposdeventas')
+                        ->get();
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success',
+                    'tipo_venta' => $tipo_venta
+                ]);
+    }
+
     /****** COTIZACIONES *****/
     public function indexCotiza(){
         $Cotizaciones = DB::table('cotizaciones')
@@ -559,12 +572,26 @@ class VentasController extends Controller
             );
         }
         if($data['status'] == 'success'){
-            $this-> generaTicket();
+            // var_dump($params_array);
+            // die();
+            if($ventasg->idTipoVenta == 1 || $ventasg->idTipoVenta == 2 || $ventasg->idTipoVenta == 3){
+                if($ventasg->total >= 1000 || count($params_array) > 7){
+                    $this-> generaTicketPeque();
+                } else{
+                    if($ventasg->idTipoVenta == 3){
+                        $this-> generaTicket($NoImpre=4);
+                    } else{
+                        $this-> generaTicket($NoImpre=3);
+                    }
+                }
+            } elseif($ventasg->idTipoVenta == 4 || $ventasg->idTipoVenta == 5 || $ventasg->idTipoVenta == 6){
+                $this-> generaTicketPeque();
+            }
         }
         return response()->json($data, $data['code']);
     }
 
-    public function generaTicket(){
+    public function generaTicket($NoImpre){
         /************** */
             //$nombreImpresora = "EPSON TM-U220 Receipt";
             //$profile = CapabilityProfile::load("simple");
@@ -599,7 +626,7 @@ class VentasController extends Controller
                             ->latest('idImpresora')
                             ->first();
             
-            for($i = 1; $i<=1; $i++){
+            for($i = 1; $i<= $NoImpre ; $i++){
                 //declaramos el nombre de la impresora
                 //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
                 $connector = new WindowsPrintConnector("smb://".$datos_imp->usuario.":".$datos_imp->contrasena."@".$datos_imp->nombreMaquina."/".$datos_imp->nombreImpresora."");
@@ -672,6 +699,57 @@ class VentasController extends Controller
                 /************** */
             }
             
+    }
+
+    public function generaTicketPeque(){
+
+        //informacion de la venta
+        $ventasg = DB::table('ventasg')
+                    ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
+                    ->select('ventasg.idVenta',
+                            'ventasg.subtotal',
+                            'ventasg.descuento',
+                            'ventasg.total',
+                            'ventasg.observaciones',
+                            'ventasg.created_at',
+                            'tiposdeventas.nombre as nombreVenta')
+                    ->latest('idVenta')
+                    ->first();
+
+        //obtenemos direccion ip
+        $ip = $_SERVER['REMOTE_ADDR'];
+        
+        //Informacion de impresoras
+        $datos_imp = Impresoras::where('ipVentas','=',$ip)
+                            ->latest('idImpresora')
+                            ->first();
+        //declaramos el nombre de la impresora
+        //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
+        $connector = new WindowsPrintConnector("smb://".$datos_imp->usuario.":".$datos_imp->contrasena."@".$datos_imp->nombreMaquina."/".$datos_imp->nombreImpresora."");
+        //$connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
+        //asociamos la impresora
+        $impresora = new Printer($connector);
+        //ajustamos tamaño del texto
+        $impresora->setTextSize(1, 1);
+        //escribimos     Folio venta: ####
+        $impresora->text( "Folio venta: ".$ventasg->idVenta."\n");
+        //Escribimos     Tipo venta: Paga, se lo lleva etc ...
+        $impresora->text( "Tipo venta: ".$ventasg->nombreVenta."\n");
+        //fecha y hora
+        $impresora->text("Fecha: ".$ventasg->created_at. "\n");
+        $impresora->text("========================================\n");
+        $impresora->text("Subtotal:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
+        $impresora->text("Descuento:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
+        $impresora->setJustification(Printer::JUSTIFY_RIGHT);
+        $impresora->text("                   ---------- \n");
+        $impresora->setJustification(Printer::JUSTIFY_LEFT);
+        $impresora->text("Total:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
+        $impresora->text("----------------------------------------\n");
+        $impresora->text("Observaciones: \n");
+        $impresora->text($ventasg->observaciones."\n");
+        $impresora->text("\n");
+        $impresora->cut();
+        $impresora->close();
     }
     
     /****ENTREGAS */
