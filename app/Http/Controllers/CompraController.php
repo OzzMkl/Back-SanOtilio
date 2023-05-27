@@ -28,7 +28,7 @@ class CompraController extends Controller
         ->join('ordendecompra','ordendecompra.idOrden','=','compra.idOrden')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
         ->join('empleado','empleado.idEmpleadoR','=','empleado.idEmpleado')
-        ->select('compra.*','proveedores.nombre as nombreProveedor',)
+        ->select('compra.*','proveedores.nombre as nombreProveedor','desc')
         ->get();
         return response()->json([
            'code'         =>  200,
@@ -743,6 +743,109 @@ class CompraController extends Controller
         ]);
 
     }
+
+    public function updateCompra(Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        if(!empty($params_array)){
+            //eliminar espacios vacios
+            $params_array = array_map('trim', $params_array);
+            //Validacion de datos
+            $validate = Validator::make($params_array, [
+                'idCompra'          => 'required',
+                'idOrd'          => 'required',
+                'idProveedor'    => 'required',
+                'folioProveedor' => 'required',
+                'subtotal'       => 'required',
+                'total'          => 'required',
+                'idEmpleadoR'    => 'required',
+                'idStatus'       => 'required',
+                'fechaRecibo'    => 'required',
+                'observaciones'  => 'required',
+                'facturable'     => 'required'
+            ]);
+            if($validate->fails()){
+                $data = array(
+                    'status'    =>  'error',
+                    'code'      =>  '404',
+                    'message_system'   =>  'Fallo la validacion de los datos de la compra',
+                    'message_validation' => $validate->getMessage(),
+                    'errors'    =>  $validate->errors()
+                );
+            }else{
+                try{
+                    DB::beginTransaction();
+                    DB::enableQueryLog();
+
+                    //Compraracion de datos para saber que cambios se realizaron
+                    $antCompra = Compra::where('idCompra',$params_array['idCompra'])->get();
+
+                    //quitamos lo que no queremos actualizar
+                    $idCompra = $params_array['idCompra'];
+                    unset($params_array['idCompra']);
+                    unset($params_array['idOrden']);
+                    unset($params_array['created_at']);
+                    //actualizamos
+                    $Compra = Compra::where('idCompra',$idCompra)->update($params_array);
+                        //retornamos la respuesta si esta
+                        return response()->json([
+                            'status'    =>  'success',
+                            'code'      =>  200,
+                            'message'   =>  'Compra actualizada'
+                        ]);
+                    
+                    //consultamos la compra que se actualizo                                
+                    $compra = Compra::where('idCompra',$params_array['idCompra'])->get();
+                    
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+                    
+                    //insertamos el movimiento que se hizo
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario = $params_array['sub'] ;
+                    $monitoreo -> accion =  "Actualizacion de status a deshabilitado del producto";
+                    $monitoreo -> folioNuevo =  $idProducto;
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
+
+                    
+                    
+                    /****** */
+                    DB::commit();
+                }catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
+            }
+
+
+
+
+        }else{
+            return response()->json([
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            ]);   
+        }
+        
+    }
+
+    public function updateProductosCompra (Request $request){
+
+    }
+
+    public function alterExistencia (Request $request){
+
+    }
+
+
+
 
 
 
