@@ -164,14 +164,14 @@ Route::get('/prueba', function(){
     Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
     Route::post('/api/ventas/guardarProductosVenta','VentasController@guardarProductosVenta');
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
-                //cotizaciones
-    Route::get('/api/cotizaciones/indexCotizaciones','VentasController@indexCotiza');
-    Route::post('/api/cotizaciones/guardarCotizacion','VentasController@guardarCotizacion');
-    Route::post('/api/cotizaciones/guardarProductosCotiza','VentasController@guardarProductosCotiza');
-    Route::get('/api/cotizaciones/consultaUltimaCotiza','VentasController@consultaUltimaCotiza');
-    Route::get('/api/cotizaciones/detallesCotizacion/{idCotiza}','VentasController@detallesCotizacion');
-    Route::put('/api/cotizaciones/actualizaCotizacion/{idCotiza}','VentasController@actualizaCotizacion');
-    Route::put('/api/cotizaciones/actualizaProductosCotizacion/{idCotiza}','VentasController@actualizaProductosCotiza');
+    /*****cotizaciones*/
+    Route::get('/api/cotizaciones/indexCotizaciones','cotizacionesController@indexCotiza');
+    Route::post('/api/cotizaciones/guardarCotizacion','cotizacionesController@guardarCotizacion');
+    Route::post('/api/cotizaciones/guardarProductosCotiza','cotizacionesController@guardarProductosCotiza');
+    Route::get('/api/cotizaciones/consultaUltimaCotiza','cotizacionesController@consultaUltimaCotiza');
+    Route::get('/api/cotizaciones/detallesCotizacion/{idCotiza}','cotizacionesController@detallesCotizacion');
+    Route::put('/api/cotizaciones/actualizaCotizacion/{idCotiza}','cotizacionesController@actualizaCotizacion');
+    Route::put('/api/cotizaciones/actualizaProductosCotizacion/{idCotiza}','cotizacionesController@actualizaProductosCotiza');
     /*******EMPRESA */
     Route::get('/api/empresa/index','EmpresaController@index');
     /*******CAJAS */
