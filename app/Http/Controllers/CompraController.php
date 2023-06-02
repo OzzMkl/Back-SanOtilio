@@ -28,6 +28,7 @@ class CompraController extends Controller
         ->join('ordendecompra','ordendecompra.idOrden','=','compra.idOrden')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
         ->join('empleado','empleado.idEmpleadoR','=','empleado.idEmpleado')
+
         ->select('compra.*','proveedores.nombre as nombreProveedor','desc')
         ->get();
         return response()->json([
@@ -208,19 +209,7 @@ class CompraController extends Controller
 
                     $Productos_compra->save();//guardamos el modelo
 
-                    //insertamos el movimiento de existencia del producto
-                    $moviproduc = new moviproduc();
-                    $moviproduc -> idProducto =  $paramdata['idProducto'];
-                    $moviproduc -> claveEx =  $paramdata['claveEx'];
-                    $moviproduc -> accion =  "Alta de compra";
-                    $moviproduc -> folioAccion =  $Foliocompra;
-                    $moviproduc -> cantidad =  $igualMedidaMenor;
-                    $moviproduc -> stockanterior =  $stockanterior;
-                    $moviproduc -> stockactualizado =  $stockactualizado;
-                    $moviproduc -> idUsuario =  $idUsuario;
-                    $moviproduc -> pc =  $ip;
-                    $moviproduc ->save();
-
+                    //Aqui no se guarda en monitoreo o movimiento de producto por que ese procedimiento se realiza en el metodo updateExistencia
 
                     //Si todo es correcto mandamos el ultimo producto insertado
                     $data =  array(
@@ -650,6 +639,7 @@ class CompraController extends Controller
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                     DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
         ->where('compra.idStatus','=',28)
+        ->orwhere('compra.idStatus','=',33)
         ->orderBy('compra.idCompra','desc')
         ->paginate(10);
 
@@ -749,10 +739,10 @@ class CompraController extends Controller
         $params_array = json_decode($json, true);
         if(!empty($params_array)){
             //eliminar espacios vacios
-            $params_array = array_map('trim', $params_array);
+            //$params_array = array_map('trim', $params_array);
             //Validacion de datos
             $validate = Validator::make($params_array, [
-                'idCompra'          => 'required',
+                'idCompra'       => 'required',
                 'idOrd'          => 'required',
                 'idProveedor'    => 'required',
                 'folioProveedor' => 'required',
@@ -762,14 +752,15 @@ class CompraController extends Controller
                 'idStatus'       => 'required',
                 'fechaRecibo'    => 'required',
                 'observaciones'  => 'required',
-                'facturable'     => 'required'
+                'facturable'     => 'required',
+                'sub'            => 'required'
             ]);
             if($validate->fails()){
                 $data = array(
                     'status'    =>  'error',
                     'code'      =>  '404',
                     'message_system'   =>  'Fallo la validacion de los datos de la compra',
-                    'message_validation' => $validate->getMessage(),
+                    //'message_validation' => $validate->getMessage(),
                     'errors'    =>  $validate->errors()
                 );
             }else{
@@ -778,33 +769,50 @@ class CompraController extends Controller
                     DB::enableQueryLog();
 
                     //Compraracion de datos para saber que cambios se realizaron
-                    $antCompra = Compra::where('idCompra',$params_array['idCompra'])->get();
+                    $antCompra = Compras::where('idCompra',$params_array['idCompra'])->get();
 
-                    //quitamos lo que no queremos actualizar
-                    $idCompra = $params_array['idCompra'];
-                    unset($params_array['idCompra']);
-                    unset($params_array['idOrden']);
-                    unset($params_array['created_at']);
                     //actualizamos
-                    $Compra = Compra::where('idCompra',$idCompra)->update($params_array);
-                        //retornamos la respuesta si esta
-                        return response()->json([
-                            'status'    =>  'success',
-                            'code'      =>  200,
-                            'message'   =>  'Compra actualizada'
-                        ]);
+                    $Compra = Compras::where('idCompra',$params_array['idCompra'])->update([
+                        'idProveedor'    => $params_array['idProveedor'],
+                        'folioProveedor' => $params_array['folioProveedor'],
+                        'subtotal'       => $params_array['subtotal'],
+                        'total'          => $params_array['total'],
+                        'idEmpleadoR'    => $params_array['idEmpleadoR'],
+                        'idStatus'       => $params_array['idStatus'],
+                        'fechaRecibo'    => $params_array['fechaRecibo'],
+                        'observaciones'  => $params_array['observaciones'],
+                        'facturable'     => $params_array['facturable']
+                    ]);
                     
                     //consultamos la compra que se actualizo                                
-                    $compra = Compra::where('idCompra',$params_array['idCompra'])->get();
+                    $compra = Compras::where('idCompra',$params_array['idCompra'])->get();
                     
                     //obtenemos direccion ip
                     $ip = $_SERVER['REMOTE_ADDR'];
                     
+                    //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
+                    foreach($antCompra[0]['attributes'] as $clave => $valor){
+                        foreach($compra[0]['attributes'] as $clave2 => $valor2){
+                           //verificamos que la clave sea igua ejem: claveEx == claveEx
+                           // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                           if($clave == $clave2 && $valor !=  $valor2){
+                               //insertamos el movimiento realizado
+                               $monitoreo = new Monitoreo();
+                               $monitoreo -> idUsuario =  $params_array['sub'];
+                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la compra";
+                               $monitoreo -> folioNuevo =  $params_array['idCompra'];
+                               $monitoreo -> pc =  $ip;
+                               $monitoreo ->save();
+                           }
+                        }
+                    }
+
+
                     //insertamos el movimiento que se hizo
                     $monitoreo = new Monitoreo();
                     $monitoreo -> idUsuario = $params_array['sub'] ;
-                    $monitoreo -> accion =  "Actualizacion de status a deshabilitado del producto";
-                    $monitoreo -> folioNuevo =  $idProducto;
+                    $monitoreo -> accion =  "Modificacion de compra";
+                    $monitoreo -> folioNuevo =  $params_array['idCompra'];
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
 
