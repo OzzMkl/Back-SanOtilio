@@ -596,33 +596,34 @@ class CompraController extends Controller
 
     public function showMejorado($idCompra){
         $compra = DB::table('compra')
-        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
-        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
-        ->select('compra.*','proveedores.idProveedor','proveedores.nombre','proveedores.rfc','proveedores.telefono', 
-                    DB::raw("CONCAT(proveedores.pais,' ',proveedores.estado,' ',proveedores.ciudad,' ',proveedores.colonia,' ',proveedores.calle,' ',proveedores.numero) as provDireccion"),
-                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
-                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
-        ->where('compra.idCompra','=',$idCompra)
-        ->get();
+            ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+            ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+            ->select('compra.*','proveedores.idProveedor','proveedores.nombre','proveedores.rfc','proveedores.telefono', 
+                        DB::raw("CONCAT(proveedores.pais,' ',proveedores.estado,' ',proveedores.ciudad,' ',proveedores.colonia,' ',proveedores.calle,' ',proveedores.numero) as provDireccion"),
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                        DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+            ->where('compra.idCompra','=',$idCompra)
+            ->get();
         $productosCompra = DB::table('productos_compra')
-        ->join('producto','producto.idProducto','=','productos_compra.idProducto')
-        ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_compra.idProdMedida')
-        ->join('impuesto','impuesto.idImpuesto','=','productos_compra.idImpuesto')
-        ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','historialproductos_medidas.nombreMedida as nombreMedida','impuesto.nombre as nombreImpuesto','impuesto.valor as valorImpuesto')
-        ->where('productos_compra.idCompra','=',$idCompra)
-        ->get();
+            ->join('producto','producto.idProducto','=','productos_compra.idProducto')
+            ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_compra.idProdMedida')
+            ->join('impuesto','impuesto.idImpuesto','=','productos_compra.idImpuesto')
+            ->select('productos_compra.*','producto.claveEx as claveexterna','producto.descripcion as descripcion','historialproductos_medidas.nombreMedida as nombreMedida','impuesto.nombre as nombreImpuesto','impuesto.valor as valorImpuesto')
+            ->where('productos_compra.idCompra','=',$idCompra)
+            ->get();         
+        
+
         if(is_object($compra)){
             $data = [
-                'code'          => 200,
-                'status'        => 'success',
-                'compra'   =>  $compra,
-                'productos'     => $productosCompra
+                'code'         => 200,
+                'status'       => 'success',
+                'compra'       => $compra
             ];
         }else{
             $data = [
                 'code'          => 400,
                 'status'        => 'error',
-                'message'       => 'El producto no existe'
+                'message'       => 'La compra no existe'
             ];
         }
         return response()->json($data, $data['code']);
@@ -850,6 +851,34 @@ class CompraController extends Controller
 
     public function alterExistencia (Request $request){
 
+    }
+
+    public function checkUpdates($idCompra){
+        $modificacion = DB::table('monitoreo')
+            ->join('empleado','empleado.idEmpleado','=','monitoreo.idUsuario')
+            ->select('monitoreo.*',
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+            ->where([
+                        ['monitoreo.accion','like','%compra%'],
+                        ['monitoreo.folioNuevo','=',$idCompra]
+                    ])
+            ->get();
+        
+        if(is_object($modificacion)){
+                $data = [
+                    'code'         => 200,
+                    'status'       => 'success',
+                    'modificacion' => $modificacion
+                    
+                ];
+        }else{
+                $data = [
+                    'code'          => 400,
+                    'status'        => 'error',
+                    'message'       => 'La compra no ha sido modificada'
+                ];
+        }
+        return response()->json($data, $data['code']);
     }
 
 

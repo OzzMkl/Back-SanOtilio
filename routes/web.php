@@ -141,6 +141,7 @@ Route::get('/prueba', function(){
     Route::get('/api/compra/searchNombreProveedor/{nombreProveedor}','CompraController@searchNombreProveedor');
     Route::get('/api/compra/searchFolioProveedor/{folioProveedor}','CompraController@searchFolioProveedor');
     Route::get('/api/compra/searchTotal/{total}','CompraController@searchTotal');
+    Route::get('/api/compra/checkUpdates/{idCompra}','CompraController@checkUpdates');
 
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
