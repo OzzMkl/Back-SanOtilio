@@ -142,7 +142,7 @@ class cotizacionesController extends Controller
     }
 
     public function consultaUltimaCotiza(){
-        $Cotiza = Cotizacion::latest('idCotiza')->first();
+        $Cotiza = Cotizacion::latest('idCotiza')->pluck('idCotiza')->first();
         return response()->json([
             'code'          => 200,
             'status'        => 'success',
@@ -252,7 +252,6 @@ class cotizacionesController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    /***EJEMPLO PDF */
     public function generatePDF($idCotiza){
 
         $Empresa = Empresa::first();
@@ -460,5 +459,5 @@ class cotizacionesController extends Controller
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
     }
-    /***EJEMPLO PDF */
+
 }
