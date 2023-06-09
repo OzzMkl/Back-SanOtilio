@@ -187,31 +187,110 @@ class cotizacionesController extends Controller
     public function actualizaCotizacion($idCotiza, Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
+
         if(!empty($params_array)){
             //eliminar espacios vacios
             $params_array = array_map('trim', $params_array);
-            //quitamos lo que no queremos actualizar o no son necesarios
-            unset($params_array['idCotiza']);
-            unset($params_array['idVenta']);
-            unset($params_array['fecha']);
-            unset($params_array['idTipoVenta']);
-            unset($params_array['nombreCliente']);
-            unset($params_array['created_at']);
-            //actualizamos
-            $Cotizacion = Cotizacion ::where('idCotiza',$idCotiza)->update($params_array);
-                //retornamos la respuesta si esta
-                 return response()->json([
-                    'status'    =>  'success',
-                    'code'      =>  200,
-                    'message'   =>  'Cotizacion actualizada'
-                 ]);
-        }else{
-            return response()->json([
-                'code'      => 400,
-                'status'    => 'error',
-                'message'   => 'Algo salio mal, favor de revisar'
+            
+
+            $validate = Validator::make($params_array,[
+                'idCotiza'      =>  'required',
+                'idCliente'     =>  'required',
+                'idEmpleado'    =>  'required',
+                'idStatus'      =>  'required',
+                'subtotal'      =>  'required',
+                'descuento'      =>  'required',
+                'total'         =>  'required'
             ]);
+
+            //si falla creamos la respuesta a enviar
+            if($validate->fails()){
+                $data = array(
+                    'status'    =>  'error',
+                    'code'      =>  '404',
+                    'message_system'   =>  'Fallo la validacion de los datos del producto',
+                    'message_validation' => $validate->getMessage(),
+                    'errors'    =>  $validate->errors()
+                );
+            } else{
+                try{
+                    DB::beginTransaction();
+
+                    //consultamos cotizacion antes de actualizar
+                    $antCotiza = Cotizacion::where('idCotiza',$idCotiza)->first();
+
+                    //actualizamos
+                    $cotizacion = Cotizacion::where('idCotiza', $idCotiza)->update([
+                        'idCliente'     => $params_array['idCliente'],
+                        'cdireccion'    => $params_array['cdireccion'],
+                        'idEmpleado'    => $params_array['idEmpleado'],
+                        'idStatus'      => $params_array['idStatus'],
+                        'observaciones' => $params_array['observaciones'],
+                        'subtotal'      => $params_array['subtotal'],
+                        'descuento'     => $params_array['descuento'],
+                        'total'         => $params_array['total'],
+
+                    ]);
+
+                    //consultamos la cotizacion actualizada
+                    $newCotiza = Cotizacion::where('idCotiza',$idCotiza)->first();
+
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+
+                    //insertamos el movimiento realizado en general de la cotizacion modificada
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                    $monitoreo -> accion =  "Modificacion de cotizacion";
+                    $monitoreo -> folioNuevo =  $params_array['idCotiza'];
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
+
+                    //Verificamos los cambios que se realizaron para insertar el antes y el despues
+                    foreach($antCotiza->getAttributes() as $clave => $valor){
+                        foreach($newCotiza->getAttributes() as $clave2 => $valor2){
+                            //verifica,os que la clave sea igual
+                            //y que los valores sean diferentes para guardar el movimiento
+                            if($clave == $clave2 && $valor != $valor2){
+                                //insertamos el movimiento realizado
+                                $monitoreo = new Monitoreo();
+                                $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                                $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de cotizacion";
+                                $monitoreo -> folioNuevo =  $params_array['idCotiza'];
+                                $monitoreo -> pc =  $ip;
+                                $monitoreo ->save();
+                            }
+
+                        }
+                    }
+
+                    //generemos respuesta
+                    $data = array(
+                        'code'          =>  200,
+                        'status'        =>  'success',
+                        'message'       =>  'Cotizacion modificada correctamente',
+                        'cotizacion'    => $newCotiza
+                    );
+
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
+            }
+        } else{
+            $data = array(
+                'code'      =>  400,
+                'status'    =>  'error',
+                'message'   =>  'Los valores ingresado no se recibieron correctamente'
+            );
         }
+        return response()->json($data,$data['code']);
     }
 
     public function actualizaProductosCotiza($idCotiza, Request $req){

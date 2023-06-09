@@ -38,8 +38,8 @@ class ProductoController extends Controller
     }
 
     /**
-     * REVISAR
-     * Trae la informacion de los productos para el modulo de punto de venta
+     * Funciona para los productos del modulo de punto de venta
+     * Cotizaciones
      * 
      */
     public function indexPV(){
@@ -445,6 +445,7 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
+    
     /**
      * CONSULTA MAL ECHA REVISAR EL WHERE
      */
