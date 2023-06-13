@@ -115,6 +115,11 @@ Route::get('/prueba', function(){
     /***********IMPUESTO */
     Route::get('/api/impuesto/index','ImpuestoController@index');
     Route::get('/api/impuesto/show/{idImpuesto}','ImpuestoController@show');//sacar impuesto por id
+    /***********Requisicion */
+    Route::post('/api/requisicion/register','RequisicionController@registerRequisicion');
+    Route::get('/api/requisicion/index','RequisicionController@index');
+
+
     /***********Orden de compra */
     Route::post('/api/ordendecompra/register','OrdendecompraController@registerOrdencompra');
     Route::post('/api/ordendecompra/registerLista','OrdendecompraController@registerProductosOrden');
