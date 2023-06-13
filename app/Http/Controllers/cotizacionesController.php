@@ -294,38 +294,76 @@ class cotizacionesController extends Controller
     }
 
     public function actualizaProductosCotiza($idCotiza, Request $req){
-        $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
-        $params_array = json_decode($json,true);//decodifiamos el json
+        //recogemos los datos enviados por post en formato json
+        $json = $req -> input('json',null);
+        //decodifiamos el json
+        $params_array = json_decode($json,true);
+        
         if(!empty($params_array)){
-            //eliminamos los registros que tengab ese idOrd
-            Productos_cotizaciones::where('idCotiza',$idCotiza)->delete();
-            //recorremos el array para asignar todos los productos
-            foreach($params_array as $param => $paramdata){
-                $productos_cotizacion = new Productos_cotizaciones();
-                $productos_cotizacion->idCotiza = $idCotiza;
-                $productos_cotizacion->idProducto = $paramdata['idProducto'];
-                //$productos_cotizacion->descripcion = $paramdata['descripcion'];
-                $productos_cotizacion->precio = $paramdata['precio'];
-                $productos_cotizacion->cantidad = $paramdata['cantidad'];
-                if(isset($paramdata['descuento'])){
-                    $productos_cotizacion->descuento = $paramdata['descuento'];
+            try{
+                DB::beginTransaction();
+                
+                //Obtenemos el id del empleado que genero/modifico la cotizacion
+                $idEmpleado = Cotizacion::where('idCotiza','=',$idCotiza)->pluck('idEmpleado')->first();
+
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+                
+                //eliminamos los registros que tengab ese idOrd
+                Productos_cotizaciones::where('idCotiza',$idCotiza)->delete();
+
+                //recorremos el array para asignar todos los productos
+                foreach($params_array as $param => $paramdata){
+
+                    $productos_cotizacion = new Productos_cotizaciones();
+                    $productos_cotizacion->idCotiza = $idCotiza;
+                    $productos_cotizacion->idProducto = $paramdata['idProducto'];
+                    $productos_cotizacion->idProdMedida = $paramdata['idProdMedida'];
+                    $productos_cotizacion->precio = $paramdata['precio'];
+                    $productos_cotizacion->cantidad = $paramdata['cantidad'];
+                    if(isset($paramdata['descuento'])){
+                        $productos_cotizacion->descuento = $paramdata['descuento'];
+                    }
+                    $productos_cotizacion->subtotal = $paramdata['subtotal'];
+
+                    //guardamos el producto
+                    $productos_cotizacion->save();
+                    
                 }
-                $productos_cotizacion->subtotal = $paramdata['subtotal'];
-                //guardamos el producto
-                $productos_cotizacion->save();
+
+                //insertamos el movimiento realizado
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario =  $idEmpleado;
+                $monitoreo -> accion =  "Modificacion de productos en cotizacion";
+                $monitoreo -> folioNuevo =  $idCotiza;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
+
                 //Si todo es correcto mandamos el ultimo producto insertado
                 $data =  array(
-                    'status'        => 'success',
                     'code'          =>  200,
-                    'Productos_cotizacion'       =>  $productos_cotizacion
+                    'status'        => 'success',
+                    'Productos_cotizacion'       =>  $params_array
+                );
+                DB::commit();
+
+            } catch(\Exception $e){
+                DB::rollback();
+                $data = array(
+                    'code' => 400,
+                    'status' => 'error',
+                    'message_system' => 'Algo salio mal rollback',
+                    'messsage' => $e->getMessage(),
+                    'errors' => $e
                 );
             }
-        }else{
+
+        } else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
             $data =  array(
+                'code'          =>  400,
                 'status'        => 'error',
-                'code'          =>  404,
-                'message'       =>  'Los datos enviados no son correctos'
+                'message'       =>  'Los datos enviados son incorrectos'
             );
         }
         return response()->json($data, $data['code']);
