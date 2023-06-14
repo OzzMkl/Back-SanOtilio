@@ -432,7 +432,7 @@ class cotizacionesController extends Controller
             $pdf->Line(10,37,200,37);//X1,Y1,X2,Y2
 
             $pdf->SetLineWidth(5);//grosor de la linea
-            $pdf->Line(10,43,55,43);//X1,Y1,X2,Y2
+            $pdf->Line(10,43,58,43);//X1,Y1,X2,Y2
 
             $pdf->SetFont('helvetica', 'B', 12); // Establece la fuente
             $pdf->setXY(10,38);

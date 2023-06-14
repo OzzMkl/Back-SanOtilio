@@ -981,15 +981,62 @@ class ProductoController extends Controller
     /**
      * Trae la existencia del producto
      */
-    public function getExistenciaG($idProducto){
-        $producto = DB::table('producto')
-        ->select('idProducto','existenciaG')
-        ->where('idProducto',$idProducto)
-        ->get();
+    public function getExistenciaG($idProducto, $idProdMedida, $cantidad){
+        
+        //obtenemos existencia del producto
+        $existencia = Producto::where('idProducto', '=', $idProducto)->pluck('existenciaG')->first();
+
+        $listaPM = Productos_medidas::where('idProducto','=',$idProducto)->select('idProdMedida','unidad')->get();
+
+        $count = count($listaPM);
+
+        $igualMedidaMenor = 0;
+        $lugar = 0; 
+
+        /**INICIAMOS CONVERSION */
+        //verificamos si el producto tiene una medida
+        if($count == 1){
+            $igualMedidaMenor = $cantidad;
+        } else{ //Desoues de dos medidas buscamos la posicion de la meida en la que se ingreso
+            //Recorremos la lista de  productos medidas (listaPM)
+            while( $idProdMedida != $listaPM[$lugar]['attributes']['idProdMedida'] ){
+                $lugar++;
+            }
+            if($lugar == $count-1){ //Si la medida a buscar es la mas baja se deja igual
+                $igualMedidaMenor = $cantidad;
+
+            } elseif($lugar == 0){//Medida mas alta
+                $igualMedidaMenor = $cantidad;
+                while($lugar < $count){
+                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                    $lugar++;
+                }
+            } elseif($lugar > 0 && $lugar < $count-1){//medida intermedias
+                $igualMedidaMenor = $cantidad;
+                $count--;
+                while($lugar < $count){
+                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                    $lugar++;
+                }
+            }
+        }
+        /*****FIN CONVECION */
+
+        //Ahora verificamos que la cantidad solicita esta disponible
+        if($existencia > $igualMedidaMenor){
+            $disponible = true;
+        } else{
+            $disponible = false;
+        }
+
+
+        //obtenemos las medidas
         return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'producto'   =>  $producto
+            'code'              =>  200,
+            'status'            => 'success',
+            'existencia'        =>  $existencia,
+            'igualMedidaMenor'  => $igualMedidaMenor,
+            'disponibilidad'    => $disponible
         ]);
     }
     
