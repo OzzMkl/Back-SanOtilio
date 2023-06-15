@@ -83,7 +83,7 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/existencia/{idProducto}', 'ProductoController@existencia');
     
     Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
-    Route::get('/api/productos/getExistenciaG/{producto}', 'ProductoController@getExistenciaG');
+    Route::get('/api/productos/getExistenciaG/{idProducto}/{idProdMedida}/{cantidad}', 'ProductoController@getExistenciaG');
     Route::get('/api/productos/searchClaveExterna/{claveex}', 'ProductoController@searchClaveEx');//buscar por clave externa productos con status 1
     Route::get('/api/productos/searchCodbar/{codbar}', 'ProductoController@searchCodbar');//buscar por codigo de barras productos con status 1
     Route::get('/api/productos/searchDescripcion/{descripcion}', 'ProductoController@searchDescripcion');//buscar por descripcion productos con status 1
@@ -117,7 +117,11 @@ Route::get('/prueba', function(){
     Route::get('/api/impuesto/show/{idImpuesto}','ImpuestoController@show');//sacar impuesto por id
     /***********Requisicion */
     Route::post('/api/requisicion/register','RequisicionController@registerRequisicion');
+    Route::post('/api/requisicion/registerLista','RequisicionController@registerProductosRequisicion');
     Route::get('/api/requisicion/index','RequisicionController@index');
+    Route::get('/api/requisicion/getLastReq','RequisicionController@getLastReq');
+    Route::get('/api/requisicion/showMejorado/{idReq}','RequisicionController@showMejorado');
+
 
 
     /***********Orden de compra */

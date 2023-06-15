@@ -66,19 +66,7 @@ class OrdendecompraController extends Controller
                         'code'      =>  200,
                         'message'   =>  'Orden creada pero sin productos'
                     );
-
-                    //   $Productos_orden = new Productos_ordenes();
-                    //   $Productos_orden->idOrd = $Ordencompra -> idOrd;
-                    //   $Productos_orden-> idProducto = $params_array['idProducto'];
-                    //   $Productos_orden-> cantidad = $params_array['cantidad'];
-
-                    //   $Productos_orden->save();
-
-                    //   $data = array(
-                    //       'status'    =>  'success',
-                    //       'code'      =>  200,
-                    //       'message'   =>  'Orden creada y lista de productos tambien!'
-                    //   );
+                    
                     DB::commit();
 
                 } catch(\Exception $e){
