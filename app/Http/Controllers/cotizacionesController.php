@@ -489,8 +489,8 @@ class cotizacionesController extends Controller
             $pdf->Cell(32,10,'CLAVE EXTERNA',1,0,'C',true);
             $pdf->Cell(76, 10, 'DESCRIPCION', 1,0,'C',true);
             $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
-            $pdf->Cell(15, 10, 'PRECIO', 1,0,'C',true);
             $pdf->Cell(15, 10, 'CANT.', 1,0,'C',true);
+            $pdf->Cell(15, 10, 'PRECIO', 1,0,'C',true);
             $pdf->Cell(16, 10, 'DESC.', 1,0,'C',true);
             $pdf->Cell(20, 10, 'SUBTOTAL', 1,0,'C',true);
             $pdf->Ln(); // Nueva línea3
@@ -508,6 +508,7 @@ class cotizacionesController extends Controller
                  *  un múltiplo del número de registros por página y se necesita agregar una nueva página.
                  */
                 if( $contRegistros > 0 && $contRegistros % $RegistroPorPagina == 0){
+                    
                     $pdf->AddPage();
                     $pdf->SetTextColor(255, 255, 255);
                     $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
@@ -515,8 +516,8 @@ class cotizacionesController extends Controller
                     $pdf->Cell(32,10,'CLAVE EXTERNA',1,0,'C',true);
                     $pdf->Cell(76, 10, 'DESCRIPCION', 1,0,'C',true);
                     $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
-                    $pdf->Cell(15, 10, 'PRECIO', 1,0,'C',true);
                     $pdf->Cell(15, 10, 'CANT.', 1,0,'C',true);
+                    $pdf->Cell(15, 10, 'PRECIO', 1,0,'C',true);
                     $pdf->Cell(16, 10, 'DESC.', 1,0,'C',true);
                     $pdf->Cell(20, 10, 'SUBTOTAL', 1,0,'C',true);
                     $pdf->Ln(); // Nueva línea
@@ -527,16 +528,30 @@ class cotizacionesController extends Controller
                     $pdf->MultiCell(32,10,$prodC->claveEx,1,'C',false,0);
                     $pdf->MultiCell(76,10,$prodC->descripcion,1,'C',false,0);
                     $pdf->MultiCell(16,10,$prodC->nombreMedida,1,'C',false,0);
-                    $pdf->MultiCell(15,10,'$'. $prodC->precio,1,'C',false,0);
                     $pdf->MultiCell(15,10,$prodC->cantidad,1,'C',false,0);
+                    $pdf->MultiCell(15,10,'$'. $prodC->precio,1,'C',false,0);
                     $pdf->MultiCell(16,10,'$'. $prodC->descuento,1,'C',false,0);
                     $pdf->MultiCell(20,10,'$'. $prodC->subtotal,1,'C',false,0);
                     $pdf->Ln(); // Nueva línea
 
+                    if($contRegistros == 18){
+                        $RegistroPorPagina = 25;
+                        $contRegistros = $contRegistros + 7;
+                    }
+
                     $contRegistros++;
             }
 
+            // if($contRegistros % $RegistroPorPagina == 0){
+            //     $pdf->AddPage();
+            // }
+
             $posY= $pdf->getY();
+
+            if($posY > 241){
+                $pdf->AddPage();
+                $posY = 0;
+            }
 
             $pdf->setXY(145,$posY+10);
             $pdf->Cell(0,10,'SUBTOTAL:          $'. $Cotiza->subtotal,0,1,'L',false);
