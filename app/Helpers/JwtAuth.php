@@ -27,12 +27,12 @@ class JwtAuth{
             'contrasena' => $password
         ])->first();
         //traemos los permisos
-        // $permissions = Permisos::where([
-        //     'idRol' => $user->idRol
-        // ])->get();
+        $permissions = Permisos::where([
+                'idRol' => $user->idRol
+            ])->get();
         //comprobar si son correctas
         $signup = false;
-        if(is_object($user)){
+        if(is_object($user) && is_object($permissions)){
             $signup= true;
         }
 
@@ -45,7 +45,7 @@ class JwtAuth{
                 'apellido'  =>  $user->aPaterno,
                 'amaterno'  =>  $user->aMaterno,
                 'idRol'     =>  $user->idRol,
-                // 'permisos'  =>  $permissions,
+                'permisos'  =>  $permissions,
                 'iat'       =>  time(),
                 'exp'       =>  time() + (7*24*60*60)//durara una semana
 
