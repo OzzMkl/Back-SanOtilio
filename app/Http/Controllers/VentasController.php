@@ -60,9 +60,11 @@ class VentasController extends Controller
         $ventas = DB::table('ventasg')
         ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
         ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+        ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
         ->select('ventasg.*',
                  DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
-                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                 'tiposdeventas.nombre as nombreTipoventa')
         ->where('ventasg.idStatus',16)
         ->orderBy('ventasg.idVenta','desc')
         ->get();
