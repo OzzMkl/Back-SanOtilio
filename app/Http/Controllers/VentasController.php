@@ -136,28 +136,77 @@ class VentasController extends Controller
                     'errors'    => $validate->errors()
                 );
             }else{
-                $ventasg = new Ventasg();
-                $ventasg->idCliente = $params_array['idCliente'];
-                $ventasg->idTipoVenta = $params_array['idTipoVenta'];
-                $ventasg->observaciones = $params_array['observaciones'];
-                $ventasg->idStatus = 16;
-                $ventasg->idEmpleado = $params_array['idEmpleado'];
-                $ventasg->subtotal = $params_array['subtotal'];
-                if(isset($params_array['descuento'])){
-                    $ventasg->descuento = $params_array['descuento'];
-                }
-                if(isset($params_array['cdireccion'])){
-                    $ventasg->cdireccion = $params_array['cdireccion'];
-                }
-                $ventasg->total = $params_array['total'];
+                try{
+                    DB::beginTransaction();
 
-                $ventasg->save();
+                    $ventasg = new Ventasg();
+                    $ventasg->idCliente = $params_array['idCliente'];
+                    $ventasg->idTipoVenta = $params_array['idTipoVenta'];
+                    $ventasg->observaciones = $params_array['observaciones'];
+                    $ventasg->idStatus = 16;
+                    $ventasg->idEmpleado = $params_array['idEmpleado'];
+                    $ventasg->subtotal = $params_array['subtotal'];
+                    if(isset($params_array['descuento'])){
+                        $ventasg->descuento = $params_array['descuento'];
+                    }
+                    if(isset($params_array['cdireccion'])){
+                        $ventasg->cdireccion = $params_array['cdireccion'];
+                    }
+                    $ventasg->total = $params_array['total'];
+    
+                    $ventasg->save();
 
-                $data = array(
-                    'status'    =>  'success',
-                    'code'      =>  200,
-                    'message'   =>  'Venta creada pero sin productos'
-                );
+                    //obtemos id de la ultima venta insertada
+                    $ultimaVenta = Ventasg::latest('idVenta')->pluck('idVenta')->first();
+                    //obtenemos ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+
+                    /****   
+                     * Verificamos si la venta viene de alguna cotizacion 
+                     * Si es que si asignamos status de deshabilitado
+                     * ****/
+                    if($params_array['idCotiza'] != 1){
+                        $cotizacion =  Cotizacion::where('idCotiza',$params_array['idCotiza'])
+                                                    ->update([
+                                                        'idStatus' => 35
+                                                    ]);
+                        //insertamos el movimiento realizado
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                        $monitoreo -> accion =  "Cotizacion pasada a venta";
+                        $monitoreo -> folioAnterior =  $params_array['idCotiza'];
+                        $monitoreo -> folioNuevo =  $ultimaVenta;
+                        $monitoreo -> pc =  $ip;
+                        $monitoreo ->save();
+                    }
+    
+                    /**** Iniciamos proceso de  monitoreo ****/
+                    
+                    //insertamos el movimiento realizado
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                    $monitoreo -> accion =  "Alta de venta";
+                    $monitoreo -> folioNuevo =  $ultimaVenta;
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
+                    /**** FIN proceso de  monitoreo ****/
+    
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'Venta creada pero sin productos'
+                    );
+
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
             }
         }else{
             $data = array(
