@@ -23,6 +23,7 @@ class cotizacionesController extends Controller
         ->select('cotizaciones.*',
         DB::raw("CONCAT(cliente.nombre,' ',cliente.Apaterno,' ',cliente.Amaterno) as nombreCliente"),
         DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        ->where('cotizaciones.idStatus','=',34)
         ->orderBy('cotizaciones.idCotiza','desc')
         ->paginate(10);
         return response()->json([
@@ -62,7 +63,7 @@ class cotizacionesController extends Controller
                     $cotizacion->cdireccion = $params_array['cdireccion'];
                 }
                 $cotizacion->idEmpleado = $params_array['idEmpleado'];
-                $cotizacion->idStatus = $params_array['idStatus'];
+                $cotizacion->idStatus = 34;
                 if(isset($params_array['observaciones'])){
                     $cotizacion->observaciones = $params_array['observaciones'];
                 }

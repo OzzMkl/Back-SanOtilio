@@ -165,7 +165,7 @@ class VentasController extends Controller
                      * Verificamos si la venta viene de alguna cotizacion 
                      * Si es que si asignamos status de deshabilitado
                      * ****/
-                    if($params_array['idCotiza'] != 1){
+                    if($params_array['idCotiza'] != 0){
                         $cotizacion =  Cotizacion::where('idCotiza',$params_array['idCotiza'])
                                                     ->update([
                                                         'idStatus' => 35
@@ -440,78 +440,86 @@ class VentasController extends Controller
             $datos_imp = Impresoras::where('ipVentas','=',$ip)
                             ->latest('idImpresora')
                             ->first();
-            
-            for($i = 1; $i<= $NoImpre ; $i++){
-                //declaramos el nombre de la impresora
-                //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
-                $connector = new WindowsPrintConnector("smb://".$datos_imp->usuario.":".$datos_imp->contrasena."@".$datos_imp->nombreMaquina."/".$datos_imp->nombreImpresora."");
-                //$connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
-                //asociamos la impresora
-                $impresora = new Printer($connector);
-                //ajustamos el texto en el centro
-                $impresora->setJustification(Printer::JUSTIFY_CENTER);
-                //declaramos imagen
-                $img = EscposImage::load("../storage/app/images/logo2.png");
-                //insertamos imagen
-                $impresora->bitImageColumnFormat($img, Printer::IMG_DOUBLE_WIDTH | Printer::IMG_DOUBLE_HEIGHT);
-                //ajustamos tamaño del texto
-                $impresora->setTextSize(1, 1);
-                //escribimos MATERIALES PARA CONSTRUCCION SAN OTILIO
-                $impresora->text( $empresa->nombreLargo ."\n");
-                //Escribimos SUCURSAL MATRIZ
-                $impresora->text($empresa->nombreCorto ." \n");
-                //Empezamos con la direccion C. SONORA SUR #2509, MEXICO SUR
-                $impresora->text("C.". $empresa->calle." #".$empresa->numero.", ".$empresa->colonia ."\n");
-                //TEHUACAN, PUEBLA. RFC: LUPB7803313V9
-                $impresora->text($empresa->ciudad.", ".$empresa->estado.". RFC: ".$empresa->rfc."\n");
-                //EMAIL: sabin_mil1000@hotmail.com
-                $impresora->text("EMAIL:".$empresa->correo1. "\n");
-                //238 107 1077 - 238 125 7845
-                $impresora->text($empresa->telefono." - ".$empresa->telefono2. "\n");
-                $impresora->text("========================================\n");
-                /***** INFORMACION DE LA VENTA PRIMERA PARTE*****/
-                //ajustamos el texto en el centro
-                $impresora->setJustification(Printer::JUSTIFY_LEFT);
-                //VENTA: 00000
-                $impresora->text("VENTA: ".$ventasg->idVenta."   TV: ".$ventasg->nombreVenta. "\n");
-                //VENDEDOR: 
-                $impresora->text("VENDEDOR: ".$ventasg->nombreEmpleado. "\n");
-                //CLIENTE: 
-                $impresora->text("CLIENTE: ".str_pad($ventasg->nombreCliente,25," "). "\n");
-                //fecha y hora
-                $impresora->text("FECHA: ".$ventasg->created_at. "\n");
-                $impresora->text("========================================\n");
-                /***** PRODUCTOS *****/
-                $impresora->text("CL./ CANT./ MED./ PRECIO/ DESC./ SUBTO."." \n");//40
-                foreach($productos_ventasg AS $param => $paramdata){
-                    //
-                    $impresora->text($paramdata['descripcion']."\n");
-                    $impresora->text(str_pad($paramdata['claveEx'],10," ")."/".
-                                    str_pad($paramdata['cantidad'],3," ",STR_PAD_BOTH)."/".
-                                    str_pad($paramdata['nombreMedida'],4," ",STR_PAD_BOTH)."/"."$".
-                                    str_pad($paramdata['precio'],6," ",STR_PAD_BOTH)."/"."$".
-                                    str_pad($paramdata['descuento'],3," ",STR_PAD_BOTH)."/"."$".
-                                    str_pad($paramdata['total'],6," ",STR_PAD_BOTH)."\n");
-                    
-                    $impresora->text("- - - - - - - - - - - - - - - - - - - - \n");
+
+            if(is_object($datos_imp)){
+                for($i = 1; $i<= $NoImpre ; $i++){
+                    //declaramos el nombre de la impresora
+                    //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
+                    $connector = new WindowsPrintConnector("smb://".$datos_imp->usuario.":".$datos_imp->contrasena."@".$datos_imp->nombreMaquina."/".$datos_imp->nombreImpresora."");
+                    //$connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
+                    //asociamos la impresora
+                    $impresora = new Printer($connector);
+                    //ajustamos el texto en el centro
+                    $impresora->setJustification(Printer::JUSTIFY_CENTER);
+                    //declaramos imagen
+                    $img = EscposImage::load("../storage/app/images/logo2.png");
+                    //insertamos imagen
+                    $impresora->bitImageColumnFormat($img, Printer::IMG_DOUBLE_WIDTH | Printer::IMG_DOUBLE_HEIGHT);
+                    //ajustamos tamaño del texto
+                    $impresora->setTextSize(1, 1);
+                    //escribimos MATERIALES PARA CONSTRUCCION SAN OTILIO
+                    $impresora->text( $empresa->nombreLargo ."\n");
+                    //Escribimos SUCURSAL MATRIZ
+                    $impresora->text($empresa->nombreCorto ." \n");
+                    //Empezamos con la direccion C. SONORA SUR #2509, MEXICO SUR
+                    $impresora->text("C.". $empresa->calle." #".$empresa->numero.", ".$empresa->colonia ."\n");
+                    //TEHUACAN, PUEBLA. RFC: LUPB7803313V9
+                    $impresora->text($empresa->ciudad.", ".$empresa->estado.". RFC: ".$empresa->rfc."\n");
+                    //EMAIL: sabin_mil1000@hotmail.com
+                    $impresora->text("EMAIL:".$empresa->correo1. "\n");
+                    //238 107 1077 - 238 125 7845
+                    $impresora->text($empresa->telefono." - ".$empresa->telefono2. "\n");
+                    $impresora->text("========================================\n");
+                    /***** INFORMACION DE LA VENTA PRIMERA PARTE*****/
+                    //ajustamos el texto en el centro
+                    $impresora->setJustification(Printer::JUSTIFY_LEFT);
+                    //VENTA: 00000
+                    $impresora->text("VENTA: ".$ventasg->idVenta."   TV: ".$ventasg->nombreVenta. "\n");
+                    //VENDEDOR: 
+                    $impresora->text("VENDEDOR: ".$ventasg->nombreEmpleado. "\n");
+                    //CLIENTE: 
+                    $impresora->text("CLIENTE: ".str_pad($ventasg->nombreCliente,25," "). "\n");
+                    //fecha y hora
+                    $impresora->text("FECHA: ".$ventasg->created_at. "\n");
+                    $impresora->text("========================================\n");
+                    /***** PRODUCTOS *****/
+                    $impresora->text("CL./ CANT./ MED./ PRECIO/ DESC./ SUBTO."." \n");//40
+                    foreach($productos_ventasg AS $param => $paramdata){
+                        //
+                        $impresora->text($paramdata['descripcion']."\n");
+                        $impresora->text(str_pad($paramdata['claveEx'],10," ")."/".
+                                        str_pad($paramdata['cantidad'],3," ",STR_PAD_BOTH)."/".
+                                        str_pad($paramdata['nombreMedida'],4," ",STR_PAD_BOTH)."/"."$".
+                                        str_pad($paramdata['precio'],6," ",STR_PAD_BOTH)."/"."$".
+                                        str_pad($paramdata['descuento'],3," ",STR_PAD_BOTH)."/"."$".
+                                        str_pad($paramdata['total'],6," ",STR_PAD_BOTH)."\n");
+                        
+                        $impresora->text("- - - - - - - - - - - - - - - - - - - - \n");
+                    }
+                    /***** INFORMACION DE LA VENTA 2DA PARTE *****/
+                    //$impresora->text("---------------------------------------- \n");
+                    $impresora->text("SUBTOTAL:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
+                    $impresora->text("DESCUENTO:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
+                    $impresora->setJustification(Printer::JUSTIFY_RIGHT);
+                    $impresora->text("                   ---------- \n");
+                    $impresora->setJustification(Printer::JUSTIFY_LEFT);
+                    $impresora->text("TOTAL:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
+                    $impresora->text("----------------------------------------\n");
+                    $impresora->text("OBSERVACIONES: \n");
+                    $impresora->text($ventasg->observaciones."\n");
+                    $impresora->text("========================================\n");
+                    $impresora->text("* TODO CAMBIO CAUSARA UN 10% EN EL IMPORTE TOTAL *"."\n");
+                    $impresora->text("* TODA CANCELACION SE COBRARA 20% DEL IMPORTE TOTAL SIN EXCEPCION *"."\n");
+                    $impresora->cut();
+                    $impresora->close();
+                    /************** */
                 }
-                /***** INFORMACION DE LA VENTA 2DA PARTE *****/
-                //$impresora->text("---------------------------------------- \n");
-                $impresora->text("SUBTOTAL:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
-                $impresora->text("DESCUENTO:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
-                $impresora->setJustification(Printer::JUSTIFY_RIGHT);
-                $impresora->text("                   ---------- \n");
-                $impresora->setJustification(Printer::JUSTIFY_LEFT);
-                $impresora->text("TOTAL:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
-                $impresora->text("----------------------------------------\n");
-                $impresora->text("OBSERVACIONES: \n");
-                $impresora->text($ventasg->observaciones."\n");
-                $impresora->text("========================================\n");
-                $impresora->text("* TODO CAMBIO CAUSARA UN 10% EN EL IMPORTE TOTAL *"."\n");
-                $impresora->text("* TODA CANCELACION SE COBRARA 20% DEL IMPORTE TOTAL SIN EXCEPCION *"."\n");
-                $impresora->cut();
-                $impresora->close();
-                /************** */
+            } else{
+                return response()->json([
+                    'code'      =>  200,
+                    'status'    => 'success',
+                    'message'   => 'La ip no esta registrada'
+                ]);
             }
             
     }
@@ -538,33 +546,43 @@ class VentasController extends Controller
         $datos_imp = Impresoras::where('ipVentas','=',$ip)
                             ->latest('idImpresora')
                             ->first();
-        //declaramos el nombre de la impresora
-        //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
-        $connector = new WindowsPrintConnector("smb://".$datos_imp->usuario.":".$datos_imp->contrasena."@".$datos_imp->nombreMaquina."/".$datos_imp->nombreImpresora."");
-        //$connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
-        //asociamos la impresora
-        $impresora = new Printer($connector);
-        //ajustamos tamaño del texto
-        $impresora->setTextSize(1, 1);
-        //escribimos     Folio venta: ####
-        $impresora->text( "Folio venta: ".$ventasg->idVenta."\n");
-        //Escribimos     Tipo venta: Paga, se lo lleva etc ...
-        $impresora->text( "Tipo venta: ".$ventasg->nombreVenta."\n");
-        //fecha y hora
-        $impresora->text("Fecha: ".$ventasg->created_at. "\n");
-        $impresora->text("========================================\n");
-        $impresora->text("Subtotal:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
-        $impresora->text("Descuento:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
-        $impresora->setJustification(Printer::JUSTIFY_RIGHT);
-        $impresora->text("                   ---------- \n");
-        $impresora->setJustification(Printer::JUSTIFY_LEFT);
-        $impresora->text("Total:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
-        $impresora->text("----------------------------------------\n");
-        $impresora->text("Observaciones: \n");
-        $impresora->text($ventasg->observaciones."\n");
-        $impresora->text("\n");
-        $impresora->cut();
-        $impresora->close();
+
+        if(is_object($datos_imp)){
+
+            //declaramos el nombre de la impresora
+            //$connector = new WindowsPrintConnector("smb://Admin:soMATv03@ventas03mat/EPSONTMU220B V3");
+            $connector = new WindowsPrintConnector("smb://".$datos_imp->usuario.":".$datos_imp->contrasena."@".$datos_imp->nombreMaquina."/".$datos_imp->nombreImpresora."");
+            //$connector = new WindowsPrintConnector("EPSON TM-U220 Receipt");
+            //asociamos la impresora
+            $impresora = new Printer($connector);
+            //ajustamos tamaño del texto
+            $impresora->setTextSize(1, 1);
+            //escribimos     Folio venta: ####
+            $impresora->text( "Folio venta: ".$ventasg->idVenta."\n");
+            //Escribimos     Tipo venta: Paga, se lo lleva etc ...
+            $impresora->text( "Tipo venta: ".$ventasg->nombreVenta."\n");
+            //fecha y hora
+            $impresora->text("Fecha: ".$ventasg->created_at. "\n");
+            $impresora->text("========================================\n");
+            $impresora->text("Subtotal:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
+            $impresora->text("Descuento:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
+            $impresora->setJustification(Printer::JUSTIFY_RIGHT);
+            $impresora->text("                   ---------- \n");
+            $impresora->setJustification(Printer::JUSTIFY_LEFT);
+            $impresora->text("Total:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
+            $impresora->text("----------------------------------------\n");
+            $impresora->text("Observaciones: \n");
+            $impresora->text($ventasg->observaciones."\n");
+            $impresora->text("\n");
+            $impresora->cut();
+            $impresora->close();
+        } else{
+            return response()->json([
+                'code'      =>  200,
+                'status'    => 'success',
+                'message'   => 'La ip no esta registrada'
+            ]);
+        }
     }
     
     /****ENTREGAS */
