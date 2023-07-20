@@ -1166,16 +1166,39 @@ class ProductoController extends Controller
                 //creamos ciclo
                 while($lugar < $count){
 
-                    //calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                    //y asignamos solo el valor entero, tampoco se redondea
-                    $calculaE = intval($existencia / $medidaMenor);
+                    /**
+                     * En este if verificamos si es la ultima vuelta para asignar decimales
+                     * a la existencia ya que si no solo tomamos el entero
+                     * 
+                     * calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
+                     * 
+                     * En el segundo if se llama la funcion cuentaDecimales()
+                     * El cual nos regresa el numero de decimales si este es mayor a 5
+                     * limitamos los decimales a 5 si no es mayor dejalos los deciamles que tenga
+                     * o no tenga
+                     */
+                    if($lugar+1 == $count){
+                        $calculaE = $existencia / $medidaMenor;
+
+                        if($this->cuentaDecimales($calculaE) > 5){
+                            //delimitamos los decimales a mostrar a solo 5
+                            $calculaE = number_format($calculaE, 5);
+                        }
+                            
+                    } else {
+                        $calculaE = intval($existencia / $medidaMenor);
+
+                    }
                     //asignamos al array el nomnre de la medida y su existencia
                     $existencia_por_med['nombreMedida'] = $productos_medidas[$lugar]->nombreMedida;
                     $existencia_por_med['exisCal'] = $calculaE;
 
                     $existencia_por_med2[$lugar] = $existencia_por_med;
-                    //reasignamos la existencia el residuo
-                    $existencia = $existencia % $medidaMenor;
+                    /**
+                     * El residuo ahora lo tomamos como la existencia
+                     * NOTA: Aqui no ocupamos el % ya que redondea decimales
+                     */
+                    $existencia = fmod($existencia, $medidaMenor);
 
                     //verificamos si contiene mas medidas para dividirlos entre la unidad
                     if($lugar+1 < $count){
@@ -1186,9 +1209,7 @@ class ProductoController extends Controller
                     
                     $lugar++;
                 }
-
-            
-            //$existencia_por_med = array("nombre_medida" => 0);
+                
         }
                                 
             $imagen = Producto::findOrFail($idProducto)->imagen;
@@ -1334,16 +1355,39 @@ class ProductoController extends Controller
                 //creamos ciclo
                 while($lugar < $count){
 
-                    //calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                    //y asignamos solo el valor entero, tampoco se redondea
-                    $calculaE = intval($existencia / $medidaMenor);
+                    /**
+                     * En este if verificamos si es la ultima vuelta para asignar decimales
+                     * a la existencia ya que si no solo tomamos el entero
+                     * 
+                     * calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
+                     * 
+                     * En el segundo if se llama la funcion cuentaDecimales()
+                     * El cual nos regresa el numero de decimales si este es mayor a 5
+                     * limitamos los decimales a 5 si no es mayor dejalos los deciamles que tenga
+                     * o no tenga
+                     */
+                    if($lugar+1 == $count){
+                        $calculaE = $existencia / $medidaMenor;
+
+                        if($this->cuentaDecimales($calculaE) > 5){
+                            //delimitamos los decimales a mostrar a solo 5
+                            $calculaE = number_format($calculaE, 5);
+                        }
+                            
+                    } else {
+                        $calculaE = intval($existencia / $medidaMenor);
+
+                    }
                     //asignamos al array el nomnre de la medida y su existencia
                     $existencia_por_med['nombreMedida'] = $productos_medidas[$lugar]->nombreMedida;
                     $existencia_por_med['exisCal'] = $calculaE;
 
                     $existencia_por_med2[$lugar] = $existencia_por_med;
-                    //reasignamos la existencia el residuo
-                    $existencia = $existencia % $medidaMenor;
+                    /**
+                     * El residuo ahora lo tomamos como la existencia
+                     * NOTA: Aqui no ocupamos el % ya que redondea decimales
+                     */
+                    $existencia = fmod($existencia, $medidaMenor);
 
                     //verificamos si contiene mas medidas para dividirlos entre la unidad
                     if($lugar+1 < $count){
@@ -1355,8 +1399,6 @@ class ProductoController extends Controller
                     $lugar++;
                 }
 
-                
-                //$existencia_por_med = array("nombre_medida" => 0);
             }
                                 
             $imagen = Producto::findOrFail($idProducto)->imagen;
@@ -1466,5 +1508,20 @@ class ProductoController extends Controller
     }
 
     
+     /****Funcion extra */
+    function cuentaDecimales($numero){
+        //convertimos el numero a string
+        $numeroString = strval($numero);
+        //buscamos la posicion del "."
+        $decimalPosi = strpos($numeroString, '.');
+
+        if($decimalPosi === false){
+            //Si el numero dado no cuenta con decimales retornamos cero
+            return 0;
+        }
+
+        $numDecimales = strlen($numeroString) - $decimalPosi -1;
+        return $numDecimales;
+    }
     
 }
