@@ -890,7 +890,10 @@ class ProductoController extends Controller
         if($count == 1){
             foreach ($productos_medidas as $producto_medida) {
                 $existencia_por_med['nombreMedida'] = $producto_medida->nombreMedida;
-                $existencia_por_med['exisCal'] = $existencia;
+                if($this->cuentaDecimales($existencia) > 5){
+                    //delimitamos los decimales a mostrar a solo 5
+                    $existencia_por_med['exisCal'] = number_format($existencia, 5);
+                }
             }
             $existencia_por_med2[$lugar] = $existencia_por_med;
             //sino
@@ -903,29 +906,50 @@ class ProductoController extends Controller
             //creamos ciclo
             while($lugar < $count){
 
-                //calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                    //y asignamos solo el valor entero, tampoco se redondea
-                    $calculaE = intval($existencia / $medidaMenor);
-                    //asignamos al array el nomnre de la medida y su existencia
-                    $existencia_por_med['nombreMedida'] = $productos_medidas[$lugar]->nombreMedida;
-                    $existencia_por_med['exisCal'] = $calculaE;
+                /**
+                 * En este if verificamos si es la ultima vuelta para asignar decimales
+                 * a la existencia ya que si no solo tomamos el entero
+                 * 
+                 * calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
+                 * 
+                 * En el segundo if se llama la funcion cuentaDecimales()
+                 * El cual nos regresa el numero de decimales si este es mayor a 5
+                 * limitamos los decimales a 5 si no es mayor dejalos los deciamles que tenga
+                 * o no tenga
+                 */
+                if($lugar+1 == $count){
+                    $calculaE = $existencia / $medidaMenor;
 
-                    $existencia_por_med2[$lugar] = $existencia_por_med;
-                    //reasignamos la existencia el residuo
-                    $existencia = $existencia % $medidaMenor;
-
-                    //verificamos si contiene mas medidas para dividirlos entre la unidad
-                    if($lugar+1 < $count){
-                        $medidaMenor = $medidaMenor / $productos_medidas[$lugar+1]->unidad;
-                    } else{
-                        $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
+                    if($this->cuentaDecimales($calculaE) > 5){
+                        //delimitamos los decimales a mostrar a solo 5
+                        $calculaE = number_format($calculaE, 5);
                     }
-                    
-                    $lugar++;
+                        
+                } else {
+                    $calculaE = intval($existencia / $medidaMenor);
+
+                }
+                //asignamos al array el nomnre de la medida y su existencia
+                $existencia_por_med['nombreMedida'] = $productos_medidas[$lugar]->nombreMedida;
+                $existencia_por_med['exisCal'] = $calculaE;
+
+                $existencia_por_med2[$lugar] = $existencia_por_med;
+                /**
+                 * El residuo ahora lo tomamos como la existencia
+                 * NOTA: Aqui no ocupamos el % ya que redondea decimales
+                 */
+                $existencia = fmod($existencia, $medidaMenor);
+
+                //verificamos si contiene mas medidas para dividirlos entre la unidad
+                if($lugar+1 < $count){
+                    $medidaMenor = $medidaMenor / $productos_medidas[$lugar+1]->unidad;
+                } else{
+                    $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
+                }
+                
+                $lugar++;
             }
 
-            
-            //$existencia_por_med = array("nombre_medida" => 0);
         }
 
         /***************************************** */
@@ -1153,7 +1177,10 @@ class ProductoController extends Controller
             if($count == 1){
                 foreach ($productos_medidas as $producto_medida) {
                     $existencia_por_med['nombreMedida'] = $producto_medida->nombreMedida;
-                    $existencia_por_med['exisCal'] = $existencia;
+                    if($this->cuentaDecimales($existencia) > 5){
+                            //delimitamos los decimales a mostrar a solo 5
+                            $existencia_por_med['exisCal'] = number_format($existencia, 5);
+                    }
                 }
                 $existencia_por_med2[$lugar] = $existencia_por_med;
                 //sino
@@ -1343,7 +1370,10 @@ class ProductoController extends Controller
             if($count == 1){
                 foreach ($productos_medidas as $producto_medida) {
                     $existencia_por_med['nombreMedida'] = $producto_medida->nombreMedida;
-                    $existencia_por_med['exisCal'] = $existencia;
+                    if($this->cuentaDecimales($existencia) > 5){
+                        //delimitamos los decimales a mostrar a solo 5
+                        $existencia_por_med['exisCal'] = number_format($existencia, 5);
+                    }
                 }
                 $existencia_por_med2[$lugar] = $existencia_por_med;
                 //sino
