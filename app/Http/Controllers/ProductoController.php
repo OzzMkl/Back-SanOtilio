@@ -584,6 +584,9 @@ class ProductoController extends Controller
         if(!empty($params_array)){
 
             //limpiamos los datos
+            //Eliminamos el array de permisos para que unicamente quede el array que contiene
+            //los datos del producto y del usuario sin los permisos claro ...
+            unset($params_array['permisos']);
             $params_array = array_map('trim', $params_array);
             //validamos los datos que llegaron
             $validate = Validator::make($params_array, [
@@ -729,7 +732,10 @@ class ProductoController extends Controller
                 //eliminamos los datos del empleado
                 //o algo mas tecnico: eliminamos los elementos que no son arrays
                 $params_array = array_filter($params_array, function($item) { return is_array($item); });
-
+                //Eliminamos el array de permisos para que unicamente quede el array que contiene las medidas
+                unset($params_array['permisos']);
+                //var_dump($params_array);
+                
                 //eliminamos los registros que tengan ese idProdcuto
                 Productos_medidas::where('idProducto',$idProducto)->delete();
 
@@ -893,6 +899,8 @@ class ProductoController extends Controller
                 if($this->cuentaDecimales($existencia) > 5){
                     //delimitamos los decimales a mostrar a solo 5
                     $existencia_por_med['exisCal'] = number_format($existencia, 5);
+                }  else {
+                    $existencia_por_med['exisCal'] = $existencia;
                 }
             }
             $existencia_por_med2[$lugar] = $existencia_por_med;
@@ -1180,6 +1188,8 @@ class ProductoController extends Controller
                     if($this->cuentaDecimales($existencia) > 5){
                             //delimitamos los decimales a mostrar a solo 5
                             $existencia_por_med['exisCal'] = number_format($existencia, 5);
+                    } else {
+                        $existencia_por_med['exisCal'] = $existencia;
                     }
                 }
                 $existencia_por_med2[$lugar] = $existencia_por_med;
@@ -1373,6 +1383,8 @@ class ProductoController extends Controller
                     if($this->cuentaDecimales($existencia) > 5){
                         //delimitamos los decimales a mostrar a solo 5
                         $existencia_por_med['exisCal'] = number_format($existencia, 5);
+                    } else {
+                        $existencia_por_med['exisCal'] = $existencia;
                     }
                 }
                 $existencia_por_med2[$lugar] = $existencia_por_med;
