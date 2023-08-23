@@ -163,6 +163,9 @@ class ProductoController extends Controller
 
             //revisamos que no vengan vacios
         if( !empty($params_array)){
+            //Eliminamos el array de permisos para que unicamente quede el array que contiene
+            //los datos del producto y del usuario sin los permisos claro ...
+            unset($params_array['permisos']);
             //limpiamos los datos
             $params_array = array_map('trim', $params_array);
             //validamos los datos que llegaron
@@ -312,6 +315,9 @@ class ProductoController extends Controller
                     //eliminamos los datos del empleado
                     //o algo mas tecnico: eliminamos los elementos que no son arrays
                     $params_array = array_filter($params_array, function($item) { return is_array($item); });
+                    //Eliminamos el array de permisos para que unicamente quede el array que contiene
+                    //los datos del producto y del usuario sin los permisos claro ...
+                    unset($params_array['permisos']);
 
                     foreach($params_array AS $param => $paramdata){
 
@@ -494,6 +500,10 @@ class ProductoController extends Controller
         if(!empty($params_array)){
             try{
                 DB::beginTransaction();
+
+                //Eliminamos el array de permisos para que unicamente quede el array que contiene
+                //los datos del producto y del usuario sin los permisos claro ...
+                unset($params_array['permisos']);
 
                 //traemos el status del producto a actualizar
                 $statusProd = Producto::find($idProducto)->statuss;
