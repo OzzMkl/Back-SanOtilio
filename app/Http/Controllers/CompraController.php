@@ -18,6 +18,8 @@ use App\models\moviproduc;
 use App\models\Moviproducfacturables;
 use App\models\Monitoreo;
 use App\models\Productos_facturables;
+use App\models\Empresa;
+use TCPDF;
 
 
 class CompraController extends Controller
@@ -556,7 +558,7 @@ class CompraController extends Controller
                         'status'        => 'success',
                         'code'          =>  200,
                         'Producto'      =>  $Producto,
-                        'Movimiento'    =>  $moviproduc,
+                        'Movimiento'    =>  $Moviproducfacturables,
                         'count'         =>  $count,
                         'listaPM'       =>  $listaPM
                     );
@@ -847,6 +849,8 @@ class CompraController extends Controller
 
     public function updateProductosCompra (Request $request){
 
+        
+
     }
 
     public function alterExistencia (Request $request){
@@ -880,6 +884,214 @@ class CompraController extends Controller
         }
         return response()->json($data, $data['code']);
     }
+    
+    public function generatePDF($idCompra,$idEmpleado){
+        $Empresa = Empresa::first();
+
+        $compra = DB::table('compra')
+        ->join('proveedores','proveedores.idProveedor','=','compra.idProveedor')
+        ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
+        ->select('compra.*','proveedores.idProveedor','proveedores.nombre as nombreProveedor','proveedores.rfc','proveedores.telefono', 
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+        ->where('compra.idCompra','=',$idCompra)
+        ->first();
+
+        $productosCompra = DB::table('productos_compra')
+        ->join('producto','producto.idProducto','=','productos_compra.idProducto')
+        ->join('marca','marca.idMarca','=','producto.idMarca')
+        ->join('departamentos','departamentos.idDep','=','producto.idDep')
+        ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_compra.idProdMedida')
+        ->select('productos_compra.*','producto.claveEx as claveEx','producto.descripcion as descripcion','historialproductos_medidas.nombreMedida as nombreMedida',
+                    'marca.nombre as marcaN','departamentos.nombre as departamentoN'
+                )
+        ->where([
+                    ['productos_compra.idCompra','=',$idCompra]
+                ])
+        ->get();
+
+        if(is_object($compra)){
+
+            //obtenemos direccion ip
+            $ip = $_SERVER['REMOTE_ADDR'];
+            //insertamos el movimiento que se hizo en general
+            $monitoreo = new Monitoreo();
+            $monitoreo -> idUsuario =  $idEmpleado;
+            $monitoreo -> accion =  "Impresión de PDF, compra";
+            $monitoreo -> folioNuevo =  $compra->idOrd;
+            $monitoreo -> pc =  $ip;
+            $monitoreo ->save(); 
+
+            //CREACION DEL PDF
+            $pdf = new TCPDF('P', 'MM','A4','UTF-8');
+            //ELIMINAMOS CABECERAS Y PIE DE PAGINA
+            $pdf-> setPrintHeader(false);
+            $pdf-> setPrintFooter(false);
+            //INSERTAMOS PAGINA
+            $pdf->AddPage();
+            //DECLARAMOS FUENTE Y TAMAÑO
+            $pdf->SetFont('helvetica', '', 18); // Establece la fuente
+
+            //Buscamos imagen y la decodificamos 
+            $file = base64_encode( \Storage::disk('images')->get('logo-solo2.png'));
+            //$file = base64_encode( \Storage::disk('images')->get('pe.jpg'));
+            //descodificamos y asignamos
+            $image = base64_decode($file);
+            //insertamos imagen se pone @ para especificar que es a base64
+            //              imagen,x1,y1,ancho,largo
+            $pdf->Image('@'.$image,10,9,25,25);
+            $pdf->setXY(40,8);
+            //ESCRIBIMOS
+            //        ancho,altura,texto,borde,salto de linea
+            $pdf->Cell(0, 10, $Empresa->nombreLargo, 0, 1); // Agrega un texto
+
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(45,15);
+            $pdf->Cell(0, 10, $Empresa->nombreCorto.': COLONIA '. $Empresa->colonia.', CALLE '. $Empresa->calle. ' #'. 
+                                $Empresa->numero. ', '. $Empresa->ciudad. ', '. $Empresa->estado, 0, 1); // Agrega un texto
+
+            $pdf->setXY(60,20);
+            $pdf->Cell(0,10,'CORREOS: '. $Empresa->correo1. ', '. $Empresa->correo2);
+
+            $pdf->setXY(68,25);
+            $pdf->Cell(0,10,'TELEFONOS: '. $Empresa->telefono. ' ó '. $Empresa->telefono2. '   RFC: '. $Empresa->rfc);
+
+            $pdf->SetDrawColor(255,145,0);//insertamos color a pintar en RGB
+            $pdf->SetLineWidth(2.5);//grosor de la linea
+            $pdf->Line(10,37,200,37);//X1,Y1,X2,Y2
+
+            $pdf->SetLineWidth(5);//grosor de la linea
+            $pdf->Line(10,43,58,43);//X1,Y1,X2,Y2
+
+            $pdf->SetFont('helvetica', 'B', 12); // Establece la fuente
+            $pdf->setXY(10,38);
+            $pdf->Cell(0, 10, 'COMPRA #'. $compra->idCompra, 0, 1); // Agrega un texto
+
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(60,38);
+            $pdf->Cell(0, 10, 'PROVEEDOR: '. strtoupper($compra->nombreProveedor), 0, 1); // Agrega un texto
+            
+            $pdf->setXY(157,38);
+            $pdf->Cell(0, 10, 'FECHA: '. substr($compra->created_at,0,10), 0, 1); // Agrega un texto
+            
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(60,43);
+            $pdf->Cell(0, 10, 'EMPLEADO: '. strtoupper($compra->nombreEmpleado), 0, 1); // Agrega un texto
+
+
+
+            $mytime = date('d/m/Y H:i:s');
+            $pdf->setXY(153,43);
+            $pdf->Cell(0, 10, 'IMPRESO: '. $mytime, 0, 1); // Agrega un texto
+
+
+            $pdf->SetDrawColor(255,145,0);//insertamos color a pintar en RGB
+            $pdf->SetLineWidth(2.5);//grosor de la linea
+            $pdf->Line(10,52,200,52);//X1,Y1,X2,Y2
+
+            $pdf->SetDrawColor(0,0,0);//insertamos color a pintar en RGB
+            $pdf->SetLineWidth(.2);//grosor de la linea
+            $pdf->SetFillColor(7, 149, 223  );//Creamos color de relleno para la tabla
+            $pdf->setXY(10,62);
+
+            //Contamos el numero de productos
+            $numRegistros = count($productosCompra);
+            //establecemos limite de productos por pagina
+            $RegistroPorPagina = 18;
+            //calculamos cuantas paginas van hacer
+            $paginas = ceil($numRegistros / $RegistroPorPagina);
+            $contRegistros = 0;
+
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
+            //INSERTAMOS CABECERAS TABLA
+            $pdf->Cell(29,10,'CLAVE EXTERNA',1,0,'C',true);
+            $pdf->Cell(70, 10, 'DESCRIPCION', 1,0,'C',true);
+            $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
+            $pdf->Cell(16, 10, 'CANT.', 1,0,'C',true);
+            $pdf->Cell(25, 10, 'MARCA', 1,0,'C',true);
+            $pdf->Cell(34, 10, 'DEPARTAMENTO', 1,0,'C',true);
+            $pdf->Ln(); // Nueva línea3
+
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
+
+            //REALIZAMOS RECORRIDO DEL ARRAY DE PRODUCTOS
+            foreach($productosCompra  as $prodC){
+                /***
+                 * Verificamos que nuestro contador sea mayor a cero para no insertar pagina de mas
+                 * Utiliza el operador % (módulo) para verificar si el contador de registros es divisible
+                 * exactamente por el número de registros por página ($RegistroPorPagina).
+                 *  Si el resultado de esta expresión es igual a cero, significa que se ha alcanzado
+                 *  un múltiplo del número de registros por página y se necesita agregar una nueva página.
+                 */
+                if( $contRegistros > 0 && $contRegistros % $RegistroPorPagina == 0){
+                    $pdf->AddPage();
+                    $pdf->SetTextColor(255, 255, 255);
+                    $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
+                    //CABECERAS TABLA
+                    $pdf->Cell(29,10,'CLAVE EXTERNA',1,0,'C',true);
+                    $pdf->Cell(70, 10, 'DESCRIPCION', 1,0,'C',true);
+                    $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
+                    $pdf->Cell(16, 10, 'CANT.', 1,0,'C',true);
+                    $pdf->Cell(25, 10, 'MARCA', 1,0,'C',true);
+                    $pdf->Cell(34, 10, 'DEPARTAMENTO', 1,0,'C',true);
+                    $pdf->Ln(); // Nueva línea3
+                }
+                    
+                    $pdf->SetTextColor(0, 0, 0);
+                    $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+                    $pdf->MultiCell(29,10,$prodC->claveEx,1,'C',false,0);
+                    $pdf->MultiCell(70,10,$prodC->descripcion,1,'C',false,0);
+                    $pdf->MultiCell(16,10,$prodC->nombreMedida,1,'C',false,0);
+                    $pdf->MultiCell(16,10,$prodC->cantidad,1,'C',false,0);
+                    $pdf->MultiCell(25,10,$prodC->marcaN,1,'C',false,0);
+                    $pdf->MultiCell(34,10,$prodC->departamentoN,1,'C',false,0);
+                    $pdf->Ln(); // Nueva línea
+
+                    if($contRegistros == 18){
+                        $RegistroPorPagina = 25;
+                        $contRegistros = $contRegistros + 7;
+                    }
+
+                    $contRegistros++;
+            }
+
+            $posY= $pdf->getY();
+
+            if($posY > 241){
+                $pdf->AddPage();
+                $posY = 0;
+            }
+
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(9,$posY+10);
+            $pdf->MultiCell(0,10,'OBSERVACIONES: '. $compra->observaciones ,0,'L',false);
+
+            $posY = $pdf->getY();
+
+            $pdf->SetDrawColor(255,145,0);//insertamos color a pintar en RGB
+            $pdf->SetLineWidth(2.5);//grosor de la linea
+            $pdf->Line(10,$posY+5,200,$posY+5);//X1,Y1,X2,Y2
+
+           
+
+            $contenido = $pdf->Output('', 'I'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
+            $nombrepdf = 'mipdf.pdf';
+        }else{
+
+
+        }
+
+        $nombreArchivo = '';
+        return response($contenido)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
+
+
+    }
+
+
 
 
 

@@ -118,9 +118,17 @@ Route::get('/prueba', function(){
     /***********Requisicion */
     Route::post('/api/requisicion/register','RequisicionController@registerRequisicion');
     Route::post('/api/requisicion/registerLista','RequisicionController@registerProductosRequisicion');
+    Route::get('/api/requisicion/updateidOrden','RequisicionController@updateidOrden');
     Route::get('/api/requisicion/index','RequisicionController@index');
     Route::get('/api/requisicion/getLastReq','RequisicionController@getLastReq');
     Route::get('/api/requisicion/showMejorado/{idReq}','RequisicionController@showMejorado');
+    Route::get('/api/requisicion/generatePDF/{idOrd}/{idEmpleado}','RequisicionController@generatePDF');
+    Route::get('/api/requisicion/listaRequisiciones','RequisicionController@listaRequisiciones');
+    Route::get('/api/requisicion/generarOrden','RequisicionController@generarOrden');
+    Route::put('/api/requisicion/updateRequisicion/{idReq}','RequisicionController@updateRequisicion');
+    Route::put('/api/requisicion/updateProductosReq/{idReq}','RequisicionController@updateProductosReq');
+    Route::put('/api/requisicion/deshabilitarReq/{idReq}/{idEmpleado}','RequisicionController@deshabilitarReq');
+    
 
 
 
@@ -131,6 +139,7 @@ Route::get('/prueba', function(){
     ///Route::get('/api/ordendecompra/show/{idOrd}','OrdendecompraController@show');
     Route::get('/api/ordendecompra/showMejorado/{idOrd}','OrdendecompraController@showMejorado');
     Route::get('/api/ordendecompra/index','OrdendecompraController@index');
+    Route::get('/api/ordendecompra/generatePDF/{idReq}/{idEmpleado}','OrdendecompraController@generatePDF');
     Route::put('/api/ordendecompra/updateOrder/{idOrd}','OrdendecompraController@updateOrder');
     Route::put('/api/ordendecompra/updateProductsOrder/{idOrd}','OrdendecompraController@updateProductsOrder');
     /***********Compra */
@@ -151,6 +160,7 @@ Route::get('/prueba', function(){
     Route::get('/api/compra/searchFolioProveedor/{folioProveedor}','CompraController@searchFolioProveedor');
     Route::get('/api/compra/searchTotal/{total}','CompraController@searchTotal');
     Route::get('/api/compra/checkUpdates/{idCompra}','CompraController@checkUpdates');
+    Route::get('/api/compra/generatePDF/{idCompra}/{idEmpleado}','CompraController@generatePDF');
 
     /****clientes */
     Route::get('/api/clientes/index','ClienteController@index');
