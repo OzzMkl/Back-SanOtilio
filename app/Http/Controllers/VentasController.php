@@ -3,13 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Validator;
-use App\models\tipo_pago;
 use App\models\Cotizacion;
-use App\models\Productos_cotizaciones;
 use App\models\Ventasg;
 use App\models\Productos_ventasg;
 use App\models\Empresa;
@@ -18,6 +15,8 @@ use App\Producto;
 use App\Productos_medidas;
 use App\models\moviproduc;
 use App\models\impresoras;
+
+use App\Clases\clsProducto;
 
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
@@ -92,7 +91,7 @@ class VentasController extends Controller
         $productosVenta = DB::table('productos_ventasg')
         ->join('producto','producto.idProducto','=','productos_ventasg.idProducto')
         ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ventasg.idProdMedida')
-        ->select('productos_ventasg.*','producto.claveEx as claveEx','historialproductos_medidas.nombreMedida')
+        ->select('productos_ventasg.*','productos_ventasg.total as subtotal','producto.claveEx as claveEx','historialproductos_medidas.nombreMedida')
         ->where('productos_ventasg.idVenta','=',$idVenta)
         ->get();
         if(is_object($venta)){
@@ -404,6 +403,238 @@ class VentasController extends Controller
             }
         }
         return response()->json($data, $data['code']);
+    }
+
+    public function updateVenta($idVenta, Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        // echo 'vardmp <br>';
+        // var_dump($params_array);
+        // die();
+
+        if(!empty($params_array)){
+            //eliminar espacios vacios
+            //$params_array = array_map('trim', $params_array['ventasg']);   
+
+            $validate = Validator::make($params_array['ventasg'],[
+                'idVenta'       =>  'required',
+                'idCliente'     =>  'required',
+                'idTipoVenta'   =>  'required',
+                //'observaciones' =>  'required',//realmente no es necesario XD
+                'idStatus'      =>  'required',
+                'idEmpleado'    =>  'required',
+                'subtotal'      =>  'required',
+                'descuento'     =>  'required',
+                'total'         =>  'required'
+            ]);
+            
+            //si falla creamos la respuesta a enviar
+            if($validate->fails()){
+                $data = array(
+                    'code'      =>  '404',
+                    'status'    =>  'error',
+                    'message'   =>  'Fallo la validacion de los datos del producto',
+                    'errors'    =>  $validate->errors()
+                );
+            } else{
+                //Verificar si la venta tiene status correcto para editar
+                if($params_array['ventasg']['idStatus'] == 16){
+                    try{
+                        DB::beginTransaction();
+    
+                        //Consultamos venta a actualizar
+                        //$antVenta = Ventasg::where('idVenta',$idVenta)->firts();
+    
+                        //actualizamos valores de venta
+                        $ventag = Ventasg::where('idVenta',$idVenta)->update([
+                                    'idCliente' => $params_array['ventasg']['idCliente'],
+                                    'idTipoVenta' => $params_array['ventasg']['idTipoVenta'],
+                                    'observaciones' => $params_array['ventasg']['observaciones'],
+                                    'idStatus' => 35,
+                                    'idEmpleado' => $params_array['ventasg']['idEmpleado'],
+                                    'subtotal' => $params_array['ventasg']['subtotal'],
+                                    'descuento' => $params_array['ventasg']['descuento'],
+                                    'total' => $params_array['ventasg']['total'],
+                                ]);
+
+                        //obtenemos ip
+                        $ip = $_SERVER['REMOTE_ADDR'];
+                    
+                        //insertamos el movimiento realizado
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario =  $params_array['identity']['sub'];
+                        $monitoreo -> accion =  "Modificacion de venta";
+                        $monitoreo -> folioNuevo =  $idVenta;
+                        $monitoreo -> pc =  $ip;
+                        $monitoreo -> motivo =  $params_array['motivo_edicion'];
+                        $monitoreo ->save();
+
+                        /*** INICIO INSERCION DE PRODUCTOS */
+                        
+                        $dataProductos = $this->updateProductosVenta($params_array['ventasg'], $params_array['lista_productoVentag']);
+
+
+                        /*** FIN INSERCION DE PRODUCTOS */
+                        
+                        $data = [
+                            'code' => 200,
+                            'status' => 'success',
+                            'message' => 'venta modificada exitosamente',
+                            'data_productos' => $dataProductos
+                        ];
+    
+    
+                        DB::commit();
+    
+                    } catch (\Exception $e){
+                        DB::rollBack();
+                        $data = array(
+                            'code'      => 400,
+                            'status'    => 'Error',
+                            'message'   => $e->getMessage(),
+                            'error'     => $e
+                        );
+                    }
+                } else{
+                    $data = array(
+                        'code'      =>  404,
+                        'status'    =>  'error',
+                        'message'   =>  'La venta no tiene el status correcto',
+                    );
+                }
+            }
+        } else{
+            $data = array(
+                'code'      =>  400,
+                'status'    =>  'error',
+                'message'   =>  'Los valores ingresado no se recibieron correctamente'
+            );
+        }
+        return response()->json($data,$data['code']);
+    }
+    public function updateProductosVenta($ventasg,$lista_productosVenta){
+        if(count($lista_productosVenta) >= 1 && !empty($lista_productosVenta)){
+            try{
+                DB::beginTransaction();
+                //Creamos instancia para poder ocupar las funciones
+                $clsMedMen = new clsProducto();
+
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                //Consultamos productos a eliminar
+                $lista_prodVen_ant = Productos_ventasg::where('idVenta',$ventasg['idVenta'])->get();
+
+                /**
+                 * Reccorremos la consulta resultante para:
+                 * -Regresar la existencia que se desconnto de la venta
+                 * -Insertar Movimiento de existencia del producto
+                 */
+                foreach($lista_prodVen_ant as $param => $paramdata){
+                    //Consultamos la existencia antes de actualizar
+                    $Producto = Producto::find($paramdata['idProducto']);
+                    $stockAnterior = $Producto -> existenciaG;
+
+                    //Actualizamos
+                    $Producto -> existenciaG = $Producto -> existenciaG + $paramdata['igualMedidaMenor'];
+                    $Producto -> save();
+
+                    //Consultamos la existencia despues de actualizar
+                    $stockActualizado = $Producto->existenciaG;
+
+                    //insertamos el movimiento de existencia que se le realizo al producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $Producto -> claveEx;
+                    $moviproduc -> accion =  "Modificacion de venta, se suma al inventario";
+                    $moviproduc -> folioAccion =  $ventasg['idVenta'];
+                    $moviproduc -> cantidad =  $paramdata['igualMedidaMenor'];
+                    $moviproduc -> stockanterior =  $stockAnterior;
+                    $moviproduc -> stockactualizado =  $stockActualizado;
+                    $moviproduc -> idUsuario =  $ventasg['idEmpleado'];
+                    $moviproduc -> pc =  $ip;
+                    $moviproduc ->save();
+                }
+                
+                //eliminamos los registros que tenga esa venta
+                Productos_ventasg::where('idVenta',$ventasg['idVenta'])->delete();
+
+                /**
+                 * Recorremos el array para:
+                 * -Actualizar existencia en el producto
+                 * -Actualizar los productos de la venta
+                 * -Insertar Movimiento de existencia del producto
+                 */
+                foreach($lista_productosVenta as $param => $paramdata){
+
+                    //calculamos medida menor
+                    $medidaMenor = $clsMedMen->cantidad_En_MedidaMenor($paramdata['idProducto'],$paramdata['idProdMedida'],$paramdata['cantidad']);
+
+                    //Consultamos la existencia antes de actualizar
+                    $Producto = Producto::find($paramdata['idProducto']);
+                    $stockAnterior = $Producto -> existenciaG;
+                    //actualizamos la existencia
+                    $Producto -> existenciaG = $Producto -> existenciaG - $medidaMenor;
+                    $Producto -> save();
+                    //Consultamos la existencia despues de actualizar
+                    $stockActualizado = $Producto->existenciaG;
+
+                    //Actualimos en los productos de la venta
+                    $producto_ventasg = new Productos_ventasg();
+                    $producto_ventasg->idVenta = $ventasg['idVenta'];
+                    $producto_ventasg->idProducto = $paramdata['idProducto'];
+                    $producto_ventasg->descripcion = $paramdata['descripcion'];
+                    $producto_ventasg->idProdMedida = $paramdata['idProdMedida'];
+                    $producto_ventasg->cantidad = $paramdata['cantidad'];
+                    $producto_ventasg->precio = $paramdata['precio'];
+
+                    if(isset($paramdata['descuento'])){
+                        $producto_ventasg->descuento = $paramdata['descuento'];
+                    }
+
+                    $producto_ventasg->igualMedidaMenor = $medidaMenor;
+                    $producto_ventasg->total = $paramdata['subtotal'];
+
+                    //guardamos el producto
+                    $producto_ventasg->save();
+
+                    //Insertamos movimiento producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $Producto->claveEx;
+                    $moviproduc -> accion =  "Modificacion de venta, se guarda despues de la modificacion";
+                    $moviproduc -> folioAccion =  $ventasg['idVenta'];
+                    $moviproduc -> cantidad =  $medidaMenor;
+                    $moviproduc -> stockanterior =  $stockAnterior;
+                    $moviproduc -> stockactualizado =  $stockActualizado;
+                    $moviproduc -> idUsuario =  $ventasg['idEmpleado'];
+                    $moviproduc -> pc =  $ip;
+                    $moviproduc ->save();
+                    
+                }
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Productos actualizados correctamente'
+                );
+
+                DB::commit();
+            } catch(\Exception $e){
+                //Si falla realizamos rollback de la transaccion
+                DB::rollback();
+                //Propagamos el error ocurrido
+                throw $e;
+            }
+
+        } else{
+            $data =  array(
+                'code'          =>  400,
+                'status'        => 'error',
+                'message'       =>  'Los datos enviados son incorrectos'
+            );
+        }
+        return $data;
     }
 
     public function generaTicket($NoImpre){
