@@ -149,8 +149,8 @@ Route::get('/prueba', function(){
     Route::post('/api/compra/updateExistencia','CompraController@updateExistencia');
     Route::post('/api/compra/updateExistenciaFacturable','CompraController@updateExistenciaFacturable');
     Route::post('/api/compra/updateCompra','CompraController@updateCompra');
-    Route::post('/api/compra/updateProductosCompra','CompraController@updateProductosCompra');
-    Route::post('/api/compra/alterExistencia','CompraController@alterExistencia');
+    Route::post('/api/compra/updateProductosCompra/{idCompra}/{idEmpleado}','CompraController@updateProductosCompra');
+    Route::post('/api/compra/cancelarCompra','CompraController@cancelarCompra');
     Route::get('/api/compra/getLastCompra','CompraController@getLastCompra');
     Route::get('/api/compra/showMejorado/{idCompra}','CompraController@showMejorado');
     Route::get('/api/compra/index','CompraController@index');
@@ -181,6 +181,7 @@ Route::get('/prueba', function(){
     Route::get('/api/ventas/getDetallesVenta/{idVenta}','VentasController@getDetallesVenta');
     Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
     Route::post('/api/ventas/guardarProductosVenta','VentasController@guardarProductosVenta');
+    Route::put('/api/ventas/updateVenta/{idVenta}','VentasController@updateVenta');
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
     /*****cotizaciones*/
     Route::get('/api/cotizaciones/indexCotizaciones','cotizacionesController@indexCotiza');
