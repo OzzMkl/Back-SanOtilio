@@ -135,11 +135,14 @@ Route::get('/prueba', function(){
     /***********Orden de compra */
     Route::post('/api/ordendecompra/register','OrdendecompraController@registerOrdencompra');
     Route::post('/api/ordendecompra/registerLista','OrdendecompraController@registerProductosOrden');
+    Route::post('/api/ordendecompra/cancelarOrden','OrdendecompraController@cancelarOrden');
     Route::get('/api/ordendecompra/getLastOrder','OrdendecompraController@getLastOrder');
     ///Route::get('/api/ordendecompra/show/{idOrd}','OrdendecompraController@show');
     Route::get('/api/ordendecompra/showMejorado/{idOrd}','OrdendecompraController@showMejorado');
     Route::get('/api/ordendecompra/index','OrdendecompraController@index');
     Route::get('/api/ordendecompra/generatePDF/{idReq}/{idEmpleado}','OrdendecompraController@generatePDF');
+    Route::get('/api/ordendecompra/searchIdOrden/{idOrd}','OrdendecompraController@searchIdOrden');
+    Route::get('/api/ordendecompra/searchNombreProveedor/{nombreProveedor}','OrdendecompraController@searchNombreProveedor');
     Route::put('/api/ordendecompra/updateOrder/{idOrd}','OrdendecompraController@updateOrder');
     Route::put('/api/ordendecompra/updateProductsOrder/{idOrd}','OrdendecompraController@updateProductsOrder');
     /***********Compra */
@@ -181,6 +184,7 @@ Route::get('/prueba', function(){
     Route::get('/api/ventas/getDetallesVenta/{idVenta}','VentasController@getDetallesVenta');
     Route::post('/api/ventas/guardarVenta','VentasController@guardarVenta');
     Route::post('/api/ventas/guardarProductosVenta','VentasController@guardarProductosVenta');
+    Route::post('/api/ventas/cancelaVenta/{idVenta}','VentasController@cancelaVenta');
     Route::put('/api/ventas/updateVenta/{idVenta}','VentasController@updateVenta');
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
     /*****cotizaciones*/
@@ -207,6 +211,10 @@ Route::get('/prueba', function(){
     Route::get('/api/entregas/indexEntregas','VentasController@indexEntregas');
     /******PRODUCTO_PRECIO */
     Route::post('/api/productos_precio/registraPrecio','Producto_precioController@registraPrecio');
+    /******TRASPASOS */
+    Route::post('/api/traspasos/index/{tipoTraspaso}','TraspasosController@index');
+
+
 /**************************************************************************************+ */
 
 
