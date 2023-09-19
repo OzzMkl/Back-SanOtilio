@@ -367,7 +367,7 @@ class CompraController extends Controller
                     //insertamos el movimiento de existencia del producto
                     $moviproduc = new moviproduc();
                     $moviproduc -> idProducto =  $paramdata['idProducto'];
-                    $moviproduc -> claveEx =  $paramdata['claveEx'];
+                    $moviproduc -> claveEx =  $paramdata['claveexterna'];
                     $moviproduc -> accion =  "Alta de compra";
                     $moviproduc -> folioAccion =  $Foliocompra;
                     $moviproduc -> cantidad =  $igualMedidaMenor;
@@ -1047,7 +1047,8 @@ class CompraController extends Controller
         ->join('empleado','empleado.idEmpleado','=','compra.idEmpleadoR')
         ->select('compra.*','proveedores.idProveedor','proveedores.nombre as nombreProveedor','proveedores.rfc','proveedores.telefono', 
                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
-                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'))
+                    DB::raw('DATE_FORMAT(compra.fechaRecibo, "%d/%m/%Y") as fecha_format'),
+                    DB::raw('DATE_FORMAT(compra.created_at, "%d/%m/%Y") as created_format'))
         ->where('compra.idCompra','=',$idCompra)
         ->first();
 
@@ -1126,7 +1127,7 @@ class CompraController extends Controller
             $pdf->Cell(0, 10, 'PROVEEDOR: '. strtoupper($compra->nombreProveedor), 0, 1); // Agrega un texto
             
             $pdf->setXY(157,38);
-            $pdf->Cell(0, 10, 'FECHA: '. substr($compra->created_at,0,10), 0, 1); // Agrega un texto
+            $pdf->Cell(0, 10, 'FECHA: '. substr($compra->created_format,0,10), 0, 1); // Agrega un texto
             
             $pdf->SetFont('helvetica', '', 9); // Establece la fuente
             $pdf->setXY(60,43);
@@ -1163,8 +1164,8 @@ class CompraController extends Controller
             $pdf->Cell(70, 10, 'DESCRIPCION', 1,0,'C',true);
             $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
             $pdf->Cell(16, 10, 'CANT.', 1,0,'C',true);
-            $pdf->Cell(25, 10, 'MARCA', 1,0,'C',true);
-            $pdf->Cell(34, 10, 'DEPARTAMENTO', 1,0,'C',true);
+            $pdf->Cell(25, 10, 'PRECIO', 1,0,'C',true);
+            $pdf->Cell(34, 10, 'SUBTOTAL', 1,0,'C',true);
             $pdf->Ln(); // Nueva línea3
 
             $pdf->SetTextColor(0, 0, 0);
@@ -1188,8 +1189,8 @@ class CompraController extends Controller
                     $pdf->Cell(70, 10, 'DESCRIPCION', 1,0,'C',true);
                     $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
                     $pdf->Cell(16, 10, 'CANT.', 1,0,'C',true);
-                    $pdf->Cell(25, 10, 'MARCA', 1,0,'C',true);
-                    $pdf->Cell(34, 10, 'DEPARTAMENTO', 1,0,'C',true);
+                    $pdf->Cell(25, 10, 'PRECIO', 1,0,'C',true);
+                    $pdf->Cell(34, 10, 'SUBTOTAL', 1,0,'C',true);
                     $pdf->Ln(); // Nueva línea3
                 }
                     
@@ -1199,8 +1200,8 @@ class CompraController extends Controller
                     $pdf->MultiCell(70,10,$prodC->descripcion,1,'C',false,0);
                     $pdf->MultiCell(16,10,$prodC->nombreMedida,1,'C',false,0);
                     $pdf->MultiCell(16,10,$prodC->cantidad,1,'C',false,0);
-                    $pdf->MultiCell(25,10,$prodC->marcaN,1,'C',false,0);
-                    $pdf->MultiCell(34,10,$prodC->departamentoN,1,'C',false,0);
+                    $pdf->MultiCell(25,10,'$'.$prodC->precio,1,'C',false,0);
+                    $pdf->MultiCell(34,10,'$'.$prodC->subtotal,1,'C',false,0);
                     $pdf->Ln(); // Nueva línea
 
                     if($contRegistros == 18){
@@ -1218,8 +1219,11 @@ class CompraController extends Controller
                 $posY = 0;
             }
 
+            $pdf->setXY(145,$posY+10);
+            $pdf->Cell(0,10,'TOTAL:                 $'. $compra->total,0,1,'L',false);
+
             $pdf->SetFont('helvetica', '', 9); // Establece la fuente
-            $pdf->setXY(9,$posY+10);
+            $pdf->setXY(9,$posY+20);
             $pdf->MultiCell(0,10,'OBSERVACIONES: '. $compra->observaciones ,0,'L',false);
 
             $posY = $pdf->getY();
