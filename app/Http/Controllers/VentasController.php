@@ -8,7 +8,9 @@ use App\Http\Controllers\Controller;
 use Validator;
 use App\models\Cotizacion;
 use App\models\Ventasg;
+use App\models\Ventascan;
 use App\models\Productos_ventasg;
+use App\models\Productos_ventascan;
 use App\models\Empresa;
 use App\models\Monitoreo;
 use App\Producto;
@@ -450,7 +452,7 @@ class VentasController extends Controller
                                     'idCliente' => $params_array['ventasg']['idCliente'],
                                     'idTipoVenta' => $params_array['ventasg']['idTipoVenta'],
                                     'observaciones' => $params_array['ventasg']['observaciones'],
-                                    'idStatus' => 35,
+                                    //'idStatus' => 35,
                                     'idEmpleado' => $params_array['ventasg']['idEmpleado'],
                                     'subtotal' => $params_array['ventasg']['subtotal'],
                                     'descuento' => $params_array['ventasg']['descuento'],
@@ -627,6 +629,175 @@ class VentasController extends Controller
                 throw $e;
             }
 
+        } else{
+            $data =  array(
+                'code'          =>  400,
+                'status'        => 'error',
+                'message'       =>  'Los datos enviados son incorrectos'
+            );
+        }
+        return $data;
+    }
+
+    public function cancelaVenta($idVenta, Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        // echo 'vardmp <br>';
+        // var_dump($params_array['identity']['sub']);
+        // die();
+        if(!empty($params_array)){
+            if($params_array['identity']['permisos']['cancelar'] == 1){
+                try{
+                    DB::beginTransaction();
+
+                    //pasos productos
+                    $dataProductos = $this->guardaProductosVentaCan($idVenta,$params_array['identity']['sub']);
+
+                    //consultar venta
+                    $venta = Ventasg::where('idVenta',$idVenta)->first();
+
+                    //Eliminar venta
+                    Ventasg::where('idVenta',$idVenta)->delete();
+
+                    //insertar venta en ventas canceladas
+                    $ventascan = new Ventascan();
+                    $ventascan->idVenta = $venta->idVenta;
+                    $ventascan->idCliente = $venta->idCliente;
+                    $ventascan->cdireccion = $venta->cdireccion;
+                    $ventascan->idTipoVenta = $venta->idTipoVenta;
+                    $ventascan->idTipoPago = $venta->idTipoPago;//se convertida en idstatus
+                    // $ventascan->autorizaV = $venta->idVenta;
+                    // $ventascan->autorizaC = $venta->idVenta;
+                    $ventascan->observaciones = $venta->observaciones;
+                    // $ventascan->fecha = $venta->fecha;
+                    $ventascan->idEmpleadoG = $venta->idEmpleado;//Empleado que genero la venta
+                    $ventascan->idEmpleadoC = $params_array['identity']['sub'];//idEmpleado que cancelo la venta
+                    $ventascan->subtotal = $venta->subtotal;
+                    $ventascan->descuento = $venta->descuento;
+                    $ventascan->total = $venta->total;
+                    $ventascan->save();
+
+
+                    
+
+                    //insertar monitoreo
+                    //obtenemos ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['identity']['sub'];
+                    $monitoreo -> accion =  "Cancelacion de venta";
+                    $monitoreo -> folioNuevo =  $idVenta;
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo -> motivo =  $params_array['motivo_cancelacion'];
+                    $monitoreo ->save();
+
+                    //data
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'Venta cancelada correctamente',
+                        'data_productos' => $dataProductos
+                    );
+
+                    DB::commit();
+
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
+            } else{
+                $data = array(
+                    'code'      =>  400,
+                    'status'    =>  'error',
+                    'message'   =>  'El usuario no cuenta con los permisos para cancelar la venta.'
+                );
+            }
+        } else{
+            $data = array(
+                'code'      =>  400,
+                'status'    =>  'error',
+                'message'   =>  'Los valores ingresados no se recibieron correctamente'
+            );
+        }
+
+        return response()->json($data, $data['code']);
+    }
+
+    public function guardaProductosVentaCan($idVenta, $idEmpleado){
+        if(!empty($idVenta) || !empty($idEmpleado)){
+            try{
+                DB::beginTransaction();
+
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                //Consultamos productos a eliminar
+                $lista_prodVen_ant = Productos_ventasg::where('idVenta',$idVenta)->get();
+
+                //Insertamos productos que le pertenecian a la venta que se elimino
+                foreach($lista_prodVen_ant as $param => $paramdata){
+
+                    //Consultamos la existencia antes de actualizar
+                    $Producto = Producto::find($paramdata['idProducto']);
+                    $stockAnterior = $Producto -> existenciaG;
+
+                    //Actualizamos existencia
+                    $Producto -> existenciaG = $Producto -> existenciaG + $paramdata['igualMedidaMenor'];
+                    $Producto -> save();
+
+                    //Consultamos la existencia despues de actualizar
+                    $stockActualizado = $Producto->existenciaG;
+
+                    //insertamos en productos ventas canceladas
+                    $productoCan = new Productos_ventascan();
+                    $productoCan->idVenta = $paramdata['idVenta'];
+                    $productoCan->idProducto = $paramdata['idProducto'];
+                    $productoCan->descripcion = $paramdata['descripcion'];
+                    $productoCan->idProdMedida = $paramdata['idProdMedida'];
+                    $productoCan->cantidad = $paramdata['cantidad'];
+                    $productoCan->precio = $paramdata['precio'];
+                    $productoCan->descuento = $paramdata['descuento'];
+                    $productoCan->total = $paramdata['total'];
+                    $productoCan->igualMedidaMenor = $paramdata['igualMedidaMenor'];
+                    $productoCan->save();
+
+                    //insertamos el movimiento de existencia que se le realizo al producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $Producto->claveEx;
+                    $moviproduc -> accion =  "Cancelacion de venta, se suma al inventario";
+                    $moviproduc -> folioAccion =  $paramdata['idVenta'];
+                    $moviproduc -> cantidad =  $paramdata['igualMedidaMenor'];
+                    $moviproduc -> stockanterior =  $stockAnterior;
+                    $moviproduc -> stockactualizado =  $stockActualizado;
+                    $moviproduc -> idUsuario =  $idEmpleado;
+                    $moviproduc -> pc =  $ip;
+                    $moviproduc ->save();
+                }
+
+                //eliminamos los registros que tenga esa venta
+                Productos_ventasg::where('idVenta',$idVenta)->delete();
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Productos registrados correctamente en ventas canceladas.'
+                );
+
+
+                DB::commit();
+            } catch(\Exception $e){
+                //Si falla realizamos rollback de la transaccion
+                DB::rollback();
+                //Propagamos el error ocurrido
+                throw $e;
+            }
         } else{
             $data =  array(
                 'code'          =>  400,
