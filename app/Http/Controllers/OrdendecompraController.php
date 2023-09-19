@@ -20,6 +20,8 @@ class OrdendecompraController extends Controller
         $ordencompra = DB::table('ordendecompra')
         ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
         ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+        ->where('ordendecompra.idStatus','=',45)
+        ->orwhere('ordendecompra.idStatus','=',46)
         ->orderBy('ordendecompra.idOrd','desc')
         ->paginate(10);
         
@@ -60,7 +62,7 @@ class OrdendecompraController extends Controller
                     $Ordencompra->observaciones = $params_array['observaciones'];
                     $Ordencompra->fecha = $params_array['fecha'];
                     $Ordencompra->idEmpleado = $params_array['idEmpleado'];
-                    $Ordencompra->idStatus = $params_array['idStatus'];
+                    $Ordencompra->idStatus = 45;
 
                     $Ordencompra->save();
 
@@ -199,6 +201,8 @@ class OrdendecompraController extends Controller
             unset($params_array['idOrd']);
             unset($params_array['idReq']);
             unset($params_array['created_at']);
+            //Asignamos idStatus
+            $params_array['idStatus'] = 46;
             //actualizamos
             $Ordencompra = OrdenDeCompra::where('idOrd',$idOrd)->update($params_array);
                 //retornamos la respuesta si esta
@@ -463,6 +467,105 @@ class OrdendecompraController extends Controller
 
 
     }
+
+    public function cancelarOrden(Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        if( !empty($params_array)){
+            $statusOrden = OrdenDeCompra::find($params_array['idOrd'])->idStatus; 
+            if($statusOrden == 47){
+                $data =  array(
+                    'status'        => 'error',
+                    'code'          =>  404,
+                    'message'       =>  'La orden de compra ya está cancelada'
+                );
+            }else{
+                try{
+                    DB::beginTransaction();
+
+                    //Cambio de status de orden de compra
+                    $Orden = OrdenDeCompra::where('idOrd',$params_array['idOrd'])->update([
+                        'idStatus' => 47
+                    ]);
+                    
+                    //Insertamos en monitoreo la cancelacion con su motivo
+                    //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario = $params_array['idEmpleado'];
+                    $monitoreo -> accion =  "Cancelacion de orden de compra";
+                    $monitoreo -> folioNuevo =  $params_array['idOrd'];
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo -> motivo = $params_array['motivo'];
+                    $monitoreo ->save();
+
+
+                    $data =  array(
+                        'status'            => 'success',
+                        'code'              =>  200,
+                        'message'           =>  'Cancelación de orden de compra correcta!'
+                    );
+
+                    DB::commit();
+                }catch(\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   =>  'Fallo algo',
+                        'messageError' => $e -> getMessage(),
+                        'error' => $e
+                    );
+                }
+            }
+        }else{
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'Los datos enviados no son correctos'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
+
+    public function searchIdOrden($idOrd){
+        $ordencompra = DB::table('ordendecompra')
+        ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
+        ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+        ->where('ordendecompra.idOrd','=',$idOrd)
+        ->where(function($query){
+            $query  ->orwhere('ordendecompra.idStatus','=',45)
+                    ->orwhere('ordendecompra.idStatus','=',46);
+        })
+        ->paginate(10);
+
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'orden'   =>  $ordencompra
+        ]);
+    }
+
+    public function searchNombreProveedor($nombreProveedor){
+        $ordencompra = DB::table('ordendecompra')
+        ->join('proveedores','proveedores.idProveedor','=','ordendecompra.idProveedor')
+        ->select('ordendecompra.*','proveedores.nombre as nombreProveedor')
+        ->where('proveedores.nombre','like','%'.$nombreProveedor.'%')
+        ->where(function($query){
+            $query  ->orwhere('ordendecompra.idStatus','=',45)
+                    ->orwhere('ordendecompra.idStatus','=',46);
+        })
+        ->paginate(10);
+
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'orden'   =>  $ordencompra
+        ]);
+
+    } 
+
 
 
 }
