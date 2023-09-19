@@ -14,6 +14,8 @@ use App\models\Empresa;
 use TCPDF;
 use App\models\Monitoreo;
 use App\OrdenDeCompra;
+use App\Clases\clsProducto;
+use App\Producto;
 
 class RequisicionController extends Controller
 {
@@ -462,9 +464,8 @@ class RequisicionController extends Controller
             //Validacion de datos
             $validate = Validator::make($params_array, [
                 'idReq'         => 'required',
-                'observaciones' => 'required',
                 'idEmpleado'    => 'required',
-                'idStatus'      => 'required',
+                'idStatus'      => 'required'
             ]);
             if($validate->fails()){
                 $data = array(
@@ -521,9 +522,10 @@ class RequisicionController extends Controller
                     $monitoreo ->save();
 
                     $data = array(
-                        'code'      =>  200,
-                        'status'    =>  'success',
-                        'message'   =>  'Requisicion actualizada'
+                        'code'        =>  200,
+                        'status'      =>  'success',
+                        'message'     =>  'Requisicion actualizada',
+                        'requisicion' => $requisicion
                     );
 
                     /****** */
@@ -569,56 +571,13 @@ class RequisicionController extends Controller
                 $Productos_requisicion-> idProdMedida = $paramdata['idProdMedida'];
                 $Productos_requisicion-> cantidad = $paramdata['cantidad'];
 
-                $idProdMedidaC = $paramdata['idProdMedida'];
-                $cantidadC = $paramdata['cantidad'];
-                $igualMedidaMenor = 0;
-                $lugar = 0;
+                //Creamos instancia para poder ocupar las funciones
+                $clsMedMen = new clsProducto();
 
-                //Consulta para saber cuantas medidas tiene un producto
-                $count = Productos_medidas::where([
-                    ['productos_medidas.idProducto','=',$paramdata['idProducto']],
-                    ['productos_medidas.idStatus','=','31']
-                ])->count();
-                //Consulta para obtener la lista de productos_medidas de un producto
-                $listaPM = Productos_medidas::where([
-                        ['productos_medidas.idProducto','=',$paramdata['idProducto']],
-                        ['productos_medidas.idStatus','=','31']
-                    ])->get();
+                //calculamos medida menor
+                $medidaMenor = $clsMedMen->cantidad_En_MedidaMenor($paramdata['idProducto'],$paramdata['idProdMedida'],$paramdata['cantidad']);
 
-                if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
-                    $Productos_requisicion-> igualMedidaMenor = $cantidadC;
-                }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
-                    //Se hace un cilo que recorre listaPM
-                    while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                        //echo $listaPM[$lugar]['attributes']['idProdMedida'];
-                        //echo $lugar;
-                        $lugar++;
-                    }
-                    if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
-                        $Productos_requisicion-> igualMedidaMenor = $cantidadC;
-                    }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
-                        $igualMedidaMenor = $cantidadC;
-                        while($lugar < $count ){
-                            $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
-                            $lugar++;
-                            //echo $igualMedidaMenor;
-                        }
-                        $Productos_requisicion-> igualMedidaMenor = $igualMedidaMenor;
-                    }elseif($lugar>0 && $lugar<$count-1){//Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
-                        $igualMedidaMenor = $cantidadC;
-                        $count--;
-                        //echo $count;
-                        while($lugar < $count ){
-                            $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
-                            $lugar++;
-                        }
-                        $Productos_requisicion-> igualMedidaMenor = $igualMedidaMenor;
-                    }else{
-
-                    }
-
-                }
-
+                $Productos_requisicion-> igualMedidaMenor = $medidaMenor;
                 $Productos_requisicion->save();//guardamos el modelo
                 //Si todo es correcto mandamos el ultimo producto insertado
             }
@@ -729,7 +688,7 @@ class RequisicionController extends Controller
             if($len > 1){
                 do{
                     $primerProducto = $ListaProductos[0];
-                    //array_splice($ListaProductos,0,1);
+                    array_splice($ListaProductos,0,1);
                     $len--;
                     foreach($ListaProductos as $clave){
                         $k = 0;
@@ -789,6 +748,7 @@ class RequisicionController extends Controller
 
             //Al terminar la busqueda regresamos la lista de compras
             //var_dump($ListaCompras);
+            //die();
             $data =  array(
                     'status'            => 'success',
                     'code'              =>  200,
