@@ -213,6 +213,8 @@ Route::get('/prueba', function(){
     Route::post('/api/productos_precio/registraPrecio','Producto_precioController@registraPrecio');
     /******TRASPASOS */
     Route::post('/api/traspasos/index/{tipoTraspaso}','TraspasosController@index');
+    /****** SUCURSALES */
+    Route::get('/api/sucursales/index','SucursalController@index');
 
 
 /**************************************************************************************+ */
