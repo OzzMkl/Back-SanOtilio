@@ -190,7 +190,6 @@ class ProductoController extends Controller
                     'status'    =>  'error',
                     'code'      =>  '404',
                     'message_system'   =>  'Fallo la validacion de los datos del producto',
-                    'message_validation' => $validate->getMessage(),
                     'errors'    =>  $validate->errors()
                 );
             }else{
