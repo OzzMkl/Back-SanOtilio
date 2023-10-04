@@ -117,11 +117,12 @@ class VentasController extends Controller
         $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
         $params_array = json_decode($json,true);
+
         if(!empty($params) && !empty($params_array)){
             //eliminamos espacios vacios
-            $params_array = array_map('trim',$params_array);
+            // $params_array = array_map('trim',$params_array);
             //validamos los datos
-            $validate = Validator::make($params_array, [
+            $validate = Validator::make($params_array['ventasg'], [
                 'idCliente'       => 'required',
                 'idTipoVenta'       => 'required',
                 'idStatus'   => 'required',
@@ -129,36 +130,39 @@ class VentasController extends Controller
                 'subtotal'   => 'required',
                 'total'   => 'required',
             ]);
+
             if($validate->fails()){
                 $data = array(
                     'status'    => 'error',
                     'code'      => 404,
-                    'message'   => 'Fallo! La orden de compra no se ha creado',
+                    'message'   => 'Validacion fallida, la venta no se genero.',
                     'errors'    => $validate->errors()
                 );
-            }else{
+            } else{
                 try{
                     DB::beginTransaction();
 
                     $ventasg = new Ventasg();
-                    $ventasg->idCliente = $params_array['idCliente'];
-                    $ventasg->idTipoVenta = $params_array['idTipoVenta'];
-                    $ventasg->observaciones = $params_array['observaciones'];
+                    $ventasg->idCliente = $params_array['ventasg']['idCliente'];
+                    $ventasg->idTipoVenta = $params_array['ventasg']['idTipoVenta'];
+                    $ventasg->observaciones = $params_array['ventasg']['observaciones'];
                     $ventasg->idStatus = 16;
-                    $ventasg->idEmpleado = $params_array['idEmpleado'];
-                    $ventasg->subtotal = $params_array['subtotal'];
-                    if(isset($params_array['descuento'])){
-                        $ventasg->descuento = $params_array['descuento'];
+                    $ventasg->idEmpleado = $params_array['ventasg']['idEmpleado'];
+                    $ventasg->subtotal = $params_array['ventasg']['subtotal'];
+                    if(isset($params_array['ventasg']['descuento'])){
+                        $ventasg->descuento = $params_array['ventasg']['descuento'];
                     }
-                    if(isset($params_array['cdireccion'])){
-                        $ventasg->cdireccion = $params_array['cdireccion'];
+                    if(isset($params_array['ventasg']['cdireccion'])){
+                        $ventasg->cdireccion = $params_array['ventasg']['cdireccion'];
                     }
-                    $ventasg->total = $params_array['total'];
+                    $ventasg->total = $params_array['ventasg']['total'];
     
                     $ventasg->save();
 
                     //obtemos id de la ultima venta insertada
-                    $ultimaVenta = Ventasg::latest('idVenta')->pluck('idVenta')->first();
+                    // $ultimaVenta = Ventasg::latest('idVenta')->pluck('idVenta')->first();
+                    $ultimaVenta = Ventasg::latest('idVenta')->value('idVenta');
+
                     //obtenemos ip
                     $ip = $_SERVER['REMOTE_ADDR'];
 
@@ -166,16 +170,16 @@ class VentasController extends Controller
                      * Verificamos si la venta viene de alguna cotizacion 
                      * Si es que si asignamos status de deshabilitado
                      * ****/
-                    if($params_array['idCotiza'] != 0){
-                        $cotizacion =  Cotizacion::where('idCotiza',$params_array['idCotiza'])
+                    if($params_array['ventasg']['idCotiza'] != 0){
+                        $cotizacion =  Cotizacion::where('idCotiza',$params_array['ventasg']['idCotiza'])
                                                     ->update([
                                                         'idStatus' => 35
                                                     ]);
                         //insertamos el movimiento realizado
                         $monitoreo = new Monitoreo();
-                        $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                        $monitoreo -> idUsuario =  $params_array['ventasg']['idEmpleado'];
                         $monitoreo -> accion =  "Cotizacion pasada a venta";
-                        $monitoreo -> folioAnterior =  $params_array['idCotiza'];
+                        $monitoreo -> folioAnterior =  $params_array['ventasg']['idCotiza'];
                         $monitoreo -> folioNuevo =  $ultimaVenta;
                         $monitoreo -> pc =  $ip;
                         $monitoreo ->save();
@@ -185,17 +189,22 @@ class VentasController extends Controller
                     
                     //insertamos el movimiento realizado
                     $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                    $monitoreo -> idUsuario =  $params_array['ventasg']['idEmpleado'];
                     $monitoreo -> accion =  "Alta de venta";
                     $monitoreo -> folioNuevo =  $ultimaVenta;
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
                     /**** FIN proceso de  monitoreo ****/
+
+                    /** INICIO DE INSERCION DE PRODUCTOS */
+                    $dataProductos = $this->guardarProductosVenta($ventasg, $params_array['lista_productoVentag']);
+                    /** FIN DE INSERCION DE PRODUCTOS */
     
                     $data = array(
                         'status'    =>  'success',
                         'code'      =>  200,
-                        'message'   =>  'Venta creada pero sin productos'
+                        'message'   =>  'Venta creada pero sin productos',
+                        'data_productos' => $dataProductos
                     );
 
                     DB::commit();
@@ -219,130 +228,36 @@ class VentasController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    public function guardarProductosVenta(Request $request){
-        $json = $request -> input('json',null);
-        $params_array = json_decode($json,true);
-        if(!empty($params_array)){
+    public function guardarProductosVenta($ventasg, $lista_productosVenta){
+
+        if( count($lista_productosVenta) >= 1 && !empty($lista_productosVenta)){
             try{
                 DB::beginTransaction();
 
+                //Creamos instancia para poder ocupar las funciones
+                $clsMedMen = new clsProducto();
+
                 //consultamos la ultima venta realizada
-                $ventasg = Ventasg::latest('idVenta')->first();
+                // $ventasg = Ventasg::latest('idVenta')->first();
                 //obtenemos direccion ip
                 $ip = $_SERVER['REMOTE_ADDR'];
 
                 //recorremos la lista de productos
-                foreach($params_array as $param => $paramdata){
+                foreach($lista_productosVenta as $param => $paramdata){
 
-                    /**************************** ACTUALIZA EXISTENCIA ***************************************** */
+                    // calculamos la medida menor
+                    $medidaMenor = $clsMedMen->cantidad_En_MedidaMenor($paramdata['idProducto'],$paramdata['idProdMedida'],$paramdata['cantidad']);
 
-                    //antes de actualizar el producto obtenemos su existencia-
-                    $stockanterior = Producto::find($paramdata['idProducto'])->existenciaG;
                     //Buscamos el producto a actualizar y actualizamos
                     $Producto = Producto::find($paramdata['idProducto']);
+                    $stockanterior = $Producto -> existenciaG;
+                    //actualizamos la existencia
+                    $Producto -> existenciaG = $Producto -> existenciaG - $medidaMenor;
+                    $Producto -> save();
+
                     
-                    /**
-                     * CONVERSION A MEDIDA MENOR
-                     * 
-                     * lugar - count
-                     *   [0] - 1
-                     *   [1] - 2
-                     *   [2] - 3
-                     *   [3] - 4
-                     *   [4] - 5
-                     * 
-                     * Variables para almacenar los datos recibidos
-                     * Consulta para saber cuantas medidas tiene un producto
-                     * Consulta para obtener la lista de productos_medidas de un producto
-                     * Verificar si el producto tiene una sola medida
-                     * Si tiene una sola medida agrega directo la existencia ( count == 1 )
-                     * Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
-                     * Se hace un cilo que recorre listaPM
-                     * Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
-                     * Medida mas alta, multiplicar desde el principio ( lugar == 0)
-                     * Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
-                     *  
-                     */
-                    //Variables para almacenar los datos recibidos
-                    $idProductoC = $paramdata['idProducto'];
-                    $idProdMedidaC = $paramdata['idProdMedida'];
-                    $cantidadC = $paramdata['cantidad'];
-                    //Variables para el calculo
-                    $igualMedidaMenor = 0;
-                    $lugar = 0; 
-                    //Consulta para saber cuantas medidas tiene un producto
-                    $count = Productos_medidas::where([
-                                                        ['productos_medidas.idProducto','=',$paramdata['idProducto']],
-                                                        ['productos_medidas.idStatus','=','31']
-                                                    ])->count();
-                    //Consulta para obtener la lista de productos_medidas de un producto
-                    $listaPM = Productos_medidas::where([
-                                                            ['productos_medidas.idProducto','=',$paramdata['idProducto']],
-                                                            ['productos_medidas.idStatus','=','31']
-                                                        ])->get();
-                    //var_dump($count);
-                    //var_dump($listaPM);
-                    //Verificar si el producto tiene una sola medida
-                    if($count == 1){//Si tiene una sola medida agrega directo la existencia ( count == 1 )
-                        $Producto -> existenciaG = $Producto -> existenciaG - $cantidadC;
-                        $igualMedidaMenor = $cantidadC;
-                    }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
-                        //Se hace un cilo que recorre listaPM
-                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
-                            //echo $lugar;
-                            $lugar++;
-                        }
-                        if($lugar == $count-1){//Si la medida de compra a ingresar es la medida mas baja ingresar directo ( lugar == count-1 )
-                            $Producto -> existenciaG = $Producto -> existenciaG - $cantidadC;
-                            $igualMedidaMenor = $cantidadC;
-                        }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
-                            $igualMedidaMenor = $cantidadC;
-                            while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
-                                $lugar++;
-                                //echo $igualMedidaMenor;
-                            }
-                            $Producto -> existenciaG = $Producto -> existenciaG - $igualMedidaMenor;
-                        }elseif($lugar>0 && $lugar<$count-1){//Medida [1] a [3] multiplicar en diagonal hacia abajo ( lugar > 0 && lugar < count-1 )
-                            $igualMedidaMenor = $cantidadC;
-                            $count--;
-                            //echo $count;
-                            while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
-                                $lugar++;
-                            }
-                            $Producto -> existenciaG = $Producto -> existenciaG - $igualMedidaMenor;
-                        }else{
-
-                        }
-                    }
-                    
-                    $Producto->save();//guardamos el modelo
-                    /****************************FIN ACTUALIZA EXISTENCIA***************************************** */
-
-                    /****************************INGRESA MOVIMIENTO PRODUCTO***************************************** */
-
-                    //obtenemos la existencia del producto actualizado
-                    $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
-
-                    //insertamos el movimiento de existencia del producto
-                    $moviproduc = new moviproduc();
-                    $moviproduc -> idProducto =  $paramdata['idProducto'];
-                    $moviproduc -> claveEx =  $paramdata['claveEx'];
-                    $moviproduc -> accion =  "Alta de venta";
-                    $moviproduc -> folioAccion =  $ventasg->idVenta;
-                    $moviproduc -> cantidad =  $igualMedidaMenor;
-                    $moviproduc -> stockanterior =  $stockanterior;
-                    $moviproduc -> stockactualizado =  $stockactualizado;
-                    $moviproduc -> idUsuario =  $ventasg->idEmpleado;
-                    $moviproduc -> pc =  $ip;
-                    $moviproduc ->save();
-
-                    /**************************** FIN INGRESA MOVIMIENTO PRODUCTO ***************************************** */
 
                     /**************************** REGISTRA PRODUCTOS VENTAG ***************************************** */
-
                     $productos_ventasg = new Productos_ventasg();
                     $productos_ventasg-> idVenta = $ventasg->idVenta;
                     $productos_ventasg-> idProducto = $paramdata['idProducto'];
@@ -354,30 +269,42 @@ class VentasController extends Controller
                         $productos_ventasg-> descuento = $paramdata['descuento'];
                     }
                     $productos_ventasg-> total = $paramdata['subtotal'];
-                    $productos_ventasg-> igualMedidaMenor = $igualMedidaMenor;
+                    $productos_ventasg-> igualMedidaMenor = $medidaMenor;
                     //guardamos el producto
                     $productos_ventasg->save();
 
-                    /**************************** FIN REGISTRA PRODUCTOS VENTAG ***************************************** */
+                    /****************************INGRESA MOVIMIENTO PRODUCTO***************************************** */
+
+                    //obtenemos la existencia del producto actualizado
+                    $stockActualizado = $Producto->existenciaG;
+
+                    //insertamos el movimiento de existencia del producto
+                    $moviproduc = new moviproduc();
+                    $moviproduc -> idProducto =  $paramdata['idProducto'];
+                    $moviproduc -> claveEx =  $paramdata['claveEx'];
+                    $moviproduc -> accion =  "Alta de venta";
+                    $moviproduc -> folioAccion =  $ventasg->idVenta;
+                    $moviproduc -> cantidad =  $medidaMenor;
+                    $moviproduc -> stockanterior =  $stockanterior;
+                    $moviproduc -> stockactualizado =  $stockActualizado;
+                    $moviproduc -> idUsuario =  $ventasg->idEmpleado;
+                    $moviproduc -> pc =  $ip;
+                    $moviproduc ->save();
+                    
                 }
 
                 //Si todo es correcto mandamos el ultimo producto insertado
                 $data =  array(
-                    'status'        => 'success',
-                    'code'          =>  200,
-                    'Productos_ventasg'       =>  $productos_ventasg
+                    'code' =>  200,
+                    'status' => 'success',
+                    'message' => 'Productos registrados correctamente'
                 );
 
                 DB::commit();
             } catch (\Exception $e){
                 DB::rollBack();
-                $data = array(
-                    'code'      => 400,
-                    'status'    => 'Error',
-                    'message'   =>  'Fallo algo',
-                    'messageError' => $e -> getMessage(),
-                    'error' => $e
-                );
+                // propagamos el er
+                throw $e;
             }
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
@@ -391,7 +318,7 @@ class VentasController extends Controller
             // var_dump($params_array);
             // die();
             if($ventasg->idTipoVenta == 1 || $ventasg->idTipoVenta == 2 || $ventasg->idTipoVenta == 3){
-                if($ventasg->total >= 1000 || count($params_array) > 7){
+                if($ventasg->total >= 1000 || count($lista_productosVenta) > 7){
                     $this-> generaTicketPeque();
                 } else{
                     if($ventasg->idTipoVenta == 3){
