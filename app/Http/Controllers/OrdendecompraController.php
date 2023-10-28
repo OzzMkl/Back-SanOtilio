@@ -194,7 +194,7 @@ class OrdendecompraController extends Controller
 
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
-         if(!empty($params_array)){
+        if(!empty($params_array)){
              //eliminar espacios vacios
             $params_array = array_map('trim', $params_array);
             //quitamos lo que no queremos actualizar
@@ -205,20 +205,25 @@ class OrdendecompraController extends Controller
             $params_array['idStatus'] = 46;
             //actualizamos
             $Ordencompra = OrdenDeCompra::where('idOrd',$idOrd)->update($params_array);
-                //retornamos la respuesta si esta
-                 return response()->json([
-                    'status'    =>  'success',
-                    'code'      =>  200,
-                    'message'   =>  'Orden actualizada'
-                 ]);
+            //Consulta orden actualizada
+            $orden = OrdenDeCompra::find($idOrd);
+            //retornamos la respuesta si esta
+            $data =  array(
+                'status'  => 'success',
+                'code'    => 200,
+                'message' => 'Orden actualizada',
+                'orden'   => $orden
+            );
 
-         }else{
-            return response()->json([
+        }else{
+            $data =  array(
                 'code'      =>  400,
                 'status'    => 'Error!',
                 'message'   =>  'json vacio'
-            ]);   
-         }
+            );   
+        }
+        return response()->json($data, $data['code']);
+        
     }
 
     public function updateProductsOrder($idOrd,Request $req){
