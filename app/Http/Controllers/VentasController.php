@@ -240,7 +240,10 @@ class VentasController extends Controller
                 //consultamos la ultima venta realizada
                 // $ventasg = Ventasg::latest('idVenta')->first();
                 //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
+                // $ip = $_SERVER['REMOTE_ADDR'];
+
+                // $arrProductosVentas = [];
+                // $arrMovimientos = [];
 
                 //recorremos la lista de productos
                 foreach($lista_productosVenta as $param => $paramdata){
@@ -258,40 +261,48 @@ class VentasController extends Controller
                     
 
                     /**************************** REGISTRA PRODUCTOS VENTAG ***************************************** */
-                    $productos_ventasg = new Productos_ventasg();
-                    $productos_ventasg-> idVenta = $ventasg->idVenta;
-                    $productos_ventasg-> idProducto = $paramdata['idProducto'];
-                    $productos_ventasg-> descripcion = $paramdata['descripcion'];
-                    $productos_ventasg-> idProdMedida = $paramdata['idProdMedida'];
-                    $productos_ventasg-> cantidad = $paramdata['cantidad'];
-                    $productos_ventasg-> precio = $paramdata['precio'];
-                    if(isset($paramdata['descuento'])){
-                        $productos_ventasg-> descuento = $paramdata['descuento'];
-                    }
-                    $productos_ventasg-> total = $paramdata['subtotal'];
-                    $productos_ventasg-> igualMedidaMenor = $medidaMenor;
-                    //guardamos el producto
-                    $productos_ventasg->save();
+                    // $arrProductoVenta = [
+                    //     'idVenta' => $ventasg->idVenta,
+                    //     'idProducto' => $paramdata['idProducto'],
+                    //     'descripcion' => $paramdata['descripcion'],
+                    //     'idProdMedida' => $paramdata['idProdMedida'],
+                    //     'cantidad' => $paramdata['cantidad'],
+                    //     'precio' => $paramdata['precio'],
+                    //     'descuento' => $paramdata['descuento'],
+                    //     'total' => $paramdata['subtotal'],
+                    //     'igualMedidaMenor' => $medidaMenor,
+                    // ];
+
+                    // $arrProductosVentas[] = $arrProductoVenta;
+                    
+                    Productos_ventasg::insertProductoVentasg($ventasg->idVenta,$paramdata,$medidaMenor);
 
                     /****************************INGRESA MOVIMIENTO PRODUCTO***************************************** */
 
                     //obtenemos la existencia del producto actualizado
-                    $stockActualizado = $Producto->existenciaG;
+                    $stockactualizado = $Producto->existenciaG;
+
+                    // $arrMovimiento = [
+                    //     'idProducto' => $paramdata['idProducto'],
+                    //     'claveEx' => $paramdata['claveEx'],
+                    //     'accion' => "Alta de venta",
+                    //     'folioAccion' => $ventasg->idVenta,
+                    //     'cantidad' => $medidaMenor,
+                    //     'stockanterior' => $stockanterior,
+                    //     'stockactualizado' => $stockActualizado,
+                    //     'idUsuario' => $ventasg->idEmpleado,
+                    //     'pc' => $ip,
+                    // ];
+
+                    // $arrMovimientos[] = $arrMovimiento;
 
                     //insertamos el movimiento de existencia del producto
-                    $moviproduc = new moviproduc();
-                    $moviproduc -> idProducto =  $paramdata['idProducto'];
-                    $moviproduc -> claveEx =  $paramdata['claveEx'];
-                    $moviproduc -> accion =  "Alta de venta";
-                    $moviproduc -> folioAccion =  $ventasg->idVenta;
-                    $moviproduc -> cantidad =  $medidaMenor;
-                    $moviproduc -> stockanterior =  $stockanterior;
-                    $moviproduc -> stockactualizado =  $stockActualizado;
-                    $moviproduc -> idUsuario =  $ventasg->idEmpleado;
-                    $moviproduc -> pc =  $ip;
-                    $moviproduc ->save();
-                    
+                    moviproduc::insertMoviproduc($paramdata,$accion = "Alta de venta", $ventasg->idVenta, $medidaMenor,
+                                                    $stockanterior, $stockactualizado, $ventasg->idEmpleado);
                 }
+
+                // Productos_ventasg::insert($arrProductosVentas);
+                // moviproduc::insert($arrMovimientos);
 
                 //Si todo es correcto mandamos el ultimo producto insertado
                 $data =  array(
