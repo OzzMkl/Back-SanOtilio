@@ -12,4 +12,21 @@ class Monitoreo extends Model
         'idUsuario','accion','folioAnterior','folioNuevo',
         'pc'
     ];
+
+    public static function insertMonitoreo($idUsuario,$accion,$folioAnterior,$folioNuevo,$motivo){
+        $ip = $_SERVER['REMOTE_ADDR'];
+
+        $monitoreo = new self([
+            'idUsuario' => $idUsuario,
+            'accion' => $accion,
+            'folioAnterior' => $folioAnterior,
+            'folioNuevo' => $folioNuevo,
+            'pc' => $ip,
+            'motivo' => $motivo
+        ]);
+
+        $monitoreo ->save();
+
+    }
+
 }
