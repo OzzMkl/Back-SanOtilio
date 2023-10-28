@@ -1121,28 +1121,39 @@ class CompraController extends Controller
             $pdf->SetFont('helvetica', 'B', 12); // Establece la fuente
             $pdf->setXY(10,38);
             $pdf->Cell(0, 10, 'COMPRA #'. $compra->idCompra, 0, 1); // Agrega un texto
-
+            
             $pdf->SetFont('helvetica', '', 9); // Establece la fuente
             $pdf->setXY(60,38);
-            $pdf->Cell(0, 10, 'PROVEEDOR: '. strtoupper($compra->nombreProveedor), 0, 1); // Agrega un texto
-            
-            $pdf->setXY(157,38);
-            $pdf->Cell(0, 10, 'FECHA: '. substr($compra->created_format,0,10), 0, 1); // Agrega un texto
-            
+            $pdf->Cell(0, 10, 'PROVEEDOR: ', 0, 1); // Agrega un texto
+
+            $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
+            $pdf->setXY(82,38);
+            $pdf->Cell(0, 10,strtoupper($compra->nombreProveedor), 0, 1); // Agrega un texto
+
             $pdf->SetFont('helvetica', '', 9); // Establece la fuente
             $pdf->setXY(60,43);
+            $pdf->Cell(0, 10, 'FOLIO DEL PROVEEDOR: ', 0, 1); // Agrega un texto
+
+            $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
+            $pdf->setXY(99.5,43);
+            $pdf->Cell(0, 10,strtoupper($compra->folioProveedor), 0, 1); // Agrega un texto
+            
+            $pdf->setXY(157,43);
+            $pdf->Cell(0, 10, 'FECHA: '. substr($compra->created_format,0,10), 0, 1); // Agrega un texto
+
+            
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(60,48);
             $pdf->Cell(0, 10, 'EMPLEADO: '. strtoupper($compra->nombreEmpleado), 0, 1); // Agrega un texto
 
-
-
             $mytime = date('d/m/Y H:i:s');
-            $pdf->setXY(153,43);
+            $pdf->setXY(153,48);
             $pdf->Cell(0, 10, 'IMPRESO: '. $mytime, 0, 1); // Agrega un texto
 
 
             $pdf->SetDrawColor(255,145,0);//insertamos color a pintar en RGB
             $pdf->SetLineWidth(2.5);//grosor de la linea
-            $pdf->Line(10,52,200,52);//X1,Y1,X2,Y2
+            $pdf->Line(10,57,200,57);//X1,Y1,X2,Y2
 
             $pdf->SetDrawColor(0,0,0);//insertamos color a pintar en RGB
             $pdf->SetLineWidth(.2);//grosor de la linea
@@ -1293,7 +1304,7 @@ class CompraController extends Controller
                         $moviproduc = new moviproduc();
                         $moviproduc -> idProducto =  $paramdata['idProducto'];
                         $moviproduc -> claveEx =  $Producto -> claveEx;
-                        $moviproduc -> accion =  "Modificacion de compra, se descuenta del inventario";
+                        $moviproduc -> accion =  "Cancelación de compra, se descuenta del inventario";
                         $moviproduc -> folioAccion =  $params_array['idCompra'];
                         $moviproduc -> cantidad =  $paramdata['igualMedidaMenor'];
                         $moviproduc -> stockanterior =  $stockanterior;
