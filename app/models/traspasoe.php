@@ -9,7 +9,7 @@ class traspasoe extends Model
     protected $table = 'traspasoe';
     protected $primaryKey = 'idTraspasoE';
     protected  $fillable = [
-        'folioD',
+        'folio',
         'sucursalE',
         'sucursalR',
         'idEnvio',

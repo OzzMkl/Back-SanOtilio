@@ -9,7 +9,7 @@ class traspasor extends Model
     protected $table = 'traspasor';
     protected $primaryKey = 'idTraspasoR';
     protected  $fillable = [
-        'folioO',
+        'folio',
         'sucursalE',
         'sucursalR',
         'idEnvio',
