@@ -213,6 +213,12 @@ Route::get('/prueba', function(){
     Route::post('/api/productos_precio/registraPrecio','Producto_precioController@registraPrecio');
     /******TRASPASOS */
     Route::post('/api/traspasos/index/{tipoTraspaso}','TraspasosController@index');
+    Route::post('/api/traspasos/registerTraspaso','TraspasosController@registerTraspaso');
+    Route::post('/api/traspasos/cancelarTraspaso','TraspasosController@cancelarTraspaso');
+    Route::get('/api/traspasos/generatePDF/{idTraspaso}/{idempleado}/{tipoTraspaso}','TraspasosController@generatePDF');
+    Route::get('/api/traspasos/showMejorado/{idTraspaso}/{tipoTraspaso}','TraspasosController@showMejorado');
+
+
     /****** SUCURSALES */
     Route::get('/api/sucursales/index','SucursalController@index');
 
