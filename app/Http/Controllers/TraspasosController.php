@@ -18,6 +18,8 @@ use App\models\Empresa;
 use TCPDF;
 use App\Clases\clsProducto;
 use App\Producto;
+use Carbon\Carbon;
+
 
 
 
@@ -676,6 +678,38 @@ class TraspasosController extends Controller
             );
         }
         return response()->json($data, $data['code']);
+
+    }
+
+    public function updateTraspaso(){
+        //Verificar status del traspaso -> Traspasos ya recibidos y con status diferente de cancelados no se pueden modificar
+        //Verificar sucursal de destino, en caso de ser diferente eliminar registro de la BD de la sucursal de destino anterior e ingresar información de traspaso en la nueva BD del nuevo destino
+        //Si es la misma sucursal de destino -> Actualizar datos
+            //Actualizar la información del traspaso 
+            //Registro en monitoreo
+        //Actualización de datos de productos
+        //Registro en movimientos productos
+
+        $empresa = DB::connection('sistemas02')->table('empresa')->get();
+        // $empresa=DB::connection('sistemas02')->table('pelote')->insert([
+        //     'idProducto'=>'1',
+        //     'existencia'=>'2',
+        //     'idLote'=>'1',
+        //     'caducidad'=>'2022-07-30 00:00:00',
+        //     'created_at'=> Carbon::now(),
+        //     'updated_at'=>'2022-07-30 00:00:00',
+        // ]);
+        
+        
+        $data =  array(
+            'code'          =>  200,
+            'status'        => 'success',
+            'message'       =>  'Conexion a servidor',
+            'sucursal'  => $empresa
+        );
+        return $data;
+
+
 
     }
 
