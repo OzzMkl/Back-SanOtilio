@@ -54,6 +54,21 @@ return [
             'engine' => null,
         ],
 
+        'sistemas02' => [
+            'driver' => 'mysql',
+            'host' => env('S02DB_HOST', '192.168.200.6'),
+            'port' => env('S02DB_PORT', '3306'),
+            'database' => env('S02DB_DATABASE', 'rei'),
+            'username' => env('S02DB_USERNAME', 'shinji'),
+            'password' => env('S02DB_PASSWORD', 'pajaslocas'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'host' => env('DB_HOST', '127.0.0.1'),
@@ -77,6 +92,8 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
         ],
+
+
 
     ],
 
