@@ -199,6 +199,7 @@ Route::get('/prueba', function(){
     Route::get('/api/cotizaciones/generatePDF/{idCotiza}','cotizacionesController@generatePDF');
     /*******EMPRESA */
     Route::get('/api/empresa/index','EmpresaController@index');
+
     /*******CAJAS */
     Route::post('/api/cajas/aperturaCaja','CajasController@aperturaCaja');
     Route::put('/api/cajas/cierreCaja','CajasController@cierreCaja');
@@ -207,10 +208,17 @@ Route::get('/prueba', function(){
     Route::get('/api/cajas/verificaSesionesCaja','CajasController@verificaSesionesCaja');
     //Route::get('/api/cajas/indexTipoMovimiento','CajasController@indexTipoMovimiento');movimientosSesionCaja
     Route::get('/api/cajas/movimientosSesionCaja/{idCaja}','CajasController@movimientosSesionCaja');
+    Route::get('/api/cajas/abonos_ventas/{idVenta}','CajasController@abonos_ventas');
+
+
     /******ENTREGAS */
     Route::get('/api/entregas/indexEntregas','VentasController@indexEntregas');
+
+
     /******PRODUCTO_PRECIO */
     Route::post('/api/productos_precio/registraPrecio','Producto_precioController@registraPrecio');
+
+
     /******TRASPASOS */
     Route::post('/api/traspasos/index/{tipoTraspaso}','TraspasosController@index');
     Route::post('/api/traspasos/registerTraspaso','TraspasosController@registerTraspaso');
