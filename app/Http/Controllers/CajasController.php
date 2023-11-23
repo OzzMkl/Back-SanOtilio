@@ -167,18 +167,32 @@ class CajasController extends Controller
                     //primero la buscamos
                     $venta = Ventasg::find($idVenta);
 
-                    if($params_array['isSaldo'] == true){
+                    if($params_array['isSaldo'] == true || $params_array['tieneAbono'] == true){
+                        $ultimoAbono = Abono_venta::where('idVenta',$idVenta)
+                                                    ->orderBy('idAbonoVentas','desc')
+                                                    ->first();
+
                         $abono_venta = new Abono_venta();
                         $abono_venta->idVenta = $params_array['idOrigen'];
-                        $abono_venta->abono = $params_array['pagoCliente'];
-                        $abono_venta->totalAnterior = $params_array['totalNota'];
-                        $abono_venta->totalActualizado = $params_array['saldo_restante'];
+
+                        if($params_array['saldo_restante'] == 0 ){
+                            
+                            $abono_venta->abono = $ultimoAbono ? $ultimoAbono->totalActualizado : die();
+                            $abono_venta->totalActualizado = $params_array['saldo_restante'];
+                            $venta->idStatus = 4; // cobrada, no se envia
+                        } else {
+                            $abono_venta->abono = $params_array['pagoCliente'];
+                            $abono_venta->totalActualizado = $params_array['saldo_restante'];
+                            $venta->idStatus = 21; // Cobro parcial, no se envia
+                        }
+
+                        $abono_venta->totalAnterior = $ultimoAbono ? $ultimoAbono->totalActualizado : $params_array['totalNota'];
                         $abono_venta->idEmpleado = $params_array['idEmpleado'];
                         $abono_venta->pc = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
                         $abono_venta->save();
 
-                        $venta->idStatus = 21; // Cobro parcial, no se envia
+                        
                     } else{
                         //asignamos status a actualizar
                         $venta->idStatus = 4; // cobrada, no se envia
