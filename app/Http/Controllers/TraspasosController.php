@@ -156,7 +156,7 @@ class TraspasosController extends Controller
                 }
 
                 $traspasoNuevo->save();
-                $Traspaso = traspasor::latest('idTraspasoR')->get();
+                //$Traspaso = traspasor::latest('idTraspasoR')->get();
                 // echo $tipoTraspaso;
                 // echo $Traspaso;
                 // var_dump($Traspaso);
@@ -184,6 +184,19 @@ class TraspasosController extends Controller
                 $dataProductos = $this->registerProductosTraspaso($Traspaso,$tipoTraspaso,$params_array['lista_producto_traspaso'],$params_array['identity']['sub']);
                 
                 /**FIN INSERCION DE PRODUCTOS */
+                
+                /**INICIO DE INSERCION EN SUCRSAL DESTINO */
+                //Verificamos sucursal de destino, en caso de ser un traspaso a una sucursal foránea no se realiza la inserción
+                //Obtenemos el campo connection de la sucursal destino, si es nulo o vacío no se hace nada
+                $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$params_array['traspaso']['sucursalR'])->value('connection');
+
+                if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
+                    $dataRegistroExternos = $this->registerTraspasoExterno($Traspaso,$params_array['traspaso']['sucursalR']);
+                }
+
+                /**FIN DE INSERCION EN SUCRSAL DESTINO */
+
+
 
                 DB::commit();
 
@@ -191,7 +204,9 @@ class TraspasosController extends Controller
                     'code' => 200,
                     'status' => 'success',
                     'message' => 'Traspaso registrado correctamente',
-                    'traspaso' => $traspasoNuevo
+                    'traspaso' => $Traspaso,
+                    'dataProductos' => $dataProductos,
+                    'dataRegistroExternos' => $dataRegistroExternos
                 );
             }
         }else{
@@ -281,6 +296,122 @@ class TraspasosController extends Controller
             );
         }
         return $data;
+    }
+
+    public function registerTraspasoExterno($idTraspasoE,$sucursalR){
+        //Consulta de datos para enviar
+        //Traspaso a enviar
+        $Traspaso = DB::table('traspasoE')->where('idTraspasoE','=',$idTraspasoE)->first();
+        //Productos del traspaso a enviar
+        $productosTraspaso = DB::table('productos_traspasoE')->where('idTraspasoE','=',$idTraspasoE)->get();
+        // dd($productosTraspaso);
+        //Base de datos a la que nos vamos a conectar
+        $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$sucursalR)->value('connection');
+        //Nombre de sucursal que envía
+        $sucursalE = DB::table('empresa')->select('nombreCorto')->value('nombreCorto');
+
+
+        DB::connection($connection)->beginTransaction();
+        try {
+
+            //Insersión de traspaso en tabla traspasoR en sucursal de destino
+            DB::connection($connection)->table('traspasoR')->insert([
+
+                'folio' => $Traspaso->idTraspasoE,
+                'sucursalE' => $Traspaso->sucursalE,
+                'sucursalR' => $Traspaso->sucursalR,
+                'idEmpleado' => $Traspaso->idEmpleado,
+                'idStatus' => $Traspaso->idStatus,
+                'observaciones' => $Traspaso->observaciones,
+                'created_at' => Carbon::now(),
+                'updated_at' =>  Carbon::now()
+
+            ]);
+
+            //Obtener idTraspasoR del traspaso que acabamos de insertar
+            $idTraspasoR=DB::connection($connection)->table('traspasoR')->latest('idTraspasoR')->value('idTraspasoR');
+
+            if(count($productosTraspaso) >= 1 && !empty($productosTraspaso)){
+                
+                foreach($productosTraspaso as $param => $paramdata){
+                    //var_dump($paramdata->claveEx);
+                    // die;
+
+                    
+                    //Insertamos en tabla de proudctos_traspasoR de sucursal que recibe
+                    DB::connection($connection)->table('productos_traspasor')->insert([
+                        'idTraspasoR' => $idTraspasoR,
+                        'idProducto' => $paramdata->idProducto,
+                        'descripcion' => $paramdata->descripcion,
+                        'claveEx' => $paramdata->claveEx,
+                        'idProdMedida' => $paramdata->idProdMedida,
+                        'cantidad' => $paramdata->cantidad,
+                        'precio' => $paramdata->precio,
+                        'subtotal' => $paramdata->subtotal,
+                        'igualMedidaMenor' => $paramdata->igualMedidaMenor,
+                        'created_at' => Carbon::now(),
+                        'updated_at' =>  Carbon::now()
+                    ]);
+                    
+                }
+
+            }else{
+                $productosTraspaso = 'El traspaso no tiene productos';
+            }   
+
+            //Obtenemos direccion ip
+            $ip = $_SERVER['REMOTE_ADDR'];
+            //Insertamos movimiento en monitoreo de sucursal que envia
+            $monitoreo = new Monitoreo();
+            $monitoreo -> idUsuario =   $Traspaso->idEmpleado;
+            $monitoreo -> accion =  "Alta de traspaso, envia, en SUCURSAL ".strtoupper($connection);
+            $monitoreo -> folioNuevo =  $Traspaso->idTraspasoE;
+            $monitoreo -> pc =  $ip;
+            $monitoreo ->save();
+
+            // Insertamos movimiento en monitoreo de sucursal que recibe
+            DB::connection($connection)->table('monitoreo')-> insert([
+                'idUsuario' => $Traspaso->idEmpleado,
+                'accion' => "Alta de traspaso, recibe, de ".$sucursalE,
+                'folioNuevo' => $idTraspasoR,
+                'pc' => $ip,
+                'created_at' => Carbon::now(),
+                'updated_at' =>  Carbon::now()
+            ]);
+
+            DB::connection($connection)->commit();
+
+            $TraspasoN = DB::connection($connection)->table('traspasoR')
+                ->where([
+                            ['folio','=',$Traspaso->idTraspasoE],
+                            ['sucursalE','=',$Traspaso->sucursalE]
+                        ])
+                ->get();
+
+
+            $data =  array(
+                'code'      =>  200,
+                'status'    =>  'success',
+                'message'   =>  '',
+                'Traspaso'  =>  $Traspaso,
+                'productos' =>  $productosTraspaso,
+                'connection' => $connection,
+                'TraspasoN' =>  $TraspasoN
+            );
+            
+        } catch (\Exception $e) {
+            DB::connection($connection)->rollback();
+            $data =  array(
+                'code'    => 400,
+                'status'  => 'error',
+                'message' => 'Fallo al registrar el traspaso en la sucursal que recibe',
+                'error'   => $e
+            );
+            
+        }
+
+        return $data;
+    
     }
 
     public function generatePDF($idTraspaso,$idEmpleado,$tipoTraspaso){
@@ -681,36 +812,140 @@ class TraspasosController extends Controller
 
     }
 
-    public function updateTraspaso(){
-        //Verificar status del traspaso -> Traspasos ya recibidos y con status diferente de cancelados no se pueden modificar
-        //Verificar sucursal de destino, en caso de ser diferente eliminar registro de la BD de la sucursal de destino anterior e ingresar información de traspaso en la nueva BD del nuevo destino
-        //Si es la misma sucursal de destino -> Actualizar datos
-            //Actualizar la información del traspaso 
-            //Registro en monitoreo
-        //Actualización de datos de productos
-        //Registro en movimientos productos
+    public function updateTraspaso(Request $request){
+        //Traspaso
+        //tipoTraspaso
+        //productosTraspaso
+        //identity
 
-        $empresa = DB::connection('sistemas02')->table('empresa')->get();
-        // $empresa=DB::connection('sistemas02')->table('pelote')->insert([
-        //     'idProducto'=>'1',
-        //     'existencia'=>'2',
-        //     'idLote'=>'1',
-        //     'caducidad'=>'2022-07-30 00:00:00',
-        //     'created_at'=> Carbon::now(),
-        //     'updated_at'=>'2022-07-30 00:00:00',
-        // ]);
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+
+        //Verificar si es local o foráneo
+        $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$params_array['traspaso']['sucursalR'])->value('connection');
         
-        
-        $data =  array(
-            'code'          =>  200,
-            'status'        => 'success',
-            'message'       =>  'Conexion a servidor',
-            'sucursal'  => $empresa
-        );
-        return $data;
+        if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
+            //si es local se consulta idStatuss en sucursalR
+            $idStatus = BD::connection($connection)->table(traspasoR)->select('idStatuss')->where('folio','=',$params_array['traspaso']['idTraspasoE'])->where('sucursalE','=',$params_array['traspaso']['sucursalE'])->value('idStatuss');
+            if($idStatus == 50){
+                //Llamar método de actualizacion en sucursalE
+                //Llamar método de actualización en sucursalR
+                //data -> modificado correctamente
+            }else{
+                //data -> no se puede modificar
+            }
 
+        }else{
+            //Foraneo            
+            //Llamar método de actualizacion en sucursalE
 
+        }
+
+        //Return -> data
 
     }
 
+    //Actualización de información de traspaso en sucursal que envía
+    public function updateSucursalE($params_array){
+
+        if(!empty($params_array)){
+
+            $validate = Validator::make($params_array['traspaso'], [
+                'idTraspasoE'   => 'required',
+                'folio'         => 'required',
+                'sucursalE'     => 'required',
+                'sucursalR'     => 'required',
+                'idEmpleado'    => 'required',
+                'total'         => 'required',
+                'idEmpleado'    => 'required'
+            ]);
+            if($validate->fails()){
+                $data = array(
+                    'status'    =>  'error',
+                    'code'      =>  '404',
+                    'message_system'   =>  'Fallo la validacion de los datos del traspaso',
+                    //'message_validation' => $validate->getMessage(),
+                    'errors'    =>  $validate->errors()
+                );
+            }else{
+                try{
+                    DB::beginTransaction();
+                    DB::enableQueryLog();
+
+                    //Compraracion de datos para saber que cambios se realizaron
+                    $anTraspaso = TraspasoE::where('idTraspasoE',$params_array['idTraspasoE'])->get();
+                    //Actualizamos
+                    $traspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->update([
+                        'folio' => $params_array['traspaso']['folio'],
+                        'sucursalE' => $params_array['traspaso']['sucursalE'],
+                        'idStatus' => 40,
+                        'observaciones' => $params_array['traspaso']['observaciones']
+                    ]);
+                    //Consultamos el traspaso que se actualizó
+                    $traspaso = TraspasoE::where('idTraspasoE',$params_array['idTraspasoE'])->get();
+                    //Obtnemos direción IP
+                    $ip = $_SERVER['REMOTE_ADDR'];
+
+                    //Recorremos el traspaso para ver que atributo cambio y asi guardar la modificación
+                    foreach($antCompra[0]['attributes'] as $clave => $valor){
+                        foreach($compra[0]['attributes'] as $clave2 => $valor2){
+                           //verificamos que la clave sea igua ejem: claveEx == claveEx
+                           // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                           if($clave == $clave2 && $valor !=  $valor2){
+                               //insertamos el movimiento realizado
+                               $monitoreo = new Monitoreo();
+                               $monitoreo -> idUsuario =  $params_array['identity']['sub'];
+                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." del traspaso envia";
+                               $monitoreo -> folioNuevo =  $params_array['traspaso']['idTraspasoE'];
+                               $monitoreo -> pc =  $ip;
+                               $monitoreo ->save();
+                           }
+                        }
+                    }
+
+
+                    //insertamos el movimiento que se hizo
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario = $params_array['identity']['sub'];
+                    $monitoreo -> accion =  "Modificacion de traspaso";
+                    $monitoreo -> folioNuevo =  $params_array['traspaso']['idTraspasoE'];
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
+
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'Traspaso actualizado',
+                        'traspaso' =>   $traspaso
+                    );
+
+
+                }catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
+            }
+
+        }else{
+            $data= array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            ); 
+        }
+        return response()->json($data, $data['code']);     
+
+    }
+
+    //Actualización de información de traspaso en sucursal que recibe
+    public function updateSucursalR($params_array){
+        
+
+        
+    }
 }

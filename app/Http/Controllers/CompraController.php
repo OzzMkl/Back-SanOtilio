@@ -755,7 +755,6 @@ class CompraController extends Controller
                 'idEmpleadoR'    => 'required',
                 'idStatus'       => 'required',
                 'fechaRecibo'    => 'required',
-                'observaciones'  => 'required',
                 'facturable'     => 'required',
                 'sub'            => 'required'
             ]);
@@ -781,7 +780,7 @@ class CompraController extends Controller
                         'folioProveedor' => $params_array['folioProveedor'],
                         'subtotal'       => $params_array['subtotal'],
                         'total'          => $params_array['total'],
-                        'idEmpleadoR'    => $params_array['idEmpleadoR'],
+                        //'idEmpleadoR'    => $params_array['idEmpleadoR'],
                         'idStatus'       => $params_array['idStatus'],
                         'fechaRecibo'    => $params_array['fechaRecibo'],
                         'observaciones'  => $params_array['observaciones'],

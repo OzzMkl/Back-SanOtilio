@@ -54,7 +54,7 @@ return [
             'engine' => null,
         ],
 
-        'sistemas02' => [
+        'bloquera' => [
             'driver' => 'mysql',
             'host' => env('S02DB_HOST', '192.168.200.6'),
             'port' => env('S02DB_PORT', '3306'),
