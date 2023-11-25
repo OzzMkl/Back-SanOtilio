@@ -58,17 +58,30 @@ class VentasController extends Controller
 
     /***** VENTAS *****/
     public function indexVentas(){
-        $ventas = DB::table('ventasg')
-        ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
-        ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
-        ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
-        ->select('ventasg.*',
-                 DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
-                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
-                 'tiposdeventas.nombre as nombreTipoventa')
-        ->where('ventasg.idStatus',16)
-        ->orderBy('ventasg.idVenta','desc')
-        ->get();
+        $status = [
+            15, //NO COBRADA, NO SE ENVIA
+            16, //NO COBRADA, NO CARGADA
+            17, //NO COBRADA, CARGANDO
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+        ];
+        $ventas = Ventasg::join('cliente','cliente.idcliente','=','ventasg.idcliente')
+                            ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
+                            ->select('ventasg.*',
+                                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                                    'tiposdeventas.nombre as nombreTipoventa')
+                            ->whereIn('ventasg.idStatus',$status)
+                            ->orderBy('ventasg.idVenta','desc')
+                            ->get();
         return response()->json([
             'code'      => 200,
             'status'    => 'success',

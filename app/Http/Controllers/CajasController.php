@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Caja;
 use App\Caja_movimientos;
 use App\models\Ventasg;
+use App\models\Abono_venta;
 use Validator;
 
 class CajasController extends Controller
@@ -128,49 +129,75 @@ class CajasController extends Controller
         $json = $req -> input('json',null);//recogemos los datos enviados por post en formato json
         $params = json_decode($json);
         $params_array = json_decode($json,true);
-        
+
         if(!empty($params) && !empty($params_array)){
             
                 try{
                     //comenzamos transaccion
                     DB::beginTransaction();
 
-                    //recorremos el array ya que un cobro puede tener 2 movimientos
-                    foreach($params_array as $param => $paramdata){
-                        //creamos el modelo
-                        $caja_movimientos = new Caja_movimientos;
-                        //asginamos datos
-                        $caja_movimientos->idCaja = $paramdata['idCaja'];
-                        $caja_movimientos->totalNota = $paramdata['totalNota'];
-                        $caja_movimientos->idTipoMov = $paramdata['idTipoMov'];
-                        $caja_movimientos->pagoCliente = $paramdata['pagoCliente'];
-                    
-                        //si los siguientes datos existen los guardamos
-                        if(isset($paramdata['idOrigen'])){
-                            $caja_movimientos->idOrigen = $paramdata['idOrigen'];
-                        }
-                        if(isset($paramdata['idTipoPago'])){
-                            $caja_movimientos->idTipoPago = $paramdata['idTipoPago'];
-                        }
-                        if(isset($paramdata['autoriza'])){
-                            $caja_movimientos->autoriza = $paramdata['autoriza'];
-                        }
-                        if(isset($paramdata['observaciones'])){
-                            $caja_movimientos->observaciones = $paramdata['observaciones'];
-                        }
-                        if(isset($paramdata['cambioCliente'])){
-                            $caja_movimientos->cambioCliente = $paramdata['cambioCliente'];
-                        }
-
-                        //por ultimo guardamos
-                        $caja_movimientos->save();
+                    //creamos el modelo
+                    $caja_movimientos = new Caja_movimientos;
+                    //asginamos datos
+                    $caja_movimientos->idCaja = $params_array['idCaja'];
+                    $caja_movimientos->totalNota = $params_array['totalNota'];
+                    $caja_movimientos->idTipoMov = $params_array['idTipoMov'];
+                    $caja_movimientos->pagoCliente = $params_array['pagoCliente'];
+                
+                    //si los siguientes datos existen los guardamos
+                    if(isset($paramdata['idOrigen'])){
+                        $caja_movimientos->idOrigen = $params_array['idOrigen'];
+                    }
+                    if(isset($paramdata['idTipoPago'])){
+                        $caja_movimientos->idTipoPago = $params_array['idTipoPago'];
+                    }
+                    if(isset($paramdata['autoriza'])){
+                        $caja_movimientos->autoriza = $params_array['autoriza'];
+                    }
+                    if(isset($paramdata['observaciones'])){
+                        $caja_movimientos->observaciones = $params_array['observaciones'];
+                    }
+                    if(isset($paramdata['cambioCliente'])){
+                        $caja_movimientos->cambioCliente = $params_array['cambioCliente'];
                     }
 
-                    /*actualizamos venta*/
+                    //por ultimo guardamos
+                    $caja_movimientos->save();
+
                     //primero la buscamos
                     $venta = Ventasg::find($idVenta);
-                    //asignamos status a actualizar
-                    $venta->idStatus = 4;
+
+                    if($params_array['isSaldo'] == true || $params_array['tieneAbono'] == true){
+                        $ultimoAbono = Abono_venta::where('idVenta',$idVenta)
+                                                    ->orderBy('idAbonoVentas','desc')
+                                                    ->first();
+
+                        $abono_venta = new Abono_venta();
+                        $abono_venta->idVenta = $params_array['idOrigen'];
+
+                        if($params_array['saldo_restante'] == 0 ){
+                            
+                            $abono_venta->abono = $ultimoAbono ? $ultimoAbono->totalActualizado : die();
+                            $abono_venta->totalActualizado = $params_array['saldo_restante'];
+                            $venta->idStatus = 4; // cobrada, no se envia
+                        } else {
+                            $abono_venta->abono = $params_array['pagoCliente'];
+                            $abono_venta->totalActualizado = $params_array['saldo_restante'];
+                            $venta->idStatus = 21; // Cobro parcial, no se envia
+                        }
+
+                        $abono_venta->totalAnterior = $ultimoAbono ? $ultimoAbono->totalActualizado : $params_array['totalNota'];
+                        $abono_venta->idEmpleado = $params_array['idEmpleado'];
+                        $abono_venta->pc = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                        $abono_venta->save();
+
+                        
+                    } else{
+                        //asignamos status a actualizar
+                        $venta->idStatus = 4; // cobrada, no se envia
+                    }
+
                     //guardamos/actualizamos
                     $venta->save();
                     
@@ -235,6 +262,30 @@ class CajasController extends Controller
             'status'    => 'success',
             'caja'  => $caja
         ]);
+    }
+
+    public function abonos_ventas($idVenta){
+        $abono_venta = Abono_venta::where('idVenta',$idVenta)
+                                    ->select('abonoventas.*',
+                                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                                    ->join('empleado','empleado.idEmpleado','=','abonoventas.idEmpleado')
+                                    ->get();
+                                    // ->map( function($abono_venta){
+                                    //         $abono_venta->totalAbono = $abono_venta->abono;
+                                    //         return $abono_venta;
+                                    //     });
+        $totalAbono = $abono_venta->sum('abono');
+        $totalActualizado = Abono_venta::where('idVenta',$idVenta)
+                                    ->orderBy('idAbonoVentas','desc')
+                                    ->value('totalActualizado');
+
+        return response()->json([
+                'code' => 200,
+                'status' => 'success',
+                'abonos' => $abono_venta,
+                'total_abono' => $totalAbono,
+                'total_actualizado' => $totalActualizado
+        ]);    
     }
 }
 /********************* */
