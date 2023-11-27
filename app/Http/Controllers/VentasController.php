@@ -17,6 +17,8 @@ use App\Producto;
 use App\Productos_medidas;
 use App\models\moviproduc;
 use App\models\impresoras;
+use App\models\Abono_venta;
+use App\Cliente;
 
 use App\Clases\clsProducto;
 
@@ -642,6 +644,20 @@ class VentasController extends Controller
                     $monitoreo -> pc =  $ip;
                     $monitoreo -> motivo =  $params_array['motivo_cancelacion'];
                     $monitoreo ->save();
+
+                    //Verificamos si la nota tiene abonos
+                    $tieneAbono = Abono_venta::where('idVenta',$idVenta)->get();
+                    
+                    //Si nos regresa registros
+                    if(count($tieneAbono) > 0){
+
+                        //sumamos todos los abonos realziados
+                        $totalAbono = $tieneAbono->sum('abono');
+                        // Buscamos al cliente y actualizamos el cambpo en donde se sumara el saldo abonado
+                        $cliente = Cliente::where('idCliente',$venta->idCliente)->first();
+                        $cliente->Saldo_SanOtilio = $cliente->Saldo_SanOtilio + $totalAbono;
+                        $cliente->save();
+                    }
 
                     //data
                     $data = array(
