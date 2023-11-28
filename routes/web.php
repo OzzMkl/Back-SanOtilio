@@ -225,8 +225,7 @@ Route::get('/prueba', function(){
     Route::post('/api/traspasos/cancelarTraspaso','TraspasosController@cancelarTraspaso');
     Route::get('/api/traspasos/generatePDF/{idTraspaso}/{idempleado}/{tipoTraspaso}','TraspasosController@generatePDF');
     Route::get('/api/traspasos/showMejorado/{idTraspaso}/{tipoTraspaso}','TraspasosController@showMejorado');
-    Route::get('/api/traspasos/updateTraspaso','TraspasosController@updateTraspaso');
-    Route::get('/api/traspasos/registerTraspasoExterno/{idTraspasoE}/{sucursalR}','TraspasosController@registerTraspasoExterno');
+    Route::post('/api/traspasos/updateTraspaso','TraspasosController@updateTraspaso');
 
 
 
