@@ -274,10 +274,14 @@ class CajasController extends Controller
                                     //         $abono_venta->totalAbono = $abono_venta->abono;
                                     //         return $abono_venta;
                                     //     });
+        // Suma todos los abonos
         $totalAbono = $abono_venta->sum('abono');
+        // Obtenemos el total actualizado del ultimo abono
         $totalActualizado = Abono_venta::where('idVenta',$idVenta)
                                     ->orderBy('idAbonoVentas','desc')
                                     ->value('totalActualizado');
+        // Verificamos que si no esta vacio asigne el valor obtenido si no asignamos cero
+        $totalActualizado = !empty($totalActualizado) ? $totalActualizado : 0;
 
         return response()->json([
                 'code' => 200,
