@@ -824,24 +824,51 @@ class TraspasosController extends Controller
         //Verificar si es local o foráneo
         $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$params_array['traspaso']['sucursalR'])->value('connection');
         
-        if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
+        //if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
+        if($connection == null){
             //si es local se consulta idStatuss en sucursalR
             $idStatus = BD::connection($connection)->table(traspasoR)->select('idStatuss')->where('folio','=',$params_array['traspaso']['idTraspasoE'])->where('sucursalE','=',$params_array['traspaso']['sucursalE'])->value('idStatuss');
             if($idStatus == 50){
                 //Llamar método de actualizacion en sucursalE
+                $registroSucursalE = $this->updateSucursalE($params_array);
                 //Llamar método de actualización en sucursalR
-                //data -> modificado correctamente
+
+                $data = array(
+                    'status'    =>  'success',
+                    'code'      =>  200,
+                    'message'   =>  'Traspaso Local actualizado',
+                    'connection' => $connection,
+                    'registroSucursalE' =>   $registroSucursalE
+                );
+
             }else{
-                //data -> no se puede modificar
+
+                $data= array(
+                    'code'      =>  400,
+                    'status'    =>  'Error!',
+                    'message'   =>  'El traspaso no se puede modificar',
+                    'idStatuss' =>  $idStatus
+                ); 
             }
 
         }else{
             //Foraneo            
             //Llamar método de actualizacion en sucursalE
+            $registroSucursalE = $this->updateSucursalE($params_array);
+
+            $data = array(
+                'status'    =>  'success',
+                'code'      =>  200,
+                'message'   =>  'Traspaso Foráneo actualizado',
+                'connection' => $connection,
+                'registroSucursalE' =>   $registroSucursalE
+            );
 
         }
 
         //Return -> data
+        return response()->json($data, $data['code']);     
+
 
     }
 
@@ -852,11 +879,8 @@ class TraspasosController extends Controller
 
             $validate = Validator::make($params_array['traspaso'], [
                 'idTraspasoE'   => 'required',
-                'folio'         => 'required',
                 'sucursalE'     => 'required',
                 'sucursalR'     => 'required',
-                'idEmpleado'    => 'required',
-                'total'         => 'required',
                 'idEmpleado'    => 'required'
             ]);
             if($validate->fails()){
@@ -864,7 +888,6 @@ class TraspasosController extends Controller
                     'status'    =>  'error',
                     'code'      =>  '404',
                     'message_system'   =>  'Fallo la validacion de los datos del traspaso',
-                    //'message_validation' => $validate->getMessage(),
                     'errors'    =>  $validate->errors()
                 );
             }else{
@@ -873,7 +896,7 @@ class TraspasosController extends Controller
                     DB::enableQueryLog();
 
                     //Compraracion de datos para saber que cambios se realizaron
-                    $anTraspaso = TraspasoE::where('idTraspasoE',$params_array['idTraspasoE'])->get();
+                    $anTraspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->get();
                     //Actualizamos
                     $traspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->update([
                         'folio' => $params_array['traspaso']['folio'],
@@ -882,13 +905,13 @@ class TraspasosController extends Controller
                         'observaciones' => $params_array['traspaso']['observaciones']
                     ]);
                     //Consultamos el traspaso que se actualizó
-                    $traspaso = TraspasoE::where('idTraspasoE',$params_array['idTraspasoE'])->get();
+                    $traspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->get();
                     //Obtnemos direción IP
                     $ip = $_SERVER['REMOTE_ADDR'];
 
                     //Recorremos el traspaso para ver que atributo cambio y asi guardar la modificación
-                    foreach($antCompra[0]['attributes'] as $clave => $valor){
-                        foreach($compra[0]['attributes'] as $clave2 => $valor2){
+                    foreach($anTraspaso[0]['attributes'] as $clave => $valor){
+                        foreach($traspaso[0]['attributes'] as $clave2 => $valor2){
                            //verificamos que la clave sea igua ejem: claveEx == claveEx
                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
                            if($clave == $clave2 && $valor !=  $valor2){
@@ -911,6 +934,9 @@ class TraspasosController extends Controller
                     $monitoreo -> folioNuevo =  $params_array['traspaso']['idTraspasoE'];
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
+
+                    DB::commit();
+
 
                     $data = array(
                         'status'    =>  'success',
@@ -941,6 +967,7 @@ class TraspasosController extends Controller
         return response()->json($data, $data['code']);     
 
     }
+
 
     //Actualización de información de traspaso en sucursal que recibe
     public function updateSucursalR($params_array){
