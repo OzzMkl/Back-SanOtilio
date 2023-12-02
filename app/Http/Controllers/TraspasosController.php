@@ -968,9 +968,137 @@ class TraspasosController extends Controller
 
     }
 
+    public function updateProductosSucursalE($params_array){
+        $productosTraspaso = $params_array['productosTraspaso'];
+        $tipoTraspaso = $params_array['tipoTraspaso'];
+
+        if(count($productosTraspaso) >= 1 && !empty($productosTraspaso)){
+            try{
+                DB::beginTransaction();
+                //Creamos instancia para poder ocupar las funciones
+                    $clsMedMen = new clsProducto();
+                //obtenemos direccion ip
+                    $ip = $_SERVER['REMOTE_ADDR'];
+                //Comparar tipo de traspaso para saber en qué tabla trabajar
+                if($tipoTraspaso == 'Envia'){
+                    //Asignar idTraspaso a una variable para su uso
+                        $idTraspaso = $params_array['traspaso']['idTraspasoE'];
+                    //Obtener lista de productos del traspaso
+                        $productosAnt = Productos_TraspasoE::where('idTraspasoE',$idTraspaso);
+                    //Se define acción a realizar para su inserción en moviproduc
+                        $accion = "Modificación de traspaso Envía, ".$idTraspaso.", se suma al inventario";
+                    //Eliminación de productos del traspaso
+                        Productos_traspasoE::where('idTraspasoE',$idTraspaso)->delete();
+                }elseif($tipoTraspaso == 'Recibe'){
+                    //Asignar idTraspaso a una variable para su uso
+                        $idTraspaso = $params_array['traspaso']['idTraspasoR'];
+                    //Obtener lista de productos del traspaso
+                        $productosAnt = Productos_TraspasoR::where('idTraspasoR',$idTraspaso);               
+                    //Se define acción a realizar para su inserción en moviproduc
+                        $accion = "Modificación de traspaso Recibe, ".$idTraspaso.", se resta al inventario";
+                    //Eliminación de productos del traspaso
+                        Productos_traspasoR::where('idTraspasoR',$idTraspaso)->delete();
+                }
+                
+                //Restar o agregar existencia antes de una modificacion
+                foreach($productosAnt as $param => $paramdata){
+                    
+                    //Obtener producto
+                        $Producto = Producto::find($paramdata['idProducto']);
+                    //Obtener su existencia antes de actualizar
+                        $stockanterior = $Producto -> existenciaG;
+                    //Actualizar existencia de acuerdo al tipo de traspaso
+                    //Se reingresa si es un traspasoE  y se resta si es un traspasoR
+                        if($tipoTraspaso == 'Envia'){
+                            $Producto -> existenciaG = $Producto -> existenciaG + $paramdata['igualMedidaMenor'];
+                        }elseif($tipoTraspaso == 'Recibe'){
+                            $Producto -> existenciaG = $Producto -> existenciaG - $paramdata['igualMedidaMenor'];
+                        }
+                    //Guardar modelo
+                        $Producto->save();
+                    //Obtenemos la existencia del producto actualizado
+                        $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+                    //insertamos el movimiento de existencia que se le realizo al producto
+                        moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$paramdata['igualMedidaMenor'],$stockAnterior,$stockActualizado,$params_array['identity']['sub']);
+
+                }
+
+                //Registro de productos del traspaso
+                foreach($productosTraspaso as $param => $paramdata){
+
+                    //Obtener producto 
+                        $Producto = Producto::find($paramdata['idProducto']);
+                    //Calcular su medida menor
+                        $medidaMenor = $clsMedMen->cantidad_En_MedidaMenor($paramdata['idProducto'],$paramdata['idProdMedida'],$paramdata['cantidad']);
+                    //Obtener su existencia antes de actualizar
+                        $stockanterior = $Producto -> existenciaG;
+                    //Actualizar existencia de acuerdo al tipo de traspaso
+                    //Se resta si es un traspasoE  y se suma si es un traspasoR
+                        if($tipoTraspaso == 'Envia'){
+                            $Producto -> existenciaG = $Producto -> existenciaG - $medidaMenor;
+                            $accion = "Se guarda después de la modificación de traspaso Envía, ".$idTraspaso.", se resta al inventario";
+                        }elseif($tipoTraspaso == 'Recibe'){
+                            $Producto -> existenciaG = $Producto -> existenciaG + $medidaMenor;
+                            $accion = "Se guarda después de la modificación de traspaso Recibe, ".$idTraspaso.", se suma al inventario";
+                        }
+                    //Guardar modelo
+                        $Producto->save();
+                    //Obtenemos la existencia del producto actualizado
+                        $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+                    //insertamos el movimiento de existencia que se le realizo al producto
+                        moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$medidaMenor,$stockAnterior,$stockActualizado,$params_array['identity']['sub']);
+
+
+                    //Agregamos los productos del traspaso
+                    if($tipoTraspaso == 'Envia'){
+                        $producto_traspaso = new Productos_traspasoE();
+                        $producto_traspaso -> idTraspasoE = $Traspaso;
+                    }elseif($tipoTraspaso == 'Recibe'){
+                        $producto_traspaso = new Productos_traspasoR();
+                        $producto_traspaso -> idTraspasoR = $Traspaso;
+                    }
+
+                    $producto_traspaso -> idProducto = $paramdata['idProducto'];
+                    $producto_traspaso -> descripcion = $Producto -> descripcion;
+                    $producto_traspaso -> claveEx = $Producto -> claveEx;
+                    $producto_traspaso -> idProdMedida = $paramdata['idProdMedida'];
+                    $producto_traspaso -> cantidad = $paramdata['cantidad'];
+                    $producto_traspaso -> precio = $paramdata['precio'];
+                    $producto_traspaso -> subtotal = $paramdata['subtotal'];
+                    $producto_traspaso -> igualMedidaMenor = $medidaMenor;
+                    $producto_traspaso -> save();
+                    
+                }
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Productos modificados correctamente'
+                );
+
+                DB::commit();
+            } catch(\Exception $e){
+                //Si falla realizamos rollback de la transaccion
+                DB::rollback(); 
+                //Propagamos el error ocurrido
+                throw $e;
+            }
+
+        } else{
+            $data =  array(
+                'code'          =>  400,
+                'status'        => 'error',
+                'message'       =>  'Los datos enviados son incorrectos'
+            );
+        }
+        return $data;
+
+    }
 
     //Actualización de información de traspaso en sucursal que recibe
     public function updateSucursalR($params_array){
+        
+
         
 
         
