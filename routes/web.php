@@ -220,7 +220,7 @@ Route::get('/prueba', function(){
 
 
     /******TRASPASOS */
-    Route::post('/api/traspasos/index/{tipoTraspaso}','TraspasosController@index');
+    Route::get('/api/traspasos/newIndex/{tipoTraspaso}/{str_traspaso}','TraspasosController@newIndex');
     Route::post('/api/traspasos/registerTraspaso','TraspasosController@registerTraspaso');
     Route::post('/api/traspasos/cancelarTraspaso','TraspasosController@cancelarTraspaso');
     Route::get('/api/traspasos/generatePDF/{idTraspaso}/{idempleado}/{tipoTraspaso}','TraspasosController@generatePDF');
