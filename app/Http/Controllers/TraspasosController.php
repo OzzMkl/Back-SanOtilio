@@ -323,7 +323,7 @@ class TraspasosController extends Controller
                 'sucursalE' => $Traspaso->sucursalE,
                 'sucursalR' => $Traspaso->sucursalR,
                 'idEmpleado' => $Traspaso->idEmpleado,
-                'idStatus' => $Traspaso->idStatus,
+                'idStatus' => 50,
                 'observaciones' => $Traspaso->observaciones,
                 'created_at' => Carbon::now(),
                 'updated_at' =>  Carbon::now()
@@ -825,16 +825,18 @@ class TraspasosController extends Controller
 
         //Verificar si es local o foráneo
         $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$params_array['traspaso']['sucursalR'])->value('connection');
-        
+        //dd($connection);
         //if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
         if($connection != null){
             //si es local se consulta idStatuss en sucursalR
-            dd($params_array);
-            $idStatus = BD::connection($connection)->table('traspasoR')->select('idStatus')
-                ->where([['folio','=',$params_array['traspaso']['idTraspasoE']],
-                         ['sucursalE','=',$params_array['traspaso']['sucursalE']]])
-                ->value('idStatuss');
-            dd($idStatus);
+            //dd($params_array['traspaso']['sucursalE']);
+            $idStatus = DB::connection($connection)->table('traspasoR')->select('idStatus')
+                ->where([
+                            ['folio','=',$params_array['traspaso']['idTraspasoE']],
+                            ['sucursalE','=',$params_array['traspaso']['sucursalE']]
+                        ])
+                ->value('idStatus');
+            
             if($idStatus == 50){
                 //Llamar método de actualizacion en sucursalE
                 $registroSucursalE = $this->updateSucursalE($params_array);
@@ -883,7 +885,7 @@ class TraspasosController extends Controller
 
     //Actualización de información de traspaso en sucursal que envía
     public function updateSucursalE($params_array){
-
+        //dd($params_array);
         if(!empty($params_array)){
 
             $validate = Validator::make($params_array['traspaso'], [
@@ -915,7 +917,6 @@ class TraspasosController extends Controller
                     ]);
                     //Consultamos el traspaso que se actualizó
                     $traspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->get();
-                    $producto_traspaso = productos_traspasoe::where('idTraspasoE',$traspaso->idTraspasoE);
                     //Obtnemos direción IP
                     $ip = $_SERVER['REMOTE_ADDR'];
 
@@ -944,6 +945,8 @@ class TraspasosController extends Controller
                     $monitoreo -> folioNuevo =  $params_array['traspaso']['idTraspasoE'];
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
+
+                    $producto_traspaso = $this->updateProductosSucursalE($params_array);
 
                     DB::commit();
 
@@ -980,8 +983,9 @@ class TraspasosController extends Controller
     }
 
     public function updateProductosSucursalE($params_array){
-        $productosTraspaso = $params_array['productosTraspaso'];
+        $productosTraspaso = $params_array['lista_producto_traspaso'];
         $tipoTraspaso = $params_array['tipoTraspaso'];
+        $idTraspaso = $params_array['traspaso']['idTraspaso'];
 
         if(count($productosTraspaso) >= 1 && !empty($productosTraspaso)){
             try{
@@ -1042,7 +1046,7 @@ class TraspasosController extends Controller
                     //Calcular su medida menor
                         $medidaMenor = $clsMedMen->cantidad_En_MedidaMenor($paramdata['idProducto'],$paramdata['idProdMedida'],$paramdata['cantidad']);
                     //Obtener su existencia antes de actualizar
-                        $stockanterior = $Producto -> existenciaG;
+                        $stockAnterior = $Producto -> existenciaG;
                     //Actualizar existencia de acuerdo al tipo de traspaso
                     //Se resta si es un traspasoE  y se suma si es un traspasoR
                         if($tipoTraspaso == 'Envia'){
@@ -1055,7 +1059,7 @@ class TraspasosController extends Controller
                     //Guardar modelo
                         $Producto->save();
                     //Obtenemos la existencia del producto actualizado
-                        $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+                        $stockActualizado = Producto::find($paramdata['idProducto'])->existenciaG;
                     //insertamos el movimiento de existencia que se le realizo al producto
                         moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$medidaMenor,$stockAnterior,$stockActualizado,$params_array['identity']['sub']);
 
@@ -1063,10 +1067,10 @@ class TraspasosController extends Controller
                     //Agregamos los productos del traspaso
                     if($tipoTraspaso == 'Envia'){
                         $producto_traspaso = new Productos_traspasoE();
-                        $producto_traspaso -> idTraspasoE = $Traspaso;
+                        $producto_traspaso -> idTraspasoE = $idTraspaso;
                     }elseif($tipoTraspaso == 'Recibe'){
                         $producto_traspaso = new Productos_traspasoR();
-                        $producto_traspaso -> idTraspasoR = $Traspaso;
+                        $producto_traspaso -> idTraspasoR = $idTraspaso;
                     }
 
                     $producto_traspaso -> idProducto = $paramdata['idProducto'];
@@ -1140,22 +1144,24 @@ class TraspasosController extends Controller
                         ])
                 ->get();
 
+
             //Actualización de traspaso en tabla traspasoR en sucursal de destino
+                
                 DB::connection($connection)->table('traspasoR')
-                ->where('idTraspasoR',$TraspasoAnt->idTraspasoR)
+                ->where('idTraspasoR','=',$TraspasoAnt[0]->idTraspasoR)
                 ->update([
-                    'idStatus' => $Traspaso->idStatus,
+                    'idStatus' => 50,
                     'observaciones' => $Traspaso->observaciones,
                     'updated_at' =>  Carbon::now()
                 ]);
 
             //Consultar información actualizada
-                $TraspasoAct = DB::connection($connection)->table('traspasoR')->where('idtraspasoR',$TraspasoAnt->idTraspasor)->get();
-                $idTraspasoR = $TraspasoAct->idTraspasoR;
+                $TraspasoAct = DB::connection($connection)->table('traspasoR')->where('idtraspasoR',$TraspasoAnt[0]->idTraspasoR)->get();
+                $idTraspasoR = $TraspasoAct[0]->idTraspasoR;
 
             //Recorremos el traspaso para ver que atributo cambio y asi guardar la modificación
-                foreach($TraspasoAnt[0]['attributes'] as $clave => $valor){
-                    foreach($TraspasoAct[0]['attributes'] as $clave2 => $valor2){
+                foreach($TraspasoAnt[0] as $clave => $valor){
+                    foreach($TraspasoAct[0] as $clave2 => $valor2){
                         //verificamos que la clave sea igual ejem: claveEx == claveEx
                         // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
                             if($clave == $clave2 && $valor !=  $valor2){
@@ -1171,7 +1177,7 @@ class TraspasosController extends Controller
                             }
                     }
                 }
-
+            
             // Insertamos movimiento en monitoreo de sucursal que recibe
                 DB::connection($connection)->table('monitoreo')-> insert([
                     'idUsuario' => $params_array['identity']['sub'],
@@ -1183,7 +1189,7 @@ class TraspasosController extends Controller
                 ]);
 
             //Eliminamos los productos del traspaso para después agregarlos 
-                DB::connection($connection)->table('productos_traspasoR')->where('idTraspasoR',$TraspasoAct)->delete();
+                DB::connection($connection)->table('productos_traspasoR')->where('idTraspasoR','=',$idTraspasoR)->delete();
 
             if(count($productosTraspaso) >= 1 && !empty($productosTraspaso)){
                 
@@ -1214,7 +1220,7 @@ class TraspasosController extends Controller
 
             $TraspasoN =  DB::connection($connection)->table('traspasoR')->where('idtraspasoR',$idTraspasoR)->get();
             //Antes de eliminar consultamos productos del traspaso en la sucursalR
-            $productosTraspasoN = DB::connection($connection)->table('traspasoR')->where('idTraspasoR',$idTraspasoR)->get();
+            $productosTraspasoN = DB::connection($connection)->table('productos_traspasoR')->where('idTraspasoR',$idTraspasoR)->get();
 
             $data =  array(
                 'code'      =>  200,
