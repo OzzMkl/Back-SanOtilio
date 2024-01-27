@@ -11,6 +11,8 @@ use App\Caja_movimientos;
 use App\models\Ventasg;
 use App\models\Abono_venta;
 use Validator;
+use App\models\Empresa;
+use App\models\Productos_ventasg;
 
 class CajasController extends Controller
 {
@@ -290,6 +292,59 @@ class CajasController extends Controller
                 'total_abono' => $totalAbono,
                 'total_actualizado' => $totalActualizado
         ]);    
+    }
+
+    public function generatePDF($idVenta){
+
+        if($idVenta){
+            try{
+                $Empresa = Empresa::first();
+                $venta = Ventasg::select('ventasg.*',
+                                    'tiposdeventas.nombre as nombreTipoVenta',
+                                    'statuss.nombre as nombreStatus',
+                                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+                                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                            ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
+                            ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
+                            ->join('statuss','statuss.idStatus','=','ventasg.idStatus')
+                            ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
+                            ->where('ventasg.idVenta','=',$idVenta)
+                            ->get();
+
+                $productosVenta = Productos_ventasg::select('productos_ventasg.*',
+                                                            'productos_ventasg.total as subtotal',
+                                                            'producto.claveEx as claveEx',
+                                                            'historialproductos_medidas.nombreMedida')
+                                ->join('producto','producto.idProducto','=','productos_ventasg.idProducto')
+                                ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ventasg.idProdMedida')
+                                ->where('productos_ventasg.idVenta','=',$idVenta)
+                                ->get();
+                // dd($venta,$productosVenta);
+                $data = array(
+                    'status'    =>  'success',
+                    'code'      =>  200,
+                    'message'   =>  'Venta creada pero sin productos',
+                    'data_productos' => $venta,
+                    'data_productos2' => $productosVenta
+                );
+            } catch (\Exception $e){
+                DB::rollBack();
+                $data = array(
+                    'code'      => 400,
+                    'status'    => 'Error',
+                    'message'   => $e->getMessage(),
+                    'error'     => $e
+                );
+            }
+        } else{
+            $data = [
+                'code'  => 404,
+                'status'=> 'error',
+                'message' => 'Folio no recibido'
+            ];
+        }
+        return response()->json($data, $data['code']);
     }
 }
 /********************* */
