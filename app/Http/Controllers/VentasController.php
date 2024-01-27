@@ -141,7 +141,7 @@ class VentasController extends Controller
                 'idCliente'       => 'required',
                 'idTipoVenta'       => 'required',
                 'idStatus'   => 'required',
-                'idEmpleado'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
+                'idEmpleado'      => 'required',
                 'subtotal'   => 'required',
                 'total'   => 'required',
             ]);
@@ -161,7 +161,7 @@ class VentasController extends Controller
                     $ventasg->idCliente = $params_array['ventasg']['idCliente'];
                     $ventasg->idTipoVenta = $params_array['ventasg']['idTipoVenta'];
                     $ventasg->observaciones = $params_array['ventasg']['observaciones'];
-                    $ventasg->idStatus = 16;
+                    $ventasg->idStatus = ($params_array['ventasg']['seEnvia'] == true ) ? 16 : 15;
                     $ventasg->idEmpleado = $params_array['ventasg']['idEmpleado'];
                     $ventasg->subtotal = $params_array['ventasg']['subtotal'];
                     if(isset($params_array['ventasg']['descuento'])){
