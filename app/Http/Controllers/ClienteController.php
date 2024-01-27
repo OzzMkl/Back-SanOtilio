@@ -20,10 +20,32 @@ class ClienteController extends Controller
      */
     public function index(){
         $clientes = DB::table('cliente')
-        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
-        ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
-        ->orderBy('cliente.idCliente')
-        ->paginate(10);
+                        ->select('cliente.*','tipocliente.Nombre as nombreTipoC',
+                            DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                            'cdireccion.telefono')
+                        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+                        ->leftjoin('cdireccion', function ($join){
+                            $join->on('cdireccion.idCliente','=','cliente.idCliente')
+                                    ->where('cdireccion.created_at', '=', DB::raw('(SELECT MAX(created_at) FROM cdireccion WHERE cdireccion.idCliente = cliente.idCliente)'));
+                        })
+                        ->orderBy('cliente.idCliente')
+                        ->paginate(10);
+
+        // $clientes = DB::table('cliente')
+        //                 ->select(
+        //                     'cliente.*',
+        //                     'tipocliente.Nombre as nombreTipoC',
+        //                     DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+        //                     DB::raw("MAX(cdireccion.telefono) as telefono")
+        //                 )
+        //                 ->join('tipocliente', 'tipocliente.idTipo', '=', 'cliente.idTipo')
+        //                 ->leftjoin('cdireccion', function ($join){
+        //                     $join->on('cdireccion.idCliente','=','cliente.idCliente');
+        //                 })
+        //                 ->groupBy('cliente.idCliente')
+        //                 ->orderBy('cliente.idCliente')
+        //                 ->paginate(10);
+
         return response()->json([
             'code'      =>  200,
             'status'    =>  'success',
