@@ -393,7 +393,7 @@ class VentasController extends Controller
                 );
             } else{
                 //Verificar si la venta tiene status correcto para editar
-                if($params_array['ventasg']['idStatus'] == 16){
+                // if($params_array['ventasg']['idStatus'] == 16){ //de momento se omite hasta revisar los status
                     try{
                         DB::beginTransaction();
     
@@ -450,13 +450,13 @@ class VentasController extends Controller
                             'error'     => $e
                         );
                     }
-                } else{
-                    $data = array(
-                        'code'      =>  404,
-                        'status'    =>  'error',
-                        'message'   =>  'La venta no tiene el status correcto',
-                    );
-                }
+                // } else{
+                //     $data = array(
+                //         'code'      =>  404,
+                //         'status'    =>  'error',
+                //         'message'   =>  'La venta no tiene el status correcto',
+                //     );
+                // }
             }
         } else{
             $data = array(
