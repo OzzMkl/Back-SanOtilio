@@ -13,6 +13,7 @@ use App\models\Abono_venta;
 use Validator;
 use App\models\Empresa;
 use App\models\Productos_ventasg;
+use App\Clases\clsMonedaLiteral;
 use TCPDF;
 
 class CajasController extends Controller
@@ -342,6 +343,15 @@ class CajasController extends Controller
                                 ->get();
 
             if($venta && $productosVenta){
+                $monedaLiteral = new clsMonedaLiteral();
+
+                // Opcional: Especifica el formato de moneda si lo deseas
+                $currency = [
+                    'plural' => 'PESOS',
+                    'singular' => 'PESO',
+                    'centPlural' => 'CENTAVOS',
+                    'centSingular' => 'CENTAVO'
+                ];
                 //CREACION DEL PDF
                 $pdf = new TCPDF('P', 'MM','A4','UTF-8');
                 //ELIMINAMOS CABECERAS Y PIE DE PAGINA
@@ -435,10 +445,10 @@ class CajasController extends Controller
                 $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
                 //INSERTAMOS CABECERAS TABLA
                 $pdf->Cell(32,10,'CLAVE EXTERNA',1,0,'C',true);
-                $pdf->Cell(76, 10, 'DESCRIPCION', 1,0,'C',true);
+                $pdf->Cell(75, 10, 'DESCRIPCION', 1,0,'C',true);
                 $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
-                $pdf->Cell(15, 10, 'CANT.', 1,0,'C',true);
-                $pdf->Cell(15, 10, 'PRECIO', 1,0,'C',true);
+                $pdf->Cell(12, 10, 'CANT.', 1,0,'C',true);
+                $pdf->Cell(18, 10, 'PRECIO', 1,0,'C',true);
                 $pdf->Cell(16, 10, 'DESC.', 1,0,'C',true);
                 $pdf->Cell(20, 10, 'SUBTOTAL', 1,0,'C',true);
                 $pdf->Ln(); // Nueva línea3
@@ -462,10 +472,10 @@ class CajasController extends Controller
                         $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
                         //CABECERAS TABLA
                         $pdf->Cell(32,10,'CLAVE EXTERNA',1,0,'C',true);
-                        $pdf->Cell(76, 10, 'DESCRIPCION', 1,0,'C',true);
+                        $pdf->Cell(75, 10, 'DESCRIPCION', 1,0,'C',true);
                         $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
-                        $pdf->Cell(15, 10, 'CANT.', 1,0,'C',true);
-                        $pdf->Cell(15, 10, 'PRECIO', 1,0,'C',true);
+                        $pdf->Cell(12, 10, 'CANT.', 1,0,'C',true);
+                        $pdf->Cell(18, 10, 'PRECIO', 1,0,'C',true);
                         $pdf->Cell(16, 10, 'DESC.', 1,0,'C',true);
                         $pdf->Cell(20, 10, 'SUBTOTAL', 1,0,'C',true);
                         $pdf->Ln(); // Nueva línea
@@ -474,12 +484,12 @@ class CajasController extends Controller
                         $pdf->SetTextColor(0, 0, 0);
                         $pdf->SetFont('helvetica', '', 9); // Establece la fuente
                         $pdf->MultiCell(32,10,$prodC->claveEx,1,'C',false,0);
-                        $pdf->MultiCell(76,10,$prodC->descripcion,1,'C',false,0);
+                        $pdf->MultiCell(75,10,$prodC->descripcion,1,'C',false,0);
                         $pdf->MultiCell(16,10,$prodC->nombreMedida,1,'C',false,0);
-                        $pdf->MultiCell(15,10,$prodC->cantidad,1,'C',false,0);
-                        $pdf->MultiCell(15,10,'$'. $prodC->precio,1,'C',false,0);
-                        $pdf->MultiCell(16,10,'$'. $prodC->descuento,1,'C',false,0);
-                        $pdf->MultiCell(20,10,'$'. $prodC->subtotal,1,'C',false,0);
+                        $pdf->MultiCell(12,10,$prodC->cantidad,1,'C',false,0);
+                        $pdf->MultiCell(18,10,'$'. number_format($prodC->precio,2),1,'C',false,0);
+                        $pdf->MultiCell(16,10,'$'. number_format($prodC->descuento,2),1,'C',false,0);
+                        $pdf->MultiCell(20,10,'$'. number_format($prodC->subtotal,2),1,'C',false,0);
                         $pdf->Ln(); // Nueva línea
 
                         if($contRegistros == 18){
@@ -498,13 +508,13 @@ class CajasController extends Controller
                 }
 
                 $pdf->setXY(145,$posY+10);
-                $pdf->Cell(0,10,'SUBTOTAL:          $'. $venta->subtotal,0,1,'L',false);
+                $pdf->Cell(0,10,'SUBTOTAL:          $'. number_format($venta->subtotal,2),0,1,'L',false);
 
                 $pdf->setXY(145,$posY+15);
-                $pdf->Cell(0,10,'DESCUENTO:      $'. $venta->descuento,0,1,'L',false);
+                $pdf->Cell(0,10,'DESCUENTO:      $'. number_format($venta->descuento,2),0,1,'L',false);
 
                 $pdf->setXY(145,$posY+20);
-                $pdf->Cell(0,10,'TOTAL:                 $'. $venta->total,0,1,'L',false);
+                $pdf->Cell(0,10,'TOTAL:                 $'. number_format($venta->total,2),0,1,'L',false);
 
                 $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
                 $pdf->setXY(135,$posY+25);
@@ -524,11 +534,21 @@ class CajasController extends Controller
                 $pdf->SetDrawColor(0,0,0);//insertamos color a pintar en RGB
                 $pdf->SetLineWidth(.5);//grosor de la linea
 
-                $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
+                $pdf->SetFont('helvetica', '', 9); // Establece la fuente
                 $pdf->setXY(10,$posY+8);                                                          // el 'LTR ES EL BORDER L=LEFT, T=TOP, B= BOTTOM, R=RIGHT PUEDEN IR EN CUALQUIE ORDEN
-                $pdf->Cell(0,10,'Por medio de este pagare me(nos) obligo(amos) a pagar incondicionalmente en este plazo, el dia     de','LTR',1,'L',false);
-                $pdf->Cell(0,10,'a nombre de LUNA PEREZ BENJAMIN por la cantidad de : $'.$venta->total,'LR',1,'L',false);
-                $pdf->Cell(0,10,'a nombre de LUNA PEREZ BENJAMIN por la cantidad de : $','LR',1,'L',false);
+                $pdf->Cell(0,0,'Por medio de este pagare me(nos) obligo(amos) a pagar incondicionalmente en este plazo, el dia     de','LTR',1,'L',false);
+                $pdf->Cell(0,0,'a nombre de LUNA PEREZ BENJAMIN por la cantidad de : $'.number_format($venta->total,2),'LR',1,'L',false);
+                $pdf->Cell(0,0,$monedaLiteral->numeroALetras($venta->total),'LR',1,'L',false);
+                $pdf->Cell(0,0,'Valor recibido en mercancias. En caso de no pagar a su vencimiento causara interes moratorio de     % mensual','LR',1,'L',false);
+                $pdf->Cell(0,15,'________________________________','LR',1,'C',false);
+                $pdf->Cell(0,0,'Acepto de conformidad','LRB',1,'C',false);
+                
+                $pdf->Ln(); // Nueva línea
+                $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
+                $pdf->Cell(0,0,'*TODO CAMBIO CAUSARA UN 10% EN EL IMPORTE TOTAL.',0,1,'L',false);
+                $pdf->Cell(0,0,'*TODA CANCELACION SE COBRARA 20% DEL IMPORTE TOTAL SIN EXCEPCION.',0,1,'L',false);
+                $pdf->Cell(0,0,'*LA DESCARGA DE MATERIAL SERA EN UN MAXIMO DE 6m.',0,1,'L',false);
+
                 
                 $contenido = $pdf->Output('', 'I'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
                 $nombrepdf = 'mipdf.pdf';
