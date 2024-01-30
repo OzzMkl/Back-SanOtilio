@@ -19,8 +19,7 @@ class ClienteController extends Controller
      * Litado de clientes
      */
     public function index(){
-        $clientes = DB::table('cliente')
-                        ->select('cliente.*','tipocliente.Nombre as nombreTipoC',
+        $clientes = Cliente::select('cliente.*','tipocliente.Nombre as nombreTipoC',
                             DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                             'cdireccion.telefono')
                         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
@@ -448,12 +447,17 @@ class ClienteController extends Controller
      * Busca en la tabla clientes por su nombre concatenado
      */
     public function searchNombreCliente($nombreCliente){
-        $clientes = DB::table('cliente')
-        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
-        ->select('cliente.*','tipocliente.Nombre as nombreTipoC')
-        ->where(DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno)"),'Like','%'.$nombreCliente.'%')
-        ->orderBy('cliente.idCliente')
-        ->paginate(10);
+        $clientes = Cliente::select('cliente.*','tipocliente.Nombre as nombreTipoC',
+                            DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                            'cdireccion.telefono')
+                        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+                        ->leftjoin('cdireccion', function ($join){
+                            $join->on('cdireccion.idCliente','=','cliente.idCliente')
+                                    ->where('cdireccion.created_at', '=', DB::raw('(SELECT MAX(created_at) FROM cdireccion WHERE cdireccion.idCliente = cliente.idCliente)'));
+                        })
+                        ->where(DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno)"),'Like','%'.$nombreCliente.'%')
+                        ->orderBy('cliente.idCliente')
+                        ->paginate(10);
         return response()->json([
             'code'      =>  200,
             'status'    =>  'success',
