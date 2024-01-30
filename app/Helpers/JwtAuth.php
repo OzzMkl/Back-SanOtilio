@@ -26,45 +26,51 @@ class JwtAuth{
             'email' => $email,
             'contrasena' => $password
         ])->first();
-        //traemos los permisos
-        $permissions = Permisos::where([
+
+        if(is_object($user)){
+            //traemos los permisos
+            $permissions = Permisos::where([
                 'idRol' => $user->idRol
             ])->get();
-        //comprobar si son correctas
-        $signup = false;
-        if(is_object($user) && is_object($permissions)){
-            $signup= true;
-        }
-
-        //Generar el token con los datos del usuario identificado
-        if($signup){
-            $token = array(
-                'sub'       =>  $user->idEmpleado,
-                'email'     =>  $user->email,
-                'nombre'    =>  $user->nombre,
-                'apellido'  =>  $user->aPaterno,
-                'amaterno'  =>  $user->aMaterno,
-                'idRol'     =>  $user->idRol,
-                'permisos'  =>  $permissions,
-                'iat'       =>  time(),
-                'exp'       =>  time() + (7*24*60*60)//durara una semana
-
-            );
-
-            $jwt = JWT::encode($token, $this->key, 'HS256');//creamos el token
-            $decoded = JWT::decode($jwt, $this->key, ['HS256']);//deciframos el token
-            //devolver los datos decodificados o el token en funcion de los parametros
-            if(is_null($getToken)){
-                    $data = $jwt;
-            }else{
-                $data = $decoded;
+            //comprobar si son correctas
+            $signup = false;
+            if(is_object($user) && is_object($permissions)){
+                $signup= true;
             }
 
+            //Generar el token con los datos del usuario identificado
+            if($signup){
+                $token = array(
+                    'sub'       =>  $user->idEmpleado,
+                    'email'     =>  $user->email,
+                    'nombre'    =>  $user->nombre,
+                    'apellido'  =>  $user->aPaterno,
+                    'amaterno'  =>  $user->aMaterno,
+                    'idRol'     =>  $user->idRol,
+                    'permisos'  =>  $permissions,
+                    'iat'       =>  time(),
+                    'exp'       =>  time() + (7*24*60*60)//durara una semana
 
-        }else{
+                );
+
+                $jwt = JWT::encode($token, $this->key, 'HS256');//creamos el token
+                $decoded = JWT::decode($jwt, $this->key, ['HS256']);//deciframos el token
+                //devolver los datos decodificados o el token en funcion de los parametros
+                if(is_null($getToken)){
+                        $data = $jwt;
+                }else{
+                    $data = $decoded;
+                }
+
+
+            }
+        }
+        
+        else{
             $data = array(//si los datos estan mal o el usuario no exste
+                'error' => 404,
                 'status' => 'error',
-                'message' => 'Login incorrecto'
+                'message' => 'Los datos ingresados son incorrectos'
             );
         }
 

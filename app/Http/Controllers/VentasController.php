@@ -141,7 +141,7 @@ class VentasController extends Controller
                 'idCliente'       => 'required',
                 'idTipoVenta'       => 'required',
                 'idStatus'   => 'required',
-                'idEmpleado'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
+                'idEmpleado'      => 'required',
                 'subtotal'   => 'required',
                 'total'   => 'required',
             ]);
@@ -161,7 +161,7 @@ class VentasController extends Controller
                     $ventasg->idCliente = $params_array['ventasg']['idCliente'];
                     $ventasg->idTipoVenta = $params_array['ventasg']['idTipoVenta'];
                     $ventasg->observaciones = $params_array['ventasg']['observaciones'];
-                    $ventasg->idStatus = 16;
+                    $ventasg->idStatus = ($params_array['ventasg']['seEnvia'] == true ) ? 16 : 15;
                     $ventasg->idEmpleado = $params_array['ventasg']['idEmpleado'];
                     $ventasg->subtotal = $params_array['ventasg']['subtotal'];
                     if(isset($params_array['ventasg']['descuento'])){
@@ -393,7 +393,7 @@ class VentasController extends Controller
                 );
             } else{
                 //Verificar si la venta tiene status correcto para editar
-                if($params_array['ventasg']['idStatus'] == 16){
+                // if($params_array['ventasg']['idStatus'] == 16){ //de momento se omite hasta revisar los status
                     try{
                         DB::beginTransaction();
     
@@ -450,13 +450,13 @@ class VentasController extends Controller
                             'error'     => $e
                         );
                     }
-                } else{
-                    $data = array(
-                        'code'      =>  404,
-                        'status'    =>  'error',
-                        'message'   =>  'La venta no tiene el status correcto',
-                    );
-                }
+                // } else{
+                //     $data = array(
+                //         'code'      =>  404,
+                //         'status'    =>  'error',
+                //         'message'   =>  'La venta no tiene el status correcto',
+                //     );
+                // }
             }
         } else{
             $data = array(

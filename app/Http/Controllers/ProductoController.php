@@ -1175,11 +1175,7 @@ class ProductoController extends Controller
             $existencia_por_med = array();
             $existencia_por_med2 = array();
 
-            //Consulta para saber cuantas medidas tiene un producto
-            $count = Productos_medidas::where([
-                ['productos_medidas.idProducto','=',$idProducto],
-                ['productos_medidas.idStatus','=','31']
-                ])->count();
+            
             //traemos la informacion de las medidas
             $productos_medidas = DB::table('productos_medidas')
                 ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
@@ -1190,6 +1186,9 @@ class ProductoController extends Controller
                 ])
                 ->orderBy('productos_medidas.idProdMedida','asc')
                 ->get();
+
+            //Consulta para saber cuantas medidas tiene un producto
+            $count = count($productos_medidas);
             //Si el producto contiene una sola medida se asigna direcamente la existencia
             if($count == 1){
                 foreach ($productos_medidas as $producto_medida) {
@@ -1256,7 +1255,7 @@ class ProductoController extends Controller
                     $lugar++;
                 }
                 
-        }
+            }
                                 
             $imagen = Producto::findOrFail($idProducto)->imagen;
             $data = [

@@ -29,10 +29,8 @@ class Productos_ventasg extends Model
             'precio' => $producto['precio'],
             'total' => $producto['subtotal'],
             'igualMedidaMenor' => $medidaMenor,
+            'descuento' => $producto['descuento'],
         ]);
-        if(isset($paramdata['descuento'])){
-            $productos_ventasg->descuento = $producto['descuento'];
-        }
         
         //guardamos el producto
         $productos_ventasg->save();
