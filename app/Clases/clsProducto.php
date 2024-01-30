@@ -25,6 +25,9 @@ class clsProducto
 
     /**
      * Calcula la cantidad ingresada en la medida menor del producto
+     * @Param: idProducto = Identificador del producto.
+     * @Param idProdMedida = Identificador de producto medida.
+     * @Param cantidad = Cantidad a convertir en medida menor.
      */
     public function cantidad_En_MedidaMenor($idProducto,$idProdMedida,$cantidad){
         //Cpnsultamos medidas del producto
