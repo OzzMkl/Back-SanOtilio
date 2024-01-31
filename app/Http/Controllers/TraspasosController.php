@@ -1258,6 +1258,7 @@ class TraspasosController extends Controller
 
     public function recibirTraspaso(Request $request){
 
+        
         //idtraspaso
         //Sucursal
         
@@ -1272,62 +1273,157 @@ class TraspasosController extends Controller
         $tabla = 'traspasoR';
         $tablaProd = 'productos_traspasoR';
         $idTraspaso = $params_array['idTraspaso'];
-        $idempleado = $params_array['idEmpleado'];
+        $idEmpleado = $params_array['idEmpleado'];
 
         if(!empty($params_array)){
             //Obtener información del traspaso en sucursal destino
                 $TraspasoSR = DB::table($tabla)
                 ->select($tabla.'.*')
                 ->where([   [$tabla.'.id'.$tabla,'=',$idTraspaso]   ])
-                ->get();
+                ->first();
+            
+            //Validación de status del traspaso en la sucursal que recibe, si es = 43 no se hace nada
+            if($TraspasoSR->idStatus == 43){
+                $data= array(
+                    'code'      =>  400,
+                    'status'    => 'Error!',
+                    'message'   =>  'El traspaso ya fue ingresado'
+                );
 
-                $productosTraspasoSR = DB::table($tablaProd)
-                ->select( $tablaProd.'.*')
-                ->where([
-                            [$tablaProd.'.id'.$tabla,'=',$idTraspaso]
-                        ])
-                ->get();
-
-            //Obtener connection
-                $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$TraspasoSR->sucursalE)->value('connection');
+            }else{
                     
-            //Consultar la informacion del traspaso en sucursal que envía
-                $TraspasoSE =  DB::connection($connection)->table('traspasoE')->where('idtraspasoE',$TraspasoSR->folio)->get();
-                $productosTraspasoSE = DB::connection($connection)->table('productos_traspasoE')->where('idTraspasoE',$TraspasoSR->folio)->get();
+                    $productosTraspasoSR = DB::table($tablaProd)
+                    ->select( $tablaProd.'.*')
+                    ->where([
+                                [$tablaProd.'.id'.$tabla,'=',$idTraspaso]
+                            ])
+                    ->get()
+                    ->map(function($productosTraspasoSR)use($TraspasoSR){
+                        $productosTraspasoSR->idTraspasoE = $TraspasoSR->folio;
+                        return $productosTraspasoSR;
+                    });
 
-            //Variable para almacenar cuántas diferencias existen entre los datos
-                $diferencias = 0;
-                
-            //Comparar informacion del traspaso para verificar que ambas sucursales tengan la misma información
-                foreach($TraspasoSR[0]['attributes'] as $clave => $valor){
-                    foreach($TraspasoSE[0]['attributes'] as $clave2 => $valor2){
-                    //verificamos que la clave sea igua ejem: claveEx == claveEx
-                    // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                        if($clave == $clave2 && $valor !=  $valor2){
-                            //insertamos el movimiento realizado
-                            $diferencias++;
-                        }else if($clave != $clave2 && $valor ==  $valor2){
-                            var_dump('Clave ',$clave,' clave2 ',$clave2,' valor ',$valor,' valor2 ',$valor2);
+                //Obtener connection
+                    $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$TraspasoSR->sucursalE)->value('connection');
+                    
+                //Consultar la informacion del traspaso en sucursal que envía
+                    $TraspasoSE =  DB::connection($connection)->table('traspasoE')->where('idtraspasoE',$TraspasoSR->folio)->first();
+                    $productosTraspasoSE = DB::connection($connection)->table('productos_traspasoE')->where('idTraspasoE',$TraspasoSR->folio)->get()
+                    ->map(function($productosTraspasoSE)use($TraspasoSR){
+                        $productosTraspasoSE->idTraspasoR = $TraspasoSR->idTraspasoR;
+                        return $productosTraspasoSE;
+                    });
+
+                //Variable para almacenar cuántas diferencias existen entre los datos
+                    $diferencias = false;
+                    // dd($productosTraspasoSR,$productosTraspasoSE);
+                    // dd($productosTraspasoSE);
+                //Comparar informacion del traspaso para verificar que ambas sucursales tengan la misma información
+                    if(count($productosTraspasoSR) == count($productosTraspasoSE)){
+                        for($i=0;$i < count($productosTraspasoSR);$i++){
+                            // dd($productosTraspasoSR[$i]->idTraspasoR);
+                            if($productosTraspasoSR[$i]->idProducto != $productosTraspasoSE[$i]->idProducto  ||
+                                $productosTraspasoSR[$i]->idProdMedida != $productosTraspasoSE[$i]->idProdMedida  ||
+                                $productosTraspasoSR[$i]->cantidad != $productosTraspasoSE[$i]->cantidad ||
+                                $productosTraspasoSR[$i]->igualMedidaMenor != $productosTraspasoSE[$i]->igualMedidaMenor){
+                                    $diferencias = true;
+                            }
+
                         }
                     }
-                }
+                    
+                //Evaluar el resultado de la comparación, si existen regresar error y no hacer nada
+                    if($diferencias == false){
+                        
+                        try {
+                            
+                            DB::beginTransaction();
+                            //dd($productosTraspasoSR);
 
-            DB::beginTransaction();
+                            //Se hace el ingreso de los productos
+                                foreach($productosTraspasoSR as $param => $paramdata){
+                                    //asignamos medida menor
+                                        $medidaMenor = $paramdata->igualMedidaMenor;
+                
+                                    //Consultamos la existencia antes de actualizar
+                                        $Producto = Producto::find($paramdata->idProducto);
+                                        $stockAnterior = $Producto -> existenciaG;
+                
+                                    //Actualizamos existenciaG
+                                        $Producto -> existenciaG = $Producto -> existenciaG + $medidaMenor;
 
-            
-            DB::commit();
-            
-            $data =  array(
-                'code'      =>  200,
-                'status'    =>  'success',
-                'message'   =>  '',
-                'TraspasoSR'  =>  $TraspasoSR,
-                'productosTraspasoSR' =>  $productosTraspasoSR,
-                'connection' => $connection,
-                'TraspasoSE' =>  $TraspasoSE,
-                'productosTraspasoSE' =>  $productosTraspasoSE
-            );
-            
+                                    //Guardamos el modelo
+                                        $Producto -> save();
+                
+                                    //Consultamos la existencia despues de actualizar
+                                        $stockActualizado = $Producto->existenciaG;
+
+                                    $paramdataArray = get_object_vars($paramdata);
+
+                                    //insertamos el movimiento de existencia que se le realizo al producto
+                                        moviproduc::insertMoviproduc($paramdataArray,$accion = "Ingreso de traspaso, RECIBE",$idTraspaso,$medidaMenor,$stockAnterior,$stockActualizado,$idEmpleado);
+                                    
+                                }
+
+                            //Registramos acción en monitoreo
+                                Monitoreo::insertMonitoreo(
+                                    $idEmpleado,
+                                    $accion = "Ingreso de trapaso RECIBE",
+                                    null,
+                                    $idTraspaso,
+                                    null
+                                );
+
+                            //Actualizamos
+                                $Traspaso = TraspasoR::where('idTraspasoR',$idTraspaso)->update([ 'idStatus' => 43 ]);
+
+                            //Registramos acción en monitoreo
+                                Monitoreo::insertMonitoreo(
+                                    $idEmpleado,
+                                    $accion = "Modificación de status por recepción de traspaso RECIBE ".$idTraspaso,
+                                    null,
+                                    $idTraspaso,
+                                    null
+                                );
+                            
+                            DB::commit();
+                        
+                            $data =  array(
+                                'code'      =>  200,
+                                'status'    =>  'success',
+                                'message'   =>  'Traspaso ingresado correctamente',
+                                'TraspasoSR'  =>  $TraspasoSR,
+                                'productosTraspasoSR' =>  $productosTraspasoSR,
+                                'connection' => $connection,
+                                'TraspasoSE' =>  $TraspasoSE,
+                                'productosTraspasoSE' =>  $productosTraspasoSE
+                            );
+
+                        } catch (\Exception $e) {
+                            DB::rollback();
+                            $data =  array(
+                                'code'    => 400,
+                                'status'  => 'error',
+                                'message' => 'Fallo al ingresar traspaso a la sucursal',
+                                'error'   => $e
+                            );
+                            
+                        }
+
+                    }else{
+                        $data= array(
+                            'code'      =>  400,
+                            'status'    => 'Error!',
+                            'message'   =>  'Diferencias encontradas en los productos del traspaso',
+                            'TraspasoSR'  =>  $TraspasoSR,
+                            'productosTraspasoSR' =>  $productosTraspasoSR,
+                            'connection' => $connection,
+                            'TraspasoSE' =>  $TraspasoSE,
+                            'productosTraspasoSE' =>  $productosTraspasoSE
+
+                        );
+                    }
+            }
 
         }else{
             $data= array(
