@@ -618,11 +618,8 @@ class VentasController extends Controller
                     $ventascan->idCliente = $venta->idCliente;
                     $ventascan->cdireccion = $venta->cdireccion;
                     $ventascan->idTipoVenta = $venta->idTipoVenta;
-                    $ventascan->idTipoPago = $venta->idTipoPago;//se convertida en idstatus
-                    // $ventascan->autorizaV = $venta->idVenta;
-                    // $ventascan->autorizaC = $venta->idVenta;
+                    $ventascan->idTipoPago = $venta->idStatus;//se convertida en idstatus
                     $ventascan->observaciones = $venta->observaciones;
-                    // $ventascan->fecha = $venta->fecha;
                     $ventascan->idEmpleadoG = $venta->idEmpleado;//Empleado que genero la venta
                     $ventascan->idEmpleadoC = $params_array['identity']['sub'];//idEmpleado que cancelo la venta
                     $ventascan->subtotal = $venta->subtotal;
@@ -972,6 +969,26 @@ class VentasController extends Controller
             'code'      => 200,
             'status'    => 'success',
             'entregas'    => $ventas
+        ]);
+    }
+
+    //Ventas canceladas
+    public function indexVentasCanceladas(){
+        $ventas_canceladas = Ventascan::join('cliente','cliente.idcliente','=','ventascan.idcliente')
+                            ->join('empleado','empleado.idEmpleado','=','ventascan.idEmpleadoG')
+                            ->join('empleado as empleado2','empleado2.idEmpleado','=','ventascan.idEmpleadoC')
+                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventascan.idTipoVenta')
+                            ->select('ventascan.*',
+                                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleadoGenera"),
+                                    DB::raw("CONCAT(empleado2.nombre,' ',empleado2.aPaterno,' ',empleado2.aMaterno) as nombreEmpleadoCancela"),
+                                    'tiposdeventas.nombre as nombreTipoventa')
+                            ->orderBy('ventascan.idVenta','desc')
+                            ->paginate(1);
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'ventas_canceladas'    => $ventas_canceladas
         ]);
     }
 }
