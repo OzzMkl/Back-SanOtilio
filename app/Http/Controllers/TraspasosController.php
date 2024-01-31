@@ -105,7 +105,6 @@ class TraspasosController extends Controller
        
     }
 
-
     public function registerTraspaso(Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
@@ -359,7 +358,7 @@ class TraspasosController extends Controller
 
             }else{
                 $productosTraspaso = 'El traspaso no tiene productos';
-            }   
+            }       
 
             //Obtenemos direccion ip
             $ip = $_SERVER['REMOTE_ADDR'];
@@ -367,6 +366,7 @@ class TraspasosController extends Controller
             $monitoreo = new Monitoreo();
             $monitoreo -> idUsuario =   $Traspaso->idEmpleado;
             $monitoreo -> accion =  "Alta de traspaso, envia, en SUCURSAL ".strtoupper($connection);
+            $monitoreo -> folioAnterior =  $idTraspasoE;
             $monitoreo -> folioNuevo =  $Traspaso->idTraspasoE;
             $monitoreo -> pc =  $ip;
             $monitoreo ->save();
@@ -883,7 +883,7 @@ class TraspasosController extends Controller
 
     }
 
-    //Actualización de información de traspaso en sucursal que envía
+    //Actualización de información de traspaso en sucursal que envía o actualizacion de informacion de un traspaso que es de una sucursal
     public function updateSucursalE($params_array){
         //dd($params_array);
         if(!empty($params_array)){
@@ -987,6 +987,7 @@ class TraspasosController extends Controller
         $tipoTraspaso = $params_array['tipoTraspaso'];
         $idTraspaso = $params_array['traspaso']['idTraspaso'];
 
+        
         if(count($productosTraspaso) >= 1 && !empty($productosTraspaso)){
             try{
                 DB::beginTransaction();
@@ -999,7 +1000,7 @@ class TraspasosController extends Controller
                     //Asignar idTraspaso a una variable para su uso
                         $idTraspaso = $params_array['traspaso']['idTraspasoE'];
                     //Obtener lista de productos del traspaso
-                        $productosAnt = Productos_TraspasoE::where('idTraspasoE',$idTraspaso);
+                        $productosAnt = Productos_TraspasoE::where('idTraspasoE','=',$idTraspaso)->get();
                     //Se define acción a realizar para su inserción en moviproduc
                         $accion = "Modificación de traspaso Envía, ".$idTraspaso.", se suma al inventario";
                     //Eliminación de productos del traspaso
@@ -1008,12 +1009,13 @@ class TraspasosController extends Controller
                     //Asignar idTraspaso a una variable para su uso
                         $idTraspaso = $params_array['traspaso']['idTraspasoR'];
                     //Obtener lista de productos del traspaso
-                        $productosAnt = Productos_TraspasoR::where('idTraspasoR',$idTraspaso);               
+                        $productosAnt = Productos_TraspasoR::where('idTraspasoR','=',$idTraspaso)->get();           
                     //Se define acción a realizar para su inserción en moviproduc
                         $accion = "Modificación de traspaso Recibe, ".$idTraspaso.", se resta al inventario";
                     //Eliminación de productos del traspaso
                         Productos_traspasoR::where('idTraspasoR',$idTraspaso)->delete();
                 }
+
                 
                 //Restar o agregar existencia antes de una modificacion
                 foreach($productosAnt as $param => $paramdata){
@@ -1021,7 +1023,7 @@ class TraspasosController extends Controller
                     //Obtener producto
                         $Producto = Producto::find($paramdata['idProducto']);
                     //Obtener su existencia antes de actualizar
-                        $stockanterior = $Producto -> existenciaG;
+                        $stockAnterior = $Producto -> existenciaG;
                     //Actualizar existencia de acuerdo al tipo de traspaso
                     //Se reingresa si es un traspasoE  y se resta si es un traspasoR
                         if($tipoTraspaso == 'Envia'){
@@ -1032,7 +1034,7 @@ class TraspasosController extends Controller
                     //Guardar modelo
                         $Producto->save();
                     //Obtenemos la existencia del producto actualizado
-                        $stockactualizado = Producto::find($paramdata['idProducto'])->existenciaG;
+                        $stockActualizado = Producto::find($paramdata['idProducto'])->existenciaG;
                     //insertamos el movimiento de existencia que se le realizo al producto
                         moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$paramdata['igualMedidaMenor'],$stockAnterior,$stockActualizado,$params_array['identity']['sub']);
 
@@ -1250,6 +1252,92 @@ class TraspasosController extends Controller
         
 
         
+
+        
+    }
+
+    public function recibirTraspaso(Request $request){
+
+        //idtraspaso
+        //Sucursal
+        
+        //consultar informacion del traspaso en suc origen y comparar con la información almacenada
+        //Si es diferente -> no hacer nada 
+        //Si es igual, continuar
+        //Tomar campo igual medida menor de cada producto y sumarlo a la existenciaG
+        
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+        
+        $tabla = 'traspasoR';
+        $tablaProd = 'productos_traspasoR';
+        $idTraspaso = $params_array['idTraspaso'];
+        $idempleado = $params_array['idEmpleado'];
+
+        if(!empty($params_array)){
+            //Obtener información del traspaso en sucursal destino
+                $TraspasoSR = DB::table($tabla)
+                ->select($tabla.'.*')
+                ->where([   [$tabla.'.id'.$tabla,'=',$idTraspaso]   ])
+                ->get();
+
+                $productosTraspasoSR = DB::table($tablaProd)
+                ->select( $tablaProd.'.*')
+                ->where([
+                            [$tablaProd.'.id'.$tabla,'=',$idTraspaso]
+                        ])
+                ->get();
+
+            //Obtener connection
+                $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$TraspasoSR->sucursalE)->value('connection');
+                    
+            //Consultar la informacion del traspaso en sucursal que envía
+                $TraspasoSE =  DB::connection($connection)->table('traspasoE')->where('idtraspasoE',$TraspasoSR->folio)->get();
+                $productosTraspasoSE = DB::connection($connection)->table('productos_traspasoE')->where('idTraspasoE',$TraspasoSR->folio)->get();
+
+            //Variable para almacenar cuántas diferencias existen entre los datos
+                $diferencias = 0;
+                
+            //Comparar informacion del traspaso para verificar que ambas sucursales tengan la misma información
+                foreach($TraspasoSR[0]['attributes'] as $clave => $valor){
+                    foreach($TraspasoSE[0]['attributes'] as $clave2 => $valor2){
+                    //verificamos que la clave sea igua ejem: claveEx == claveEx
+                    // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                        if($clave == $clave2 && $valor !=  $valor2){
+                            //insertamos el movimiento realizado
+                            $diferencias++;
+                        }else if($clave != $clave2 && $valor ==  $valor2){
+                            var_dump('Clave ',$clave,' clave2 ',$clave2,' valor ',$valor,' valor2 ',$valor2);
+                        }
+                    }
+                }
+
+            DB::beginTransaction();
+
+            
+            DB::commit();
+            
+            $data =  array(
+                'code'      =>  200,
+                'status'    =>  'success',
+                'message'   =>  '',
+                'TraspasoSR'  =>  $TraspasoSR,
+                'productosTraspasoSR' =>  $productosTraspasoSR,
+                'connection' => $connection,
+                'TraspasoSE' =>  $TraspasoSE,
+                'productosTraspasoSE' =>  $productosTraspasoSE
+            );
+            
+
+        }else{
+            $data= array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            );
+        }
+        return response()->json($data, $data['code']);
+
 
         
     }
