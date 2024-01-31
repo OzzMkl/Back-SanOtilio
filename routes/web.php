@@ -187,6 +187,11 @@ Route::get('/prueba', function(){
     Route::post('/api/ventas/cancelaVenta/{idVenta}','VentasController@cancelaVenta');
     Route::put('/api/ventas/updateVenta/{idVenta}','VentasController@updateVenta');
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
+
+    /*****VENTAS CANCELADAS*/
+    Route::get('/api/ventas/indexVentasCanceladas','VentasController@indexVentasCanceladas');
+
+
     /*****cotizaciones*/
     Route::get('/api/cotizaciones/indexCotizaciones','cotizacionesController@indexCotiza');
     Route::post('/api/cotizaciones/guardarCotizacion','cotizacionesController@guardarCotizacion');
