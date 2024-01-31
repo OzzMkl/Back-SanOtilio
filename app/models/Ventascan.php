@@ -12,11 +12,11 @@ class Ventascan extends Model
         'idCliente',
         'cdireccion',
         'idTipoVenta',
-        'idTipoPago',
-        'autorizaV',
-        'autorizaC',
+        // 'idTipoPago', ->se cambia por idStatus
+        // 'autorizaV', ->se elimina
+        // 'autorizaC', ->se elimina
         'observaciones',
-        'fecha',
+        // 'fecha', ->se elimina
         'idEmpleadoG',
         'idEmpleadoC',
         'subtotal',
