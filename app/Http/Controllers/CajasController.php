@@ -169,19 +169,19 @@ class CajasController extends Controller
                     $caja_movimientos->pagoCliente = $params_array['pagoCliente'];
                 
                     //si los siguientes datos existen los guardamos
-                    if(isset($paramdata['idOrigen'])){
+                    if(isset($params_array['idOrigen'])){
                         $caja_movimientos->idOrigen = $params_array['idOrigen'];
                     }
-                    if(isset($paramdata['idTipoPago'])){
+                    if(isset($params_array['idTipoPago'])){
                         $caja_movimientos->idTipoPago = $params_array['idTipoPago'];
                     }
-                    if(isset($paramdata['autoriza'])){
+                    if(isset($params_array['autoriza'])){
                         $caja_movimientos->autoriza = $params_array['autoriza'];
                     }
-                    if(isset($paramdata['observaciones'])){
+                    if(isset($params_array['observaciones'])){
                         $caja_movimientos->observaciones = $params_array['observaciones'];
                     }
-                    if(isset($paramdata['cambioCliente'])){
+                    if(isset($params_array['cambioCliente'])){
                         $caja_movimientos->cambioCliente = $params_array['cambioCliente'];
                     }
 
