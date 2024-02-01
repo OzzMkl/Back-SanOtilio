@@ -973,7 +973,7 @@ class VentasController extends Controller
     }
 
     //Ventas canceladas
-    public function indexVentasCanceladas(){
+    public function indexVentasCanceladas($type, $search){
         $ventas_canceladas = Ventascan::join('cliente','cliente.idcliente','=','ventascan.idcliente')
                             ->join('empleado','empleado.idEmpleado','=','ventascan.idEmpleadoG')
                             ->join('empleado as empleado2','empleado2.idEmpleado','=','ventascan.idEmpleadoC')
@@ -982,13 +982,66 @@ class VentasController extends Controller
                                     DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleadoGenera"),
                                     DB::raw("CONCAT(empleado2.nombre,' ',empleado2.aPaterno,' ',empleado2.aMaterno) as nombreEmpleadoCancela"),
-                                    'tiposdeventas.nombre as nombreTipoventa')
-                            ->orderBy('ventascan.idVenta','desc')
-                            ->paginate(1);
+                                    'tiposdeventas.nombre as nombreTipoventa');
+                            //Folio
+                            if($type == 1 && $search != "null"){
+                                $ventas_canceladas->where('ventascan.idVenta','like','%'.$search.'%');
+                            }
+                            // Cliente
+                            if($type == 2 && $search != "null") {
+                                $ventas_canceladas->where(DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            // empleadoGenera
+                            if($type == 3 && $search != "null") {
+                                $ventas_canceladas->where(DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            // empleadoCancela
+                            if($type == 4 && $search != "null") {
+                                $ventas_canceladas->where(DB::raw("CONCAT(empleado2.nombre,' ',empleado2.aPaterno,' ',empleado2.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            
+        $ventas_canceladas = $ventas_canceladas ->orderBy('ventascan.idVenta','desc')
+                            ->paginate(5);
         return response()->json([
             'code'      => 200,
             'status'    => 'success',
             'ventas_canceladas'    => $ventas_canceladas
         ]);
+    }
+
+    public function getDetallesVentaCancelada($idVenta){
+        $venta = Ventascan::join('cliente','cliente.idcliente','=','ventascan.idcliente')
+                ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+                ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventascan.idTipoVenta')
+                ->leftjoin('statuss','statuss.idStatus','=','ventascan.idTipoPago')
+                ->join('empleado','empleado.idEmpleado','=','ventascan.idEmpleadoG')
+                ->select('ventascan.*',
+                        'tiposdeventas.nombre as nombreTipoVenta',
+                        'statuss.nombre as nombreStatus',
+                        DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                ->where('ventascan.idVenta','=',$idVenta)
+                ->get();
+        $productosVenta = DB::table('productos_ventascan')
+                ->join('producto','producto.idProducto','=','productos_ventascan.idProducto')
+                ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ventascan.idProdMedida')
+                ->select('productos_ventascan.*','productos_ventascan.total as subtotal','producto.claveEx as claveEx','historialproductos_medidas.nombreMedida')
+                ->where('productos_ventascan.idVenta','=',$idVenta)
+                ->get();
+        if(is_object($venta)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'venta_cancelada'   =>  $venta,
+                'productos_ventascan'     => $productosVenta
+            ];
+        }else{
+            $data = [
+                'code'          => 404,
+                'status'        => 'error',
+                'message'       => 'La venta no existe.'
+            ];
+        }
+        return response()->json($data, $data['code']);
     }
 }
