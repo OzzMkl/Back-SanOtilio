@@ -1002,7 +1002,7 @@ class VentasController extends Controller
                 ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
                 ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventascan.idTipoVenta')
                 ->leftjoin('statuss','statuss.idStatus','=','ventascan.idStatusCaja')
-                ->leftjoin('statuss as statuss2','statuss.idStatus','=','ventascan.idStatusEntregas')
+                ->leftjoin('statuss as statuss2','statuss2.idStatus','=','ventascan.idStatusEntregas')
                 ->join('empleado','empleado.idEmpleado','=','ventascan.idEmpleadoG')
                 ->select('ventascan.*',
                         'tiposdeventas.nombre as nombreTipoVenta',
