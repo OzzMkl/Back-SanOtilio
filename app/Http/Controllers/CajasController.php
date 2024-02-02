@@ -15,6 +15,7 @@ use App\models\Empresa;
 use App\models\Productos_ventasg;
 use App\Clases\clsMonedaLiteral;
 use TCPDF;
+use Carbon\Carbon;
 
 class CajasController extends Controller
 {
@@ -185,6 +186,9 @@ class CajasController extends Controller
                         $caja_movimientos->cambioCliente = $params_array['cambioCliente'];
                     }
 
+                    $caja_movimientos->created_at = Carbon::now();
+                    $caja_movimientos->updated_at = Carbon::now();
+
                     //por ultimo guardamos
                     $caja_movimientos->save();
 
@@ -203,26 +207,29 @@ class CajasController extends Controller
                             
                             $abono_venta->abono = $ultimoAbono ? $ultimoAbono->totalActualizado : die();
                             $abono_venta->totalActualizado = $params_array['saldo_restante'];
-                            $venta->idStatus = 4; // cobrada, no se envia
+                            $venta->idStatus = 3; // cobrada
                         } else {
                             $abono_venta->abono = $params_array['pagoCliente'];
                             $abono_venta->totalActualizado = $params_array['saldo_restante'];
-                            $venta->idStatus = 21; // Cobro parcial, no se envia
+                            $venta->idStatus = 5; // Cobro parcial
                         }
 
                         $abono_venta->totalAnterior = $ultimoAbono ? $ultimoAbono->totalActualizado : $params_array['totalNota'];
                         $abono_venta->idEmpleado = $params_array['idEmpleado'];
                         $abono_venta->pc = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+                        $abono_venta->created_at = Carbon::now();
+                        $abono_venta->updated_at = Carbon::now();
 
                         $abono_venta->save();
 
                         
                     } else{
                         //asignamos status a actualizar
-                        $venta->idStatus = 4; // cobrada, no se envia
+                        $venta->idStatus = 3; // cobrada
                     }
 
                     //guardamos/actualizamos
+                    $venta->updated_at = Carbon::now();
                     $venta->save();
                     
 
