@@ -11,14 +11,16 @@ class Ventascan extends Model
     protected $fillable = [
         'idCliente',
         'cdireccion',
-        'idTipoVenta',
-        // 'idTipoPago', ->se cambia por idStatus
-        // 'autorizaV', ->se elimina
-        // 'autorizaC', ->se elimina
+        'idTipoVenta',//Paga se lo lleva, etc.
+        'idTipoPago',//Por si tiene abonos?
+        'autorizaV', // Autoriza venta, ventas especiales
+        'autorizaC', //Autoriza cancelacion algun jefe encargado etc.
         'observaciones',
-        // 'fecha', ->se elimina
-        'idEmpleadoG',
-        'idEmpleadoC',
+        'idStatusCaja',
+        'idStatusEntregas',
+        'fecha', //Fecha de alta de venta
+        'idEmpleadoG',//Empleado que dio de alta la venta
+        'idEmpleadoC',//Empleado que realizo la cancelacion
         'subtotal',
         'descuento',
         'total' 

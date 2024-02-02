@@ -28,6 +28,7 @@ use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 //use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 //use Mike42\Escpos\PrintConnectors\FilePrintConnector;
 //use Mike42\Escpos\CapabilityProfile;
+use Carbon\Carbon;
 
 class VentasController extends Controller
 {
@@ -61,18 +62,8 @@ class VentasController extends Controller
     /***** VENTAS *****/
     public function indexVentas(){
         $status = [
-            15, //NO COBRADA, NO SE ENVIA
-            16, //NO COBRADA, NO CARGADA
-            17, //NO COBRADA, CARGANDO
-            18,
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
+            4, //NO COBRADA
+            5, //COBRO PARCIAL
         ];
         $ventas = Ventasg::join('cliente','cliente.idcliente','=','ventasg.idcliente')
                             ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
@@ -81,7 +72,7 @@ class VentasController extends Controller
                                     DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
                                     'tiposdeventas.nombre as nombreTipoventa')
-                            ->whereIn('ventasg.idStatus',$status)
+                            ->whereIn('ventasg.idStatusCaja',$status)
                             ->orderBy('ventasg.idVenta','desc')
                             ->get();
         return response()->json([
@@ -96,11 +87,13 @@ class VentasController extends Controller
         ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
         ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
         ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
-        ->join('statuss','statuss.idStatus','=','ventasg.idStatus')
+        ->join('statuss','statuss.idStatus','=','ventasg.idStatusCaja')
+        ->leftjoin('statuss as statuss2','statuss2.idStatus','=','ventasg.idStatusEntregas')//Proximo a modificar
         ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
         ->select('ventasg.*',
                  'tiposdeventas.nombre as nombreTipoVenta',
                  'statuss.nombre as nombreStatus',
+                 'statuss2.nombre as nombreStatusEntregas',
                  DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
                  DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
         ->where('ventasg.idVenta','=',$idVenta)
@@ -140,7 +133,6 @@ class VentasController extends Controller
             $validate = Validator::make($params_array['ventasg'], [
                 'idCliente'       => 'required',
                 'idTipoVenta'       => 'required',
-                'idStatus'   => 'required',
                 'idEmpleado'      => 'required',
                 'subtotal'   => 'required',
                 'total'   => 'required',
@@ -161,17 +153,15 @@ class VentasController extends Controller
                     $ventasg->idCliente = $params_array['ventasg']['idCliente'];
                     $ventasg->idTipoVenta = $params_array['ventasg']['idTipoVenta'];
                     $ventasg->observaciones = $params_array['ventasg']['observaciones'];
-                    $ventasg->idStatus = ($params_array['ventasg']['seEnvia'] == true ) ? 16 : 15;
+                    $ventasg->idStatusCaja = 4;
+                    $ventasg->idStatusEntregas = ($params_array['ventasg']['seEnvia'] == true ) ? 7 : 6;
                     $ventasg->idEmpleado = $params_array['ventasg']['idEmpleado'];
                     $ventasg->subtotal = $params_array['ventasg']['subtotal'];
-                    if(isset($params_array['ventasg']['descuento'])){
-                        $ventasg->descuento = $params_array['ventasg']['descuento'];
-                    }
-                    if(isset($params_array['ventasg']['cdireccion'])){
-                        $ventasg->cdireccion = $params_array['ventasg']['cdireccion'];
-                    }
+                    $ventasg->descuento = $params_array['ventasg']['descuento'] ? $params_array['ventasg']['descuento'] : 0.00;
+                    $ventasg->cdireccion = $params_array['ventasg']['cdireccion'] ? $params_array['ventasg']['cdireccion'] : '';
                     $ventasg->total = $params_array['ventasg']['total'];
-    
+                    $ventasg->created_at = Carbon::now();
+                    $ventasg->updated_at = Carbon::now();
                     $ventasg->save();
 
                     //obtemos id de la ultima venta insertada
@@ -197,6 +187,8 @@ class VentasController extends Controller
                         $monitoreo -> folioAnterior =  $params_array['ventasg']['idCotiza'];
                         $monitoreo -> folioNuevo =  $ultimaVenta;
                         $monitoreo -> pc =  $ip;
+                        $monitoreo->created_at = Carbon::now();
+                        $monitoreo->updated_at = Carbon::now();
                         $monitoreo ->save();
                     }
     
@@ -208,6 +200,8 @@ class VentasController extends Controller
                     $monitoreo -> accion =  "Alta de venta";
                     $monitoreo -> folioNuevo =  $ultimaVenta;
                     $monitoreo -> pc =  $ip;
+                    $monitoreo->created_at = Carbon::now();
+                    $monitoreo->updated_at = Carbon::now();
                     $monitoreo ->save();
                     /**** FIN proceso de  monitoreo ****/
 
@@ -276,19 +270,6 @@ class VentasController extends Controller
                     
 
                     /**************************** REGISTRA PRODUCTOS VENTAG ***************************************** */
-                    // $arrProductoVenta = [
-                    //     'idVenta' => $ventasg->idVenta,
-                    //     'idProducto' => $paramdata['idProducto'],
-                    //     'descripcion' => $paramdata['descripcion'],
-                    //     'idProdMedida' => $paramdata['idProdMedida'],
-                    //     'cantidad' => $paramdata['cantidad'],
-                    //     'precio' => $paramdata['precio'],
-                    //     'descuento' => $paramdata['descuento'],
-                    //     'total' => $paramdata['subtotal'],
-                    //     'igualMedidaMenor' => $medidaMenor,
-                    // ];
-
-                    // $arrProductosVentas[] = $arrProductoVenta;
                     
                     Productos_ventasg::insertProductoVentasg($ventasg->idVenta,$paramdata,$medidaMenor);
 
@@ -297,27 +278,18 @@ class VentasController extends Controller
                     //obtenemos la existencia del producto actualizado
                     $stockactualizado = $Producto->existenciaG;
 
-                    // $arrMovimiento = [
-                    //     'idProducto' => $paramdata['idProducto'],
-                    //     'claveEx' => $paramdata['claveEx'],
-                    //     'accion' => "Alta de venta",
-                    //     'folioAccion' => $ventasg->idVenta,
-                    //     'cantidad' => $medidaMenor,
-                    //     'stockanterior' => $stockanterior,
-                    //     'stockactualizado' => $stockActualizado,
-                    //     'idUsuario' => $ventasg->idEmpleado,
-                    //     'pc' => $ip,
-                    // ];
-
-                    // $arrMovimientos[] = $arrMovimiento;
-
                     //insertamos el movimiento de existencia del producto
-                    moviproduc::insertMoviproduc($paramdata,$accion = "Alta de venta", $ventasg->idVenta, $medidaMenor,
-                                                    $stockanterior, $stockactualizado, $ventasg->idEmpleado);
+                    moviproduc::insertMoviproduc(
+                        $paramdata,
+                        "Alta de venta",
+                        $ventasg->idVenta,
+                        $medidaMenor,
+                        $stockanterior,
+                        $stockactualizado,
+                        $ventasg->idEmpleado,
+                        $_SERVER['REMOTE_ADDR']
+                    );
                 }
-
-                // Productos_ventasg::insert($arrProductosVentas);
-                // moviproduc::insert($arrMovimientos);
 
                 //Si todo es correcto mandamos el ultimo producto insertado
                 $data =  array(
@@ -375,8 +347,6 @@ class VentasController extends Controller
                 'idVenta'       =>  'required',
                 'idCliente'     =>  'required',
                 'idTipoVenta'   =>  'required',
-                //'observaciones' =>  'required',//realmente no es necesario XD
-                'idStatus'      =>  'required',
                 'idEmpleado'    =>  'required',
                 'subtotal'      =>  'required',
                 'descuento'     =>  'required',
@@ -406,10 +376,11 @@ class VentasController extends Controller
                                     'idTipoVenta' => $params_array['ventasg']['idTipoVenta'],
                                     'observaciones' => $params_array['ventasg']['observaciones'],
                                     //'idStatus' => 35,
-                                    'idEmpleado' => $params_array['ventasg']['idEmpleado'],
+                                    // 'idEmpleado' => $params_array['ventasg']['idEmpleado'],
                                     'subtotal' => $params_array['ventasg']['subtotal'],
                                     'descuento' => $params_array['ventasg']['descuento'],
                                     'total' => $params_array['ventasg']['total'],
+                                    'updated_at' => Carbon::now(),
                                 ]);
 
                         //obtenemos ip
@@ -422,6 +393,8 @@ class VentasController extends Controller
                         $monitoreo -> folioNuevo =  $idVenta;
                         $monitoreo -> pc =  $ip;
                         $monitoreo -> motivo =  $params_array['motivo_edicion'];
+                        $monitoreo->created_at = Carbon::now();
+                        $monitoreo->updated_at = Carbon::now();
                         $monitoreo ->save();
 
                         /*** INICIO INSERCION DE PRODUCTOS */
@@ -508,6 +481,8 @@ class VentasController extends Controller
                     $moviproduc -> stockactualizado =  $stockActualizado;
                     $moviproduc -> idUsuario =  $ventasg['idEmpleado'];
                     $moviproduc -> pc =  $ip;
+                    $moviproduc -> created_at = Carbon::now();
+                    $moviproduc -> updated_at = Carbon::now();
                     $moviproduc ->save();
                 }
                 
@@ -549,6 +524,8 @@ class VentasController extends Controller
 
                     $producto_ventasg->igualMedidaMenor = $medidaMenor;
                     $producto_ventasg->total = $paramdata['subtotal'];
+                    $producto_ventasg -> created_at = Carbon::now();
+                    $producto_ventasg -> updated_at = Carbon::now();
 
                     //guardamos el producto
                     $producto_ventasg->save();
@@ -564,6 +541,8 @@ class VentasController extends Controller
                     $moviproduc -> stockactualizado =  $stockActualizado;
                     $moviproduc -> idUsuario =  $ventasg['idEmpleado'];
                     $moviproduc -> pc =  $ip;
+                    $moviproduc -> created_at = Carbon::now();
+                    $moviproduc -> updated_at = Carbon::now();
                     $moviproduc ->save();
                     
                 }
@@ -618,13 +597,18 @@ class VentasController extends Controller
                     $ventascan->idCliente = $venta->idCliente;
                     $ventascan->cdireccion = $venta->cdireccion;
                     $ventascan->idTipoVenta = $venta->idTipoVenta;
-                    $ventascan->idTipoPago = $venta->idStatus;//se convertida en idstatus
+                    // $ventascan->idTipoPago = $venta->idStatus;
                     $ventascan->observaciones = $venta->observaciones;
+                    $ventascan->idStatusCaja = $venta->idStatusCaja;
+                    $ventascan->idStatusEntregas = $venta->idStatusEntregas;
+                    $ventascan->fecha = $venta->created_at;
                     $ventascan->idEmpleadoG = $venta->idEmpleado;//Empleado que genero la venta
                     $ventascan->idEmpleadoC = $params_array['identity']['sub'];//idEmpleado que cancelo la venta
                     $ventascan->subtotal = $venta->subtotal;
                     $ventascan->descuento = $venta->descuento;
                     $ventascan->total = $venta->total;
+                    $ventascan->created_at = Carbon::now();
+                    $ventascan->updated_at = Carbon::now();
                     $ventascan->save();
 
 
@@ -729,6 +713,8 @@ class VentasController extends Controller
                     $productoCan->descuento = $paramdata['descuento'];
                     $productoCan->total = $paramdata['total'];
                     $productoCan->igualMedidaMenor = $paramdata['igualMedidaMenor'];
+                    $productoCan->created_at = Carbon::now();
+                    $productoCan->updated_at = Carbon::now();
                     $productoCan->save();
 
                     //insertamos el movimiento de existencia que se le realizo al producto
@@ -742,6 +728,8 @@ class VentasController extends Controller
                     $moviproduc -> stockactualizado =  $stockActualizado;
                     $moviproduc -> idUsuario =  $idEmpleado;
                     $moviproduc -> pc =  $ip;
+                    $moviproduc -> created_at = Carbon::now();
+                    $moviproduc -> updated_at = Carbon::now();
                     $moviproduc ->save();
                 }
 
@@ -1013,11 +1001,13 @@ class VentasController extends Controller
         $venta = Ventascan::join('cliente','cliente.idcliente','=','ventascan.idcliente')
                 ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
                 ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventascan.idTipoVenta')
-                ->leftjoin('statuss','statuss.idStatus','=','ventascan.idTipoPago')
+                ->leftjoin('statuss','statuss.idStatus','=','ventascan.idStatusCaja')
+                ->leftjoin('statuss as statuss2','statuss.idStatus','=','ventascan.idStatusEntregas')
                 ->join('empleado','empleado.idEmpleado','=','ventascan.idEmpleadoG')
                 ->select('ventascan.*',
                         'tiposdeventas.nombre as nombreTipoVenta',
                         'statuss.nombre as nombreStatus',
+                        'statuss2.nombre as nombreStatusEntregas',
                         DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
                         DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
                 ->where('ventascan.idVenta','=',$idVenta)

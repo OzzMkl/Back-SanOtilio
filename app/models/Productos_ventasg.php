@@ -3,6 +3,7 @@
 namespace App\models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Productos_ventasg extends Model
 {
@@ -30,6 +31,8 @@ class Productos_ventasg extends Model
             'total' => $producto['subtotal'],
             'igualMedidaMenor' => $medidaMenor,
             'descuento' => $producto['descuento'],
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
         ]);
         
         //guardamos el producto
