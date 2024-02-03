@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Caja;
 use App\Caja_movimientos;
 use App\models\Ventasg;
+use App\models\Ventasf;
 use App\models\Abono_venta;
 use Validator;
 use App\models\Empresa;
@@ -207,11 +208,11 @@ class CajasController extends Controller
                             
                             $abono_venta->abono = $ultimoAbono ? $ultimoAbono->totalActualizado : die();
                             $abono_venta->totalActualizado = $params_array['saldo_restante'];
-                            $venta->idStatus = 3; // cobrada
+                            $venta->idStatusCaja = 3; // cobrada
                         } else {
                             $abono_venta->abono = $params_array['pagoCliente'];
                             $abono_venta->totalActualizado = $params_array['saldo_restante'];
-                            $venta->idStatus = 5; // Cobro parcial
+                            $venta->idStatusCaja = 5; // Cobro parcial
                         }
 
                         $abono_venta->totalAnterior = $ultimoAbono ? $ultimoAbono->totalActualizado : $params_array['totalNota'];
@@ -225,12 +226,24 @@ class CajasController extends Controller
                         
                     } else{
                         //asignamos status a actualizar
-                        $venta->idStatus = 3; // cobrada
+                        $venta->idStatusCaja = 3; // cobrada
                     }
 
                     //guardamos/actualizamos
                     $venta->updated_at = Carbon::now();
                     $venta->save();
+
+                    /***************
+                     * 
+                     * 
+                     * PROXIMO A ACTUALIZAR PARA ENTREGAS
+                     * 
+                     * ***************** */
+                    if($venta->idStatusCaja == 3 && ($venta->idStatusEntregas == 6 || $venta->idStatusEntregas == 11)){
+                        //guardamos la venta en ventas finalizadas
+                        
+
+                    }
                     
 
                     DB::commit();
@@ -335,7 +348,7 @@ class CajasController extends Controller
                             ->join('cliente','cliente.idcliente','=','ventasg.idcliente')
                             ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
                             ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
-                            ->join('statuss','statuss.idStatus','=','ventasg.idStatus')
+                            ->join('statuss','statuss.idStatus','=','ventasg.idStatusCaja')
                             ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
                             ->where('ventasg.idVenta','=',$idVenta)
                             ->first();
@@ -567,6 +580,85 @@ class CajasController extends Controller
         return response($contenido)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', "attachment; filename=\"$nombrepdf\"");
+    }
+
+    function guardaVentaFinalizada($objVenta){
+        if($objVenta){
+            try{
+                DB::beginTransaction();
+
+                $venta_finalizada = new Ventasf;
+                $venta_finalizada -> idVenta = $objVenta -> idVenta;
+                $venta_finalizada -> idCliente = $objVenta -> idCliente;
+                $venta_finalizada -> cdireccion = $objVenta -> cdireccion;
+                $venta_finalizada -> idTipoVenta = $objVenta -> idTipoVenta;
+                $venta_finalizada -> autorizaV = $objVenta -> autorizaV;
+                $venta_finalizada -> observaciones = $objVenta -> observaciones;
+                $venta_finalizada -> idStatusCaja = $objVenta -> idStatusCaja;
+                $venta_finalizada -> idStatusEntregas = $objVenta -> idStatusEntregas;
+                $venta_finalizada -> fecha = $objVenta -> created_at;
+                $venta_finalizada -> idEmpleado = $objVenta -> idEmpleado;
+                $venta_finalizada -> subtotal = $objVenta -> subtotal;
+                $venta_finalizada -> descuento = $objVenta -> descuento;
+                $venta_finalizada -> total = $objVenta -> total;
+                $venta_finalizada -> created_at = Carbon::now();
+                $venta_finalizada -> updated_at = Carbon::now();
+                $venta_finalizada -> save();
+
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Venta finalizada correctamente'
+                );
+
+                DB::commit();
+            } catch(\Exception $e){
+                //Si falla realizamos rollback de la transaccion
+                DB::rollback();
+                //Propagamos el error ocurrido
+                throw $e;
+            }
+        } else{
+            $data =  array(
+                'code'          =>  400,
+                'status'        => 'error',
+                'message'       =>  'El folio de venta es incorrecto'
+            );
+        }
+        return $data;
+    }
+
+    function guardaProductosVentaFinalizada($idVenta){
+        if($idVenta){
+            try{
+                DB::beginTransaction();
+
+                //Consultamos productos a eliminar
+                $lista_prodVen_ant = Productos_ventasg::where('idVenta',$idVenta)->get();
+
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Productos registrados correctamente en ventas finalizadas'
+                );
+
+                DB::commit();
+            } catch(\Exception $e){
+                //Si falla realizamos rollback de la transaccion
+                DB::rollback();
+                //Propagamos el error ocurrido
+                throw $e;
+            }
+        } else{
+            $data =  array(
+                'code'          =>  400,
+                'status'        => 'error',
+                'message'       =>  'El folio de venta es incorrecto'
+            );
+        }
+        return $data;
     }
 }
 /********************* */
