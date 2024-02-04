@@ -199,7 +199,9 @@ class CajasController extends Controller
                     //primero la buscamos
                     $venta = Ventasg::find($idVenta);
 
+                    //Si la venta cuenta con saldo pendiente o ya tenia abonos
                     if($params_array['isSaldo'] == true || $params_array['tieneAbono'] == true){
+                        //Se consigue su ultimo abono
                         $ultimoAbono = Abono_venta::where('idVenta',$idVenta)
                                                     ->orderBy('idAbonoVentas','desc')
                                                     ->first();
@@ -208,7 +210,7 @@ class CajasController extends Controller
                         $abono_venta->idVenta = $params_array['idOrigen'];
 
                         if($params_array['saldo_restante'] == 0 ){
-                            
+                            //Se asigna lo que se debe abonar desde su ultimo abono
                             $abono_venta->abono = $ultimoAbono ? $ultimoAbono->totalActualizado : die();
                             $abono_venta->totalActualizado = $params_array['saldo_restante'];
                             $venta->idStatusCaja = 3; // cobrada
@@ -218,6 +220,8 @@ class CajasController extends Controller
                             $venta->idStatusCaja = 5; // Cobro parcial
                         }
 
+                        //Si ya cuenta con abonos se registra su ultimo total
+                        //Si no se registra el total de la nota
                         $abono_venta->totalAnterior = $ultimoAbono ? $ultimoAbono->totalActualizado : $params_array['totalNota'];
                         $abono_venta->idEmpleado = $params_array['idEmpleado'];
                         $abono_venta->pc = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -249,7 +253,7 @@ class CajasController extends Controller
                         );
                     }
 
-                    //guardamos/actualizamos
+                    //actualizamos
                     $venta->updated_at = Carbon::now();
                     $venta->save();
 
@@ -331,16 +335,18 @@ class CajasController extends Controller
         ]);
     }
 
+    /**
+     * @description
+     * Busca todos los abonos de la venta
+     * Suma el total de los abonos
+     */
     public function abonos_ventas($idVenta){
         $abono_venta = Abono_venta::where('idVenta',$idVenta)
                                     ->select('abonoventas.*',
                                         DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
                                     ->join('empleado','empleado.idEmpleado','=','abonoventas.idEmpleado')
                                     ->get();
-                                    // ->map( function($abono_venta){
-                                    //         $abono_venta->totalAbono = $abono_venta->abono;
-                                    //         return $abono_venta;
-                                    //     });
+                                    
         // Suma todos los abonos
         $totalAbono = $abono_venta->sum('abono');
         // Obtenemos el total actualizado del ultimo abono
@@ -605,6 +611,10 @@ class CajasController extends Controller
             ->header('Content-Disposition', "attachment; filename=\"$nombrepdf\"");
     }
 
+    /**
+     * @description
+     * Registra la venta en ventasf despues la elimina de ventasg
+     */
     function guardaVentaFinalizada($objVenta){
         if($objVenta){
             try{
@@ -653,6 +663,11 @@ class CajasController extends Controller
         return $data;
     }
 
+    /**
+     * @description
+     * registra los productos en productos_ventasf,
+     * luego los elimina de la tabla productos_ventasg
+     */
     function guardaProductosVentaFinalizada($idVenta){
         if($idVenta){
             try{
@@ -703,4 +718,3 @@ class CajasController extends Controller
         return $data;
     }
 }
-/********************* */
