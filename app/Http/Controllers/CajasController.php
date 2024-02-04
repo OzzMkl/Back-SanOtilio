@@ -14,9 +14,12 @@ use App\models\Abono_venta;
 use Validator;
 use App\models\Empresa;
 use App\models\Productos_ventasg;
+use App\models\Productos_ventasf;
 use App\Clases\clsMonedaLiteral;
 use TCPDF;
 use Carbon\Carbon;
+use App\Producto;
+use App\models\Monitoreo;
 
 class CajasController extends Controller
 {
@@ -223,10 +226,27 @@ class CajasController extends Controller
 
                         $abono_venta->save();
 
+                        //Registramos acción en monitoreo
+                        Monitoreo::insertMonitoreo(
+                            $params_array['idEmpleado'],
+                            $accion = "Abono a la venta ".$venta->idVenta." con folio de abono: ",
+                            null,
+                            $abono_venta->idAbonoVentas,
+                            null
+                        );
                         
                     } else{
                         //asignamos status a actualizar
                         $venta->idStatusCaja = 3; // cobrada
+
+                         //Registramos acción en monitoreo
+                         Monitoreo::insertMonitoreo(
+                            $params_array['idEmpleado'],
+                            $accion = "Cobro de venta: ",
+                            null,
+                            $venta->idVenta,
+                            null
+                        );
                     }
 
                     //guardamos/actualizamos
@@ -239,12 +259,13 @@ class CajasController extends Controller
                      * PROXIMO A ACTUALIZAR PARA ENTREGAS
                      * 
                      * ***************** */
+                    $dataProductos = [];
+                    $dataVentaf = [];
                     if($venta->idStatusCaja == 3 && ($venta->idStatusEntregas == 6 || $venta->idStatusEntregas == 11)){
-                        //guardamos la venta en ventas finalizadas
-                        
-
+                        //guardamos la venta en ventas finalizadas y se elimina de ventasg
+                        $dataProductos = $this->guardaProductosVentaFinalizada($venta->idVenta);
+                        $dataVentaf = $this->guardaVentaFinalizada($venta);
                     }
-                    
 
                     DB::commit();
 
@@ -252,7 +273,9 @@ class CajasController extends Controller
                     $data = array(
                         'code'      =>  200,
                         'status'    =>  'success',
-                        'message'   =>  'Registro correcto'
+                        'message'   =>  'Registro correcto',
+                        'data_productos' => $dataProductos,
+                        'data_venta' => $dataVentaf
                     );
                 } catch(\Exception $e){
                     DB::rollBack();
@@ -605,6 +628,7 @@ class CajasController extends Controller
                 $venta_finalizada -> updated_at = Carbon::now();
                 $venta_finalizada -> save();
 
+                Ventasg::where('idVenta')->delete();
 
                 $data = array(
                     'code' => 200,
@@ -637,6 +661,24 @@ class CajasController extends Controller
                 //Consultamos productos a eliminar
                 $lista_prodVen_ant = Productos_ventasg::where('idVenta',$idVenta)->get();
 
+                foreach($lista_prodVen_ant as $param => $paramdata){
+                    $claveEx = Producto::select('claveEx')->where('idProducto',$paramdata['idProducto'])->value('claveEx');
+                    $producto_ventaf = new Productos_ventasf();
+                    $producto_ventaf->idVenta = $paramdata['idVenta'];
+                    $producto_ventaf->idProducto = $paramdata['idProducto'];
+                    $producto_ventaf->descripcion = $paramdata['descripcion'];
+                    $producto_ventaf->claveEx = $claveEx;
+                    $producto_ventaf->idProdMedida = $paramdata['idProdMedida'];
+                    $producto_ventaf->cantidad = $paramdata['cantidad'];
+                    $producto_ventaf->precio = $paramdata['precio'];
+                    $producto_ventaf->descuento = $paramdata['descuento'];
+                    $producto_ventaf->total = $paramdata['total'];
+                    $producto_ventaf->igualMedidaMenor = $paramdata['igualMedidaMenor'];
+                    $producto_ventaf-> save();
+                }
+
+                //Eliminamos de la tabla
+                Productos_ventasg::where('idVenta',$idVenta)->delete();
 
                 $data = array(
                     'code' => 200,
