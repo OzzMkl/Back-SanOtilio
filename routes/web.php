@@ -192,6 +192,10 @@ Route::get('/prueba', function(){
     Route::get('/api/ventas/indexVentasCanceladas/{type}/{search}','VentasController@indexVentasCanceladas');
     Route::get('/api/ventas/getDetallesVentaCancelada/{idVenta}','VentasController@getDetallesVentaCancelada');
 
+    /*****VENTAS FINALIZADAS*/
+    Route::get('/api/ventas/indexVentasFinalizadas/{type}/{search}','VentasController@indexVentasFinalizadas');
+    Route::get('/api/ventas/getDetallesVentaFinalizada/{idVenta}','VentasController@getDetallesVentaFinalizada');
+
 
     /*****cotizaciones*/
     Route::get('/api/cotizaciones/indexCotizaciones','cotizacionesController@indexCotiza');

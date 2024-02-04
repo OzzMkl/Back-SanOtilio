@@ -9,6 +9,8 @@ use Validator;
 use App\models\Cotizacion;
 use App\models\Ventasg;
 use App\models\Ventascan;
+use App\models\Ventasf;
+use App\models\Productos_ventasf;
 use App\models\Productos_ventasg;
 use App\models\Productos_ventascan;
 use App\models\Empresa;
@@ -1024,6 +1026,78 @@ class VentasController extends Controller
                 'status'        => 'success',
                 'venta_cancelada'   =>  $venta,
                 'productos_ventascan'     => $productosVenta
+            ];
+        }else{
+            $data = [
+                'code'          => 404,
+                'status'        => 'error',
+                'message'       => 'La venta no existe.'
+            ];
+        }
+        return response()->json($data, $data['code']);
+    }
+
+    //ventas finalizadas
+    public function indexVentasFinalizadas($type, $search){
+        $ventas_finalizadas = Ventasf::join('cliente','cliente.idcliente','=','ventasf.idcliente')
+                            ->join('empleado','empleado.idEmpleado','=','ventasf.idEmpleado')
+                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasf.idTipoVenta')
+                            ->select('ventasf.*',
+                                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleadoGenera"),
+                                    'tiposdeventas.nombre as nombreTipoventa');
+                            //Folio
+                            if($type == 1 && $search != "null"){
+                                $ventas_finalizadas->where('ventasf.idVenta','like','%'.$search.'%');
+                            }
+                            // Cliente
+                            if($type == 2 && $search != "null") {
+                                $ventas_finalizadas->where(DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            // empleadoGenera
+                            if($type == 3 && $search != "null") {
+                                $ventas_finalizadas->where(DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            // empleadoCancela
+                            if($type == 4 && $search != "null") {
+                                $ventas_finalizadas->where(DB::raw("CONCAT(empleado2.nombre,' ',empleado2.aPaterno,' ',empleado2.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            
+        $ventas_finalizadas = $ventas_finalizadas ->orderBy('ventasf.idVenta','desc')
+                            ->paginate(5);
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'ventas_finalizadas'    => $ventas_finalizadas
+        ]);
+    }
+
+    public function getDetallesVentaFinalizada($idVenta){
+        $venta = Ventasf::join('cliente','cliente.idcliente','=','Ventasf.idcliente')
+                ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+                ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','Ventasf.idTipoVenta')
+                ->leftjoin('statuss','statuss.idStatus','=','Ventasf.idStatusCaja')
+                ->leftjoin('statuss as statuss2','statuss2.idStatus','=','Ventasf.idStatusEntregas')
+                ->join('empleado','empleado.idEmpleado','=','Ventasf.idEmpleado')
+                ->select('Ventasf.*',
+                        'tiposdeventas.nombre as nombreTipoVenta',
+                        'statuss.nombre as nombreStatus',
+                        'statuss2.nombre as nombreStatusEntregas',
+                        DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                ->where('Ventasf.idVenta','=',$idVenta)
+                ->get();
+        $productosVenta = DB::table('Productos_ventasf')
+                ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','Productos_ventasf.idProdMedida')
+                ->select('Productos_ventasf.*','Productos_ventasf.total as subtotal','historialproductos_medidas.nombreMedida')
+                ->where('Productos_ventasf.idVenta','=',$idVenta)
+                ->get();
+        if(is_object($venta)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'venta_finalizada'   =>  $venta,
+                'productos_ventasf'     => $productosVenta
             ];
         }else{
             $data = [
