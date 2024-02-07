@@ -10,11 +10,13 @@ use App\Caja;
 use App\Caja_movimientos;
 use App\models\Ventasg;
 use App\models\Ventasf;
+use App\models\Ventascre;
 use App\models\Abono_venta;
 use Validator;
 use App\models\Empresa;
 use App\models\Productos_ventasg;
 use App\models\Productos_ventasf;
+use App\models\Productos_ventascre;
 use App\Clases\clsMonedaLiteral;
 use TCPDF;
 use Carbon\Carbon;
@@ -741,17 +743,63 @@ class CajasController extends Controller
                 try{
                     DB::beginTransaction();
 
-
                     if($params_array['permisos']['editar'] == 1){
+                        //Buscamos la venta a mover a credito
+                        $ventag = Ventasg::find($params_array['idVenta']);
                         
-                    }
+                        //insertamos valores
+                        $ventacre = new Ventascre();
+                        $ventacre->idVenta = $ventag->idVenta;
+                        $ventacre->idCliente = $ventag->idCliente;
+                        $ventacre->cdireccion = $ventag->cdireccion;
+                        $ventacre->idTipoVenta = $ventag->idTipoVenta;
+                        $ventacre->autorizaV = $ventag->autorizaV;
+                        $ventacre->autorizaC = $ventag->autorizaC;
+                        $ventacre->observaciones = $ventag->observaciones;
+                        $ventacre->idStatusCaja = $ventag->idStatusCaja;
+                        $ventacre->idStatusEntregas = $ventag->idStatusEntregas;
+                        $ventacre->fecha = $ventag->created_at;
+                        $ventacre->idEmpleadoG = $ventag->idEmpleado;
+                        $ventacre->idEmpleadoC = $params_array['idEmpleado'];
+                        // $ventacre->idEmpleadoF = $ventag->;
+                        $ventacre->subtotal = $ventag->subtotal;
+                        $ventacre->descuento = $ventag->descuento;
+                        $ventacre->total = $ventag->total;
+                        $ventacre->save();
 
-                    $data = array(
-                        'status'    =>  'success',
-                        'code'      =>  200,
-                        'message'   =>  'Venta creada pero sin productos',
-                        
-                    );
+                        //Consultamos productos a eliminar
+                        $lista_prodVen_ant = Productos_ventasg::where('idVenta',$params_array['idVenta'])->get();
+                        //insertamos en la nueva tabla
+                        foreach($lista_prodVen_ant as $param => $paramdata){
+                            $producto_ventacre = new Productos_ventascre();
+                            $producto_ventacre->idVenta = $paramdata['idVenta'];
+                            $producto_ventacre->idProducto = $paramdata['idProducto'];
+                            $producto_ventacre->descripcion = $paramdata['descripcion'];
+                            $producto_ventacre->idProdMedida = $paramdata['idProdMedida'];
+                            $producto_ventacre->cantidad = $paramdata['cantidad'];
+                            $producto_ventacre->precio = $paramdata['precio'];
+                            $producto_ventacre->descuento = $paramdata['descuento'];
+                            $producto_ventacre->total = $paramdata['total'];
+                            $producto_ventacre->igualMedidaMenor = $paramdata['igualMedidaMenor'];
+                            $producto_ventacre-> save();
+                        }
+
+                        //Eliminamos de la tabla
+                        Productos_ventasg::where('idVenta',$params_array['idVenta'])->delete();
+                        Ventasg::where('idVenta',$params_array['idVenta'])->delete();
+
+                        $data = array(
+                            'status'    =>  'success',
+                            'code'      =>  200,
+                            'message'   =>  'La venta '.$params_array['idVenta'].' se movio a credito correctamente',
+                        );
+                    } else{
+                        $data = array(
+                            'code'      =>  400,
+                            'status'    =>  'error',
+                            'message'   =>  'El usuario no cuenta con los permisos necesarios',
+                        );
+                    }
 
                     DB::commit();
                 } catch (\Exception $e){
