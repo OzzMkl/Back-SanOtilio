@@ -717,4 +717,60 @@ class CajasController extends Controller
         }
         return $data;
     }
+
+    //Ventas credito
+    public function guardaVentaCredito(Request $request){
+        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
+        $params = json_decode($json);
+        $params_array = json_decode($json,true);
+
+        if(!empty($params) && !empty($params_array)){
+            $validate = Validator::make($params_array, [
+                'idVenta'       => 'required',
+                'idEmpleado'       => 'required',
+            ]);
+
+            if($validate->fails()){
+                $data = array(
+                    'status'    => 'error',
+                    'code'      => 404,
+                    'message'   => 'Validacion fallida, la venta no se genero.',
+                    'errors'    => $validate->errors()
+                );
+            } else{
+                try{
+                    DB::beginTransaction();
+
+
+                    if($params_array['permisos']['editar'] == 1){
+                        
+                    }
+
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'Venta creada pero sin productos',
+                        
+                    );
+
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
+                }
+            }
+        }else{
+            $data = array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'Los datos enviados son incorrectos'
+            );
+        }
+        return response()->json($data, $data['code']);
+    }
 }

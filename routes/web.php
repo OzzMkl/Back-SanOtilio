@@ -220,6 +220,7 @@ Route::get('/prueba', function(){
     Route::get('/api/cajas/movimientosSesionCaja/{idCaja}','CajasController@movimientosSesionCaja');
     Route::get('/api/cajas/abonos_ventas/{idVenta}','CajasController@abonos_ventas');
     Route::get('/api/cajas/generatePDF/{idVenta}','CajasController@generatePDF');
+    Route::post('/api/cajas/guardaVentaCredito','CajasController@guardaVentaCredito');
 
 
     /******ENTREGAS */
