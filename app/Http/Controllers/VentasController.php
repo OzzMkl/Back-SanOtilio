@@ -10,6 +10,8 @@ use App\models\Cotizacion;
 use App\models\Ventasg;
 use App\models\Ventascan;
 use App\models\Ventasf;
+use App\models\Ventascre;
+use App\models\Productos_ventascre;
 use App\models\Productos_ventasf;
 use App\models\Productos_ventasg;
 use App\models\Productos_ventascan;
@@ -1107,5 +1109,40 @@ class VentasController extends Controller
             ];
         }
         return response()->json($data, $data['code']);
+    }
+
+    //ventas credito
+    public function indexVentasCredito($type, $search){
+        $ventas_credito = Ventascre::join('cliente','cliente.idcliente','=','ventasf.idcliente')
+                            ->join('empleado','empleado.idEmpleado','=','ventasf.idEmpleado')
+                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasf.idTipoVenta')
+                            ->select('ventasf.*',
+                                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleadoGenera"),
+                                    'tiposdeventas.nombre as nombreTipoventa');
+                            //Folio
+                            if($type == 1 && $search != "null"){
+                                $ventas_credito->where('ventasf.idVenta','like','%'.$search.'%');
+                            }
+                            // Cliente
+                            if($type == 2 && $search != "null") {
+                                $ventas_credito->where(DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            // empleadoGenera
+                            if($type == 3 && $search != "null") {
+                                $ventas_credito->where(DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            // empleadoCancela
+                            if($type == 4 && $search != "null") {
+                                $ventas_credito->where(DB::raw("CONCAT(empleado2.nombre,' ',empleado2.aPaterno,' ',empleado2.aMaterno)"), 'like', '%' . $search . '%');
+                            }
+                            
+        $ventas_credito = $ventas_credito ->orderBy('ventasf.idVenta','desc')
+                            ->paginate(5);
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'ventas_credito'    => $ventas_credito
+        ]);
     }
 }
