@@ -21,7 +21,7 @@ class moviproduc extends Model
         'pc'
     ];
 
-    public static function insertMoviproduc($producto,$accion,$folioAccion,$medidaMenor,$stockAnterior,$stockActualizado,$idEmpleado,$ip){
+    public static function insertMoviproduc($producto,$accion,$folioAccion,$medidaMenor,$stockAnterior,$stockActualizado,$idEmpleado,$ip = gethostbyaddr($_SERVER['REMOTE_ADDR'])){
 
         $moviproduc = new self([
             'idProducto' => $producto['idProducto'],

@@ -1113,16 +1113,25 @@ class VentasController extends Controller
 
     //ventas credito
     public function indexVentasCredito($type, $search){
-        $ventas_credito = Ventascre::join('cliente','cliente.idcliente','=','ventasf.idcliente')
-                            ->join('empleado','empleado.idEmpleado','=','ventasf.idEmpleado')
-                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasf.idTipoVenta')
-                            ->select('ventasf.*',
+        $ventas_credito = Ventascre::join('cliente','cliente.idcliente','=','ventascre.idcliente')
+                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventascre.idTipoVenta')
+                            ->leftjoin('statuss','statuss.idStatus','=','ventascre.idStatusCaja')
+                            ->leftjoin('statuss as statuss2','statuss2.idStatus','=','ventascre.idStatusEntregas')
+                            ->join('empleado','empleado.idEmpleado','=','ventascre.idEmpleadoG')
+                            // ->leftJoin('empleado as empleadoC','empleadoC.idEmpleado','=','ventascre.idEmpleadoC')
+                            // ->leftJoin('empleado as empleadoF','empleadoF.idEmpleado','=','ventascre.idEmpleadoF')
+                            ->select('ventascre.*',
+                                    'tiposdeventas.nombre as nombreTipoventa',
+                                    'statuss.nombre as nombreStatus',
+                                    'statuss2.nombre as nombreStatusEntregas',
                                     DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                                     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleadoGenera"),
-                                    'tiposdeventas.nombre as nombreTipoventa');
+                                    // DB::raw("CONCAT(empleadoC.nombre,' ',empleadoC.aPaterno,' ',empleadoC.aMaterno) as nombreEmpleadoCredito"),
+                                    // DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleadoGenera"),
+                                );
                             //Folio
                             if($type == 1 && $search != "null"){
-                                $ventas_credito->where('ventasf.idVenta','like','%'.$search.'%');
+                                $ventas_credito->where('ventascre.idVenta','like','%'.$search.'%');
                             }
                             // Cliente
                             if($type == 2 && $search != "null") {
@@ -1132,17 +1141,50 @@ class VentasController extends Controller
                             if($type == 3 && $search != "null") {
                                 $ventas_credito->where(DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno)"), 'like', '%' . $search . '%');
                             }
-                            // empleadoCancela
-                            if($type == 4 && $search != "null") {
-                                $ventas_credito->where(DB::raw("CONCAT(empleado2.nombre,' ',empleado2.aPaterno,' ',empleado2.aMaterno)"), 'like', '%' . $search . '%');
-                            }
                             
-        $ventas_credito = $ventas_credito ->orderBy('ventasf.idVenta','desc')
+        $ventas_credito = $ventas_credito ->orderBy('ventascre.idVenta','desc')
                             ->paginate(5);
         return response()->json([
             'code'      => 200,
             'status'    => 'success',
             'ventas_credito'    => $ventas_credito
         ]);
+    }
+
+    public function getDetallesVentaCredito($idVenta){
+        $venta = Ventascre::join('cliente','cliente.idcliente','=','ventascre.idcliente')
+                ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+                ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventascre.idTipoVenta')
+                ->leftjoin('statuss','statuss.idStatus','=','ventascre.idStatusCaja')
+                ->leftjoin('statuss as statuss2','statuss2.idStatus','=','ventascre.idStatusEntregas')
+                ->join('empleado','empleado.idEmpleado','=','ventascre.idEmpleadoG')
+                ->select('ventascre.*',
+                        'tiposdeventas.nombre as nombreTipoVenta',
+                        'statuss.nombre as nombreStatus',
+                        'statuss2.nombre as nombreStatusEntregas',
+                        DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                ->where('ventascre.idVenta','=',$idVenta)
+                ->get();
+        $productosVenta = Productos_ventascre::
+                join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','Productos_ventascre.idProdMedida')
+                ->select('Productos_ventascre.*','Productos_ventascre.total as subtotal','historialproductos_medidas.nombreMedida')
+                ->where('Productos_ventascre.idVenta','=',$idVenta)
+                ->get();
+        if(is_object($venta)){
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'venta_credito'   =>  $venta,
+                'productos_ventascre'     => $productosVenta
+            ];
+        }else{
+            $data = [
+                'code'          => 404,
+                'status'        => 'error',
+                'message'       => 'La venta no existe.'
+            ];
+        }
+        return response()->json($data, $data['code']);
     }
 }
