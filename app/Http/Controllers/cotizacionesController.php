@@ -45,7 +45,6 @@ class cotizacionesController extends Controller
             $validate = Validator::make($params_array, [
                 'idCliente'       => 'required',
                 'idEmpleado'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
-                'idStatus'   => 'required',
                 'subtotal'   => 'required',
                 'total'   => 'required',
             ]);
