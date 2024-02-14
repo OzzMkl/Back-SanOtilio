@@ -11,6 +11,7 @@ use App\Producto;
 use App\Productos_medidas;
 use App\models\Monitoreo;
 use App\models\historialproductos_medidas;
+use Carbon\Carbon;
 
 class ProductoController extends Controller
 {
@@ -40,7 +41,7 @@ class ProductoController extends Controller
     /**
      * Funciona para los productos del modulo de punto de venta
      * Cotizaciones
-     * 
+     *
      */
     public function indexPV(){
         $productos = DB::table('producto')
@@ -93,7 +94,7 @@ class ProductoController extends Controller
         ]);
         //guardar la imagen en el disco
         if(!$image || $validate->fails()){
-            
+
             $data = array(//mandamos mensaje de error si la carga salio mal
                 'code'      =>  400,
                 'status'    =>  'error',
@@ -116,8 +117,8 @@ class ProductoController extends Controller
 
     /**
      * Busca el nombre de la imagen en la carpeta
-     * Si existe devuelve la imagen y si no 
-     * regresa un mensaje 
+     * Si existe devuelve la imagen y si no
+     * regresa un mensaje
      */
     public function getImageProduc($filename){
         //comprobar si existe la imagen
@@ -133,7 +134,7 @@ class ProductoController extends Controller
                 'image' => base64_encode($file)
             );
             return response()->json($data, $data['code']);*/
-           
+
             return new Response($file);
           //return new Response(base64_encode($file));
         } else{
@@ -149,11 +150,11 @@ class ProductoController extends Controller
 
     /**
      * Da de alta el producto
-     * 
+     *
      * Recibe los datos del producto + datos empleado
      */
     public function register(Request $request){
-        
+
         //tomamos solo el json
         $json = $request -> input('json', null);
         //lo decodificamos como json
@@ -161,15 +162,16 @@ class ProductoController extends Controller
         //se separa y se ponen como array
         $params_array = json_decode($json, true);
 
+        // dd($params_array['producto']);
             //revisamos que no vengan vacios
         if( !empty($params_array)){
             //Eliminamos el array de permisos para que unicamente quede el array que contiene
             //los datos del producto y del usuario sin los permisos claro ...
-            unset($params_array['permisos']);
+            // unset($params_array['permisos']);
             //limpiamos los datos
-            $params_array = array_map('trim', $params_array);
+            $params_array['producto'] = array_map('trim', $params_array['producto']);
             //validamos los datos que llegaron
-            $validate = Validator::make($params_array, [
+            $validate = Validator::make($params_array['producto'], [
                 'idMarca'           =>  'required',
                 'idDep'             =>  'required',
                 'idCat'             =>  'required',
@@ -204,49 +206,59 @@ class ProductoController extends Controller
 
                     //creamos el producto a ingresar
                     $producto = new Producto();
-                    $producto -> idMarca = $params_array['idMarca'];
-                    $producto -> idDep = $params_array['idDep'];
-                    $producto -> idCat = $params_array['idCat'];
-                    $producto -> claveEx = $params_array['claveEx'];
+                    $producto -> idMarca = $params_array['producto']['idMarca'];
+                    $producto -> idDep = $params_array['producto']['idDep'];
+                    $producto -> idCat = $params_array['producto']['idCat'];
+                    $producto -> claveEx = $params_array['producto']['claveEx'];
                     $producto -> cbarras = $ultimoCbarras;//aqui ingresamos el codigo de barras consultado
-                    $producto -> descripcion = $params_array['descripcion'];
-                    $producto -> stockMin = $params_array['stockMin'];
-                    $producto -> stockMax = $params_array['stockMax'];
-                    if( isset($params_array['imagen'])){
-                        $producto -> imagen = $params_array['imagen'];
+                    $producto -> descripcion = $params_array['producto']['descripcion'];
+                    $producto -> stockMin = $params_array['producto']['stockMin'];
+                    $producto -> stockMax = $params_array['producto']['stockMax'];
+                    if( isset($params_array['producto']['imagen'])){
+                        $producto -> imagen = $params_array['producto']['imagen'];
                     }
                     $producto -> statuss = 31;
-                    $producto -> ubicacion = $params_array['ubicacion'];
-                    $producto -> claveSat = $params_array['claveSat'];
-                    $producto -> tEntrega = $params_array['tEntrega'];
-                    $producto -> idAlmacen = $params_array['idAlmacen'];
-                    $producto -> existenciaG = $params_array['existenciaG'];
+                    $producto -> ubicacion = $params_array['producto']['ubicacion'];
+                    $producto -> claveSat = $params_array['producto']['claveSat'];
+                    $producto -> tEntrega = $params_array['producto']['tEntrega'];
+                    $producto -> idAlmacen = $params_array['producto']['idAlmacen'];
+                    $producto -> existenciaG = $params_array['producto']['existenciaG'];
+                    $producto -> created_at = Carbon::now();
+                    $producto -> updated_at = Carbon::now();
                     //guardamos
                     $producto->save();
                     //una vez guardado mandamos mensaje de OK
-                    
+
                     //consultamos el ultimo producto ingresado
-                    $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
+                    $ultimoProducto = Producto::latest('idProducto')->first();
 
                     //obtenemos direccion ip
-                    $ip = $_SERVER['REMOTE_ADDR'];
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
                     //insertamos el movimiento realizado
                     $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> idUsuario =  $params_array['empleado']['sub'];
                     $monitoreo -> accion =  "Alta de producto";
-                    $monitoreo -> folioNuevo =  $ultimoProducto;
+                    $monitoreo -> folioNuevo =  $ultimoProducto->idProducto;
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
+
+                    /**** */
+                    $dataPrecios = $this->registraPrecioProducto($params_array['empleado']['sub'],$ultimoProducto->idProducto,$params_array['lista_productosMedida']);
+                    /**** */
+
+                    /***Empieza registro en otras sucursales */
+                    $data_registroMultiSucursal = $this->registraProductoMultiSucursal($ultimoProducto,$params_array['empleado']['sub'],$params_array['lista_productosMedida']);
+                    // $data_registroPrecioMultiSucursal = $this->registraPrecioProductoMultiSucursal($params_array['empleado']['sub'],$ultimoProducto->idProducto,$params_array['lista_productosMedida']);
 
                     //generamos respuesta
                     $data = array(
                         'status'    =>  'success',
                         'code'      =>  '200',
                         'message'   =>  'El producto se a guardado correctamente',
-                        'producto'  =>  $producto
+                        'producto'  =>  $producto,
+                        'data_precios_local'  =>  $dataPrecios,
+                        'data_producto_multi'  =>  $data_registroMultiSucursal,
                     );
-
-
 
                     /******GUARDACONSULTA */
                     $file = fopen('queries.txt', 'a');
@@ -288,68 +300,111 @@ class ProductoController extends Controller
     }
 
     /**
+     * Agrega el producto en las diferentes conexiones que se tengan declaradas
+     * dentro de la funcion tambien se registran los precios
+     */
+    function registraProductoMultiSucursal($producto,$idEmpleado,$lista_precios_medida){
+        $sucursal_con = DB::table('sucursal')
+                        ->whereNotNull('connection')
+                        ->where('connection', '<>', 'matriz')
+                        ->get();
+                        // dd($sucursal_con);
+            for($i=0;$i<count($sucursal_con);$i++){
+            // for($i=0;$i<1;$i++){
+                // dd($sucursal_con[$i]->connection);
+                try{
+                    DB::connection($sucursal_con[$i]->connection)->beginTransaction();
+                        DB::connection($sucursal_con[$i]->connection)->table('producto')->insert([
+                            'idProducto' => $producto->idProducto,
+                            'idMarca' => $producto->idMarca,
+                            'idDep' => $producto->idDep,
+                            'idCat' => $producto->idCat,
+                            'claveEx' => $producto->claveEx,
+                            'cbarras' => $producto->cbarras,
+                            'descripcion' => $producto->descripcion,
+                            'stockMin' => $producto->stockMin,
+                            'stockMax' => $producto->stockMax,
+                            'imagen' => $producto->imagen,
+                            'statuss' => $producto->statuss,
+                            'ubicacion' => $producto->ubicacion,
+                            'claveSat' => $producto->claveSat,
+                            'tEntrega' => $producto->tEntrega,
+                            'idAlmacen' => $producto->idAlmacen,
+                            'existenciaG' => $producto->existenciaG,
+                            'created_at' => $producto->created_at,
+                            'updated_at' =>  $producto->updated_at,
+                        ]);
+
+                        $data_registroPrecioMultiSucursal = $this->registraPrecioProductoMultiSucursal(
+                                                                $idEmpleado,
+                                                                $producto->idProducto,
+                                                                $lista_precios_medida,
+                                                                $sucursal_con[$i]->connection
+                                                            );
+
+                        //generamos respuesta
+                        $data = array(
+                            'status'    =>  'success',
+                            'code'      =>  '200',
+                            'message'   =>  'El producto se a guardado correctamente',
+                            'producto'  =>  $producto,
+                            'data_preciosMultiSucursal'  =>  $data_registroPrecioMultiSucursal,
+                        );
+
+                        DB::connection($sucursal_con[$i]->connection)->commit();
+                } catch (\Exception $e) {
+                    DB::connection($sucursal_con[$i]->connection)->rollback();
+                    throw $e;
+                    // $data =  array(
+                    //     'code'    => 400,
+                    //     'status'  => 'error',
+                    //     'message' => 'Fallo al registrar el producto en la sucursal '.$sucursal_con[$i]->connection,
+                    //     'error'   => $e
+                    // );
+                    // break;
+                }
+            }
+        return $data;
+    }
+
+    /**
      * Guarda las medidas por producto
-     * 
+     *
      * Recibe los datos de las medidas a ingresar + datos empleado
      */
-    public function registraPrecioProducto(Request $request){
-        //capturamos el parametro json
-        $json = $request -> input('json', null);
-        //lo transformamos en un array
-        $params_array = json_decode($json, true);
+    public function registraPrecioProducto($idEmpleado, $idProducto, $lista_precios_medida){
 
-        //verificamos que no venga vacio
-        if(!empty($params_array)){
+        //verificamos que los datos no vengan vacios
+        if(!empty($idEmpleado) && !empty($idProducto) && !empty($lista_precios_medida)){
             try{
                 DB::beginTransaction();
                 DB::enableQueryLog();
-                    //consultamos el ultimo ingresado para obtener su id
-                    $ultimoProducto = Producto::latest('idProducto')->first()->idProducto;
 
-                    //obtemos el id del usuario
-                    $idEmpleado = $params_array['sub'];
                     //obtenemos direccion ip
-                    $ip = $_SERVER['REMOTE_ADDR'];
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
-                    //eliminamos los datos del empleado
-                    //o algo mas tecnico: eliminamos los elementos que no son arrays
-                    $params_array = array_filter($params_array, function($item) { return is_array($item); });
-                    //Eliminamos el array de permisos para que unicamente quede el array que contiene
-                    //los datos del producto y del usuario sin los permisos claro ...
-                    unset($params_array['permisos']);
-
-                    foreach($params_array AS $param => $paramdata){
+                    foreach($lista_precios_medida AS $param => $paramdata){
 
                         $productos_medidas = new Productos_medidas();
-                        $productos_medidas -> idProducto = $ultimoProducto;
+                        $productos_medidas -> idProducto = $idProducto;
                         $productos_medidas -> idMedida = $paramdata['idMedida'];
                         $productos_medidas -> unidad = $paramdata['unidad'];
                         $productos_medidas -> precioCompra = $paramdata['preciocompra'];
 
                         $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
-                        if($paramdata['precio1'] > 0 ){
-                            $productos_medidas -> precio1 = $paramdata['precio1'];
-                        }
+                        $productos_medidas -> precio1 = $paramdata['precio1'];
 
                         $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
-                        if($paramdata['precio2'] > 0){
-                            $productos_medidas -> precio2 = $paramdata['precio2'];
-                        }
+                        $productos_medidas -> precio2 = $paramdata['precio2'];
 
                         $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
-                        if($paramdata['precio3'] > 0){
-                            $productos_medidas -> precio3 = $paramdata['precio3'];
-                        }
+                        $productos_medidas -> precio3 = $paramdata['precio3'];
 
                         $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
-                        if($paramdata['precio4'] > 0){
-                            $productos_medidas -> precio4 = $paramdata['precio4'];
-                        }
+                        $productos_medidas -> precio4 = $paramdata['precio4'];
 
                         $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
-                        if($paramdata['precio5'] > 0){
-                            $productos_medidas -> precio5 = $paramdata['precio5'];
-                        }
+                        $productos_medidas -> precio5 = $paramdata['precio5'];
                         $productos_medidas -> idStatus = 31;
 
                         $productos_medidas -> save();
@@ -361,7 +416,7 @@ class ProductoController extends Controller
                         /**hisotiroa*/
                         $historialPM = new historialproductos_medidas();
                         $historialPM -> idProdMedida = $ultimaMedida;
-                        $historialPM -> idProducto = $ultimoProducto;
+                        $historialPM -> idProducto = $idProducto;
                         $historialPM -> idMedida = $paramdata['idMedida'];
                         $historialPM -> nombreMedida = $nomMedida[0]->nombre;
                         $historialPM -> unidad = $paramdata['unidad'];
@@ -372,7 +427,7 @@ class ProductoController extends Controller
 
                         $historialPM -> porcentaje2 = $paramdata['porcentaje2'];
                         $historialPM -> precio2 = $paramdata['precio2'];
-                        
+
                         $historialPM -> porcentaje3 = $paramdata['porcentaje3'];
                         $historialPM -> precio3 = $paramdata['precio3'];
 
@@ -390,7 +445,7 @@ class ProductoController extends Controller
                         $monitoreo = new Monitoreo();
                         $monitoreo -> idUsuario =  $idEmpleado;
                         $monitoreo -> accion =  "Alta de medida ".$ultimaMedida." para el producto";
-                        $monitoreo -> folioNuevo =  $ultimoProducto;
+                        $monitoreo -> folioNuevo =  $idProducto;
                         $monitoreo -> pc =  $ip;
                         $monitoreo ->save();
 
@@ -419,17 +474,18 @@ class ProductoController extends Controller
                     }
                     fclose($file);
                     /****** */
-                
+
                 DB::commit();
             } catch(\Exception $e){
                 DB::rollback();
-                $data = array(
-                    'code' => 400,
-                    'status' => 'error',
-                    'message_system' => 'Algo salio mal rollback precios',
-                    'messsage_exception' => $e->getMessage(),
-                    'errors' => $e
-                );
+                throw $e;
+                // $data = array(
+                //     'code' => 400,
+                //     'status' => 'error',
+                //     'message_system' => 'Algo salio mal rollback precios',
+                //     'messsage_exception' => $e->getMessage(),
+                //     'errors' => $e
+                // );
             }
         } else {
             $data = array(
@@ -438,7 +494,106 @@ class ProductoController extends Controller
                 'message' => 'Un campo viene vacio / mal'
             );
         }
-        return response()->json($data, $data['code']);
+        return $data;
+    }
+
+    /**
+     * Registra los precios de los productos registrados en las demas sucursales
+     */
+    function registraPrecioProductoMultiSucursal($idEmpleado, $idProducto, $lista_precios_medida,$connection){
+                try{
+                    DB::connection($connection)->beginTransaction();
+                    //obtenemos direccion ip
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                    foreach($lista_precios_medida AS $param => $paramdata){
+
+                        DB::connection($connection)->table('productos_medidas')->insert([
+                            'idProducto' => $idProducto,
+                            'idMedida' => $paramdata['idMedida'],
+                            'unidad' => $paramdata['unidad'],
+                            'precioCompra' => $paramdata['preciocompra'],
+
+                            'porcentaje1' => $paramdata['porcentaje1'],
+                            'precio1' => $paramdata['precio1'],
+
+                            'porcentaje2' => $paramdata['porcentaje2'],
+                            'precio2' => $paramdata['precio2'],
+
+                            'porcentaje3' => $paramdata['porcentaje3'],
+                            'precio3' => $paramdata['precio3'],
+
+                            'porcentaje4' => $paramdata['porcentaje4'],
+                            'precio4' => $paramdata['precio4'],
+
+                            'porcentaje5' => $paramdata['porcentaje5'],
+                            'precio5' => $paramdata['precio5'],
+
+                            'idStatus' => 31,
+                        ]);
+
+                        //consulta la ultima medida ingresada
+                        $ultimaMedida = DB::connection($connection)->table('productos_medidas')->latest()->first()->idProdMedida;
+                        $nomMedida = DB::connection($connection)->table('medidas')->where('idMedida',$paramdata['idMedida'])->first()->nombre;
+
+                        /**Historial*/
+                        DB::connection($connection)->table('historialproductos_medidas')->insert([
+                            'idProdMedida'=> $ultimaMedida,
+                            'idProducto'=> $idProducto,
+                            'idMedida'=> $paramdata['idMedida'],
+                            'nombreMedida'=> $nomMedida,
+                            'unidad'=> $paramdata['unidad'],
+                            'precioCompra'=> $paramdata['preciocompra'],//delete
+
+                            'porcentaje1'=> $paramdata['porcentaje1'],
+                            'precio1'=> $paramdata['precio1'],
+
+                            'porcentaje2'=> $paramdata['porcentaje2'],
+                            'precio2'=> $paramdata['precio2'],
+
+                            'porcentaje3'=> $paramdata['porcentaje3'],
+                            'precio3'=> $paramdata['precio3'],
+
+                            'porcentaje4'=> $paramdata['porcentaje4'],
+                            'precio4'=> $paramdata['precio4'],
+
+                            'porcentaje5'=> $paramdata['porcentaje5'],
+                            'precio5'=> $paramdata['precio5'],
+
+                            'idStatus' => 31,
+                        ]);
+
+                        //insertamos el movimiento realizado
+                        DB::connection($connection)->table('monitoreo')->insert([
+                            'idUsuario'=> $ultimaMedida,
+                            'accion'=> "Alta de medida ".$ultimaMedida." para el producto",
+                            'folioNuevo'=> $idProducto,
+                            'pc'=> $ip,
+                        ]);
+
+                    }//fin foreach
+
+                    //generamos respuesta
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  '200',
+                        'message'   =>  'Precios registrado correctamente',
+                    );
+
+                    DB::connection($connection)->commit();
+
+                } catch (\Exception $e) {
+                    DB::connection($connection)->rollback();
+                    throw $e;
+                    // $data =  array(
+                    //     'code'    => 400,
+                    //     'status'  => 'error',
+                    //     'message' => 'Fallo al registrar el producto en la sucursal '.$sucursal_con[$i]->connection,
+                    //     'error'   => $e
+                    // );
+                    // break;
+                }
+        return $data;
     }
 
     public function getLastProduct(){
@@ -450,7 +605,7 @@ class ProductoController extends Controller
             'productos'   =>  $productos
         ]);
     }
-    
+
     /**
      * CONSULTA MAL ECHA REVISAR EL WHERE
      */
@@ -529,7 +684,7 @@ class ProductoController extends Controller
                                 'code'      => 200,
                                 'status'    => 'success',
                                 'message'   =>  'Producto con id: '.$idProducto.' actualizado a idStatus: 32'
-                            );                        
+                            );
                         break;
                     case 32:
                             //Si esta habilitado lo deshabilitamos
@@ -550,7 +705,7 @@ class ProductoController extends Controller
                                 'code'      => 200,
                                 'status'    => 'success',
                                 'message'   =>  'Producto con id: '.$idProducto.' actualizado a idStatus: 31'
-                            );       
+                            );
                         break;
                     default:
                         //Si recibimos otra cosa generamos mensaje de error
@@ -586,7 +741,7 @@ class ProductoController extends Controller
      * Actualizacion del producto
      */
     public function updateProduct($idProducto, Request $request){
-        
+
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
 
@@ -645,12 +800,12 @@ class ProductoController extends Controller
                                     'tEntrega' => $params_array['tEntrega'],
                                     'idAlmacen' => $params_array['idAlmacen'],
                                 ]);
-                    //consultamos el producto que se actualizo                                
+                    //consultamos el producto que se actualizo
                     $producto = Producto::where('idProducto',$params_array['idProducto'])->get();
-                    
+
                     //obtenemos direccion ip
                     $ip = $_SERVER['REMOTE_ADDR'];
-                    
+
                     //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
                      foreach($antProducto[0]['attributes'] as $clave => $valor){
                          foreach($producto[0]['attributes'] as $clave2 => $valor2){
@@ -716,18 +871,18 @@ class ProductoController extends Controller
                 'message'   =>  'Los valores no se recibieron correctamente'
             );
         }
-        return response()->json($data, $data['code']);       
+        return response()->json($data, $data['code']);
     }
 
     /**
      * Actualiza las medidas por producto
-     * 
+     *
      * Recibe los datos de las medidas a actualizar + datos empleado
      */
     public function updatePrecioProducto($idProducto, Request $request){
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
-        
+
         if(!empty($params_array)){
             try{
                 DB::beginTransaction();
@@ -744,7 +899,7 @@ class ProductoController extends Controller
                 //Eliminamos el array de permisos para que unicamente quede el array que contiene las medidas
                 unset($params_array['permisos']);
                 //var_dump($params_array);
-                
+
                 //eliminamos los registros que tengan ese idProdcuto
                 Productos_medidas::where('idProducto',$idProducto)->delete();
 
@@ -926,9 +1081,9 @@ class ProductoController extends Controller
                 /**
                  * En este if verificamos si es la ultima vuelta para asignar decimales
                  * a la existencia ya que si no solo tomamos el entero
-                 * 
+                 *
                  * calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                 * 
+                 *
                  * En el segundo if se llama la funcion cuentaDecimales()
                  * El cual nos regresa el numero de decimales si este es mayor a 5
                  * limitamos los decimales a 5 si no es mayor dejalos los deciamles que tenga
@@ -941,7 +1096,7 @@ class ProductoController extends Controller
                         //delimitamos los decimales a mostrar a solo 5
                         $calculaE = number_format($calculaE, 5);
                     }
-                        
+
                 } else {
                     $calculaE = intval($existencia / $medidaMenor);
 
@@ -963,7 +1118,7 @@ class ProductoController extends Controller
                 } else{
                     $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
                 }
-                
+
                 $lugar++;
             }
 
@@ -1023,7 +1178,7 @@ class ProductoController extends Controller
      * Trae la existencia del producto
      */
     public function getExistenciaG($idProducto, $idProdMedida, $cantidad){
-        
+
         //obtenemos existencia del producto
         $existencia = Producto::where('idProducto', '=', $idProducto)->pluck('existenciaG')->first();
 
@@ -1032,7 +1187,7 @@ class ProductoController extends Controller
         $count = count($listaPM);
 
         $igualMedidaMenor = 0;
-        $lugar = 0; 
+        $lugar = 0;
 
         /**INICIAMOS CONVERSION */
         //verificamos si el producto tiene una medida
@@ -1080,7 +1235,7 @@ class ProductoController extends Controller
             'disponibilidad'    => $disponible
         ]);
     }
-    
+
     /* MODULO INVENTARIO->PRODUCTOS */
 
     /**
@@ -1168,14 +1323,14 @@ class ProductoController extends Controller
             //consultamos las propiedades del producto
             $producto = Producto::find($idProducto);
             //asignamos existencia a variable
-            $existencia = $producto->existenciaG; 
+            $existencia = $producto->existenciaG;
             //iniciamos variables
             $medidaMenor= 1;
             $lugar = 0;
             $existencia_por_med = array();
             $existencia_por_med2 = array();
 
-            
+
             //traemos la informacion de las medidas
             $productos_medidas = DB::table('productos_medidas')
                 ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
@@ -1214,9 +1369,9 @@ class ProductoController extends Controller
                     /**
                      * En este if verificamos si es la ultima vuelta para asignar decimales
                      * a la existencia ya que si no solo tomamos el entero
-                     * 
+                     *
                      * calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                     * 
+                     *
                      * En el segundo if se llama la funcion cuentaDecimales()
                      * El cual nos regresa el numero de decimales si este es mayor a 5
                      * limitamos los decimales a 5 si no es mayor dejalos los deciamles que tenga
@@ -1229,7 +1384,7 @@ class ProductoController extends Controller
                             //delimitamos los decimales a mostrar a solo 5
                             $calculaE = number_format($calculaE, 5);
                         }
-                            
+
                     } else {
                         $calculaE = intval($existencia / $medidaMenor);
 
@@ -1251,12 +1406,12 @@ class ProductoController extends Controller
                     } else{
                         $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
                     }
-                    
+
                     $lugar++;
                 }
-                
+
             }
-                                
+
             $imagen = Producto::findOrFail($idProducto)->imagen;
             $data = [
                 'code'          =>  200,
@@ -1363,7 +1518,7 @@ class ProductoController extends Controller
             //consultamos las propiedades del producto
             $producto = Producto::find($idProducto);
             //asignamos existencia a variable
-            $existencia = $producto->existenciaG; 
+            $existencia = $producto->existenciaG;
             //iniciamos variables
             $medidaMenor= 1;
             $lugar = 0;
@@ -1408,9 +1563,9 @@ class ProductoController extends Controller
                     /**
                      * En este if verificamos si es la ultima vuelta para asignar decimales
                      * a la existencia ya que si no solo tomamos el entero
-                     * 
+                     *
                      * calculamos el total de existencia de acuerdo medida dividiendo entre la existencia y la medida menor
-                     * 
+                     *
                      * En el segundo if se llama la funcion cuentaDecimales()
                      * El cual nos regresa el numero de decimales si este es mayor a 5
                      * limitamos los decimales a 5 si no es mayor dejalos los deciamles que tenga
@@ -1423,7 +1578,7 @@ class ProductoController extends Controller
                             //delimitamos los decimales a mostrar a solo 5
                             $calculaE = number_format($calculaE, 5);
                         }
-                            
+
                     } else {
                         $calculaE = intval($existencia / $medidaMenor);
 
@@ -1445,12 +1600,12 @@ class ProductoController extends Controller
                     } else{
                         $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
                     }
-                    
+
                     $lugar++;
                 }
 
             }
-                                
+
             $imagen = Producto::findOrFail($idProducto)->imagen;
             $data = [
                 'code'          =>  200,
@@ -1478,7 +1633,7 @@ class ProductoController extends Controller
         //consultamos las propiedades del producto
         $producto = Producto::find($idProducto);
         //asignamos existencia a variable
-        $existencia = $producto->existenciaG; 
+        $existencia = $producto->existenciaG;
         //iniciamos variables
         $medidaMenor= 1;
         $lugar = 0;
@@ -1536,16 +1691,16 @@ class ProductoController extends Controller
                     } else{
                         $medidaMenor = $medidaMenor / $productos_medidas[$lugar]->unidad;
                     }
-                    
+
                     $lugar++;
             }
 
-            
+
             //$existencia_por_med = array("nombre_medida" => 0);
         }
 
 
-        
+
         //->get();
         return response()->json([
             'code'          =>  200,
@@ -1557,7 +1712,7 @@ class ProductoController extends Controller
         ]);
     }
 
-    
+
      /****Funcion extra */
     function cuentaDecimales($numero){
         //convertimos el numero a string
@@ -1573,5 +1728,5 @@ class ProductoController extends Controller
         $numDecimales = strlen($numeroString) - $decimalPosi -1;
         return $numDecimales;
     }
-    
+
 }
