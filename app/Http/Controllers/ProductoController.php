@@ -299,6 +299,10 @@ class ProductoController extends Controller
         return response()->json($data, $data['code']);
     }
 
+    /**
+     * Agrega el producto en las diferentes conexiones que se tengan declaradas
+     * dentro de la funcion tambien se registran los precios
+     */
     function registraProductoMultiSucursal($producto,$idEmpleado,$lista_precios_medida){
         $sucursal_con = DB::table('sucursal')
                         ->whereNotNull('connection')
@@ -493,6 +497,9 @@ class ProductoController extends Controller
         return $data;
     }
 
+    /**
+     * Registra los precios de los productos registrados en las demas sucursales
+     */
     function registraPrecioProductoMultiSucursal($idEmpleado, $idProducto, $lista_precios_medida,$connection){
                 try{
                     DB::connection($connection)->beginTransaction();
