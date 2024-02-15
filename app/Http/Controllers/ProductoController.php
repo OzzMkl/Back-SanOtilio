@@ -981,24 +981,17 @@ class ProductoController extends Controller
                 DB::beginTransaction();
                 DB::enableQueryLog();
                 //obtemos el id del usuario
-                $idEmpleado = $params_array['sub'];
+                $idEmpleado = $params_array['idEmpleado'];
 
                 //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
-
-                //eliminamos los datos del empleado
-                //o algo mas tecnico: eliminamos los elementos que no son arrays
-                $params_array = array_filter($params_array, function($item) { return is_array($item); });
-                //Eliminamos el array de permisos para que unicamente quede el array que contiene las medidas
-                unset($params_array['permisos']);
-                //var_dump($params_array);
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
                 //eliminamos los registros que tengan ese idProdcuto
                 Productos_medidas::where('idProducto',$idProducto)->delete();
 
                 //insertamos las nuevas medidas
-                foreach($params_array AS $param => $paramdata){
-
+                foreach($params_array['lista_productoMed'] AS $param => $paramdata){
+                    
                     $productos_medidas = new Productos_medidas();
                     $productos_medidas -> idProducto = $idProducto;
                     $productos_medidas -> idMedida = $paramdata['idMedida'];
@@ -1006,29 +999,19 @@ class ProductoController extends Controller
                     $productos_medidas -> precioCompra = $paramdata['preciocompra'];
 
                     $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
-                    if($paramdata['precio1'] > 0 ){
-                        $productos_medidas -> precio1 = $paramdata['precio1'];
-                    }
+                    $productos_medidas -> precio1 = $paramdata['precio1'];
 
                     $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
-                    if($paramdata['precio2'] > 0){
-                        $productos_medidas -> precio2 = $paramdata['precio2'];
-                    }
+                    $productos_medidas -> precio2 = $paramdata['precio2'];
 
                     $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
-                    if($paramdata['precio3'] > 0){
-                        $productos_medidas -> precio3 = $paramdata['precio3'];
-                    }
+                    $productos_medidas -> precio3 = $paramdata['precio3'];
 
                     $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
-                    if($paramdata['precio4'] > 0){
-                        $productos_medidas -> precio4 = $paramdata['precio4'];
-                    }
+                    $productos_medidas -> precio4 = $paramdata['precio4'];
 
                     $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
-                    if($paramdata['precio5'] > 0){
-                        $productos_medidas -> precio5 = $paramdata['precio5'];
-                    }
+                    $productos_medidas -> precio5 = $paramdata['precio5'];
                     $productos_medidas -> idStatus = 31;
 
                     $productos_medidas -> save();
@@ -1065,12 +1048,25 @@ class ProductoController extends Controller
                 $monitoreo -> pc =  $ip;
                 $monitoreo ->save();
 
+                /**Actualiza precio multisuc */
+                $conecctions = [];
+                foreach($params_array['sucursales'] as $data){
+                    if($data['isSelected']){
+                        $conecctions[] =$data['connection'];
+                    }
+                }
+                $data_updatePreciosMulti = array() ;
+                if(count($conecctions) > 0){
+                    $data_updatePreciosMulti = $this->updatePrecioProductoMultiSuc($idProducto,$idEmpleado,$params_array['lista_productoMed'],$conecctions);
+                }
+                /*** */
 
                 $data = array(
                     'code' => 200,
                     'status' => 'success',
                     'message' => 'Precios actualizados correctamente',
-                    'productos_medidas' => $productos_medidas
+                    'productos_medidas' => $productos_medidas,
+                    'precios_ext'=> $data_updatePreciosMulti,
                 );
 
                 /******GUARDACONSULTA */
@@ -1107,6 +1103,101 @@ class ProductoController extends Controller
             );
         }
         return response()->json($data,$data['code']);
+    }
+
+    public function updatePrecioProductoMultiSuc($idProducto,$idEmpleado,$lista_precios_medida,$conecctions){
+        for($i= 0;$i<count($conecctions);$i++){
+            try{
+                DB::connection($conecctions[$i])->beginTransaction();
+                //obtenemos direccion ip
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                //Eliminamos medidas a actualizar
+                DB::connection($conecctions[$i])->table('productos_medidas')->where('idProducto',$idProducto)->delete();
+                //Insertamos nuevas medidas
+                foreach($lista_precios_medida as $param => $paramdata){
+                    //insermedida
+                    DB::connection($conecctions[$i])->table('productos_medidas')->insert([
+                        'idProducto'=> $idProducto,
+                        'idMedida'=> $paramdata['idMedida'],
+                        'unidad'=> $paramdata['unidad'],
+                        'precioCompra'=> $paramdata['preciocompra'],
+
+                        'porcentaje1'=> $paramdata['porcentaje1'],
+                        'precio1'=> $paramdata['precio1'],
+
+                        'porcentaje2'=> $paramdata['porcentaje2'],
+                        'precio2'=> $paramdata['precio2'],
+
+                        'porcentaje3'=> $paramdata['porcentaje3'],
+                        'precio3'=> $paramdata['precio3'],
+
+                        'porcentaje4'=> $paramdata['porcentaje4'],
+                        'precio4'=> $paramdata['precio4'],
+
+                        'porcentaje5'=> $paramdata['porcentaje5'],
+                        'precio5'=> $paramdata['precio5'],
+
+                        'idStatus' => 31,
+
+                        'created_at'=> Carbon::now(),
+                        'updated_at'=> Carbon::now(),
+                    ]);
+                    //agregamos monitoreo
+                    $ultimaMedida = DB::connection($conecctions[$i])
+                                        ->table('productos_medidas')
+                                            ->latest()->first()->idProdMedida;
+
+                    DB::connection($conecctions[$i])->table('monitoreo')->insert([
+                        'idUsuario'=> $idEmpleado,
+                        'accion'=> "Alta de medida ".$ultimaMedida." para el producto",
+                        'folioNuevo'=> $idProducto,
+                        'pc'=> $ip,
+                        'created_at'=> Carbon::now(),
+                        'updated_at'=> Carbon::now(),
+                    ]);
+                }
+
+                //Obtenemos la lista de precios actualizada
+                $actListaPrecio = DB::connection($conecctions[$i])
+                                    ->table('productos_medidas')
+                                    ->select('productos_medidas.*','medidas.nombre as nombreMedida')
+                                    ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+                                    ->where('idProducto','=',$idProducto)
+                                    ->orderBy('productos_medidas.idProdMedida','asc')
+                                    ->get();
+                //insertamos en historial de precios
+                // $listaPrecioArray = $actListaPrecio->toArray();
+                // DB::connection($conecctions[$i])->table('historialproductos_medidas')->insert($listaPrecioArray);
+                $historialData = [];
+
+                foreach ($actListaPrecio as $item) {
+                    $historialData[] = (array) $item; // Convertir cada objeto stdClass a un array asociativo
+                }
+
+                DB::connection($conecctions[$i])->table('historialproductos_medidas')->insert($historialData);
+
+                DB::connection($conecctions[$i])->table('monitoreo')->insert([
+                    'idUsuario'=> $idEmpleado,
+                    'accion'=> "Actualizacion de precios del producto",
+                    'folioNuevo'=> $idProducto,
+                    'pc'=> $ip,
+                    'created_at'=> Carbon::now(),
+                    'updated_at'=> Carbon::now(),
+                ]);
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Precios actualizados correctamente ext',
+                );
+                DB::connection($conecctions[$i])->commit();
+            }catch (\Exception $e){
+                DB::connection($conecctions[$i])->rollback();
+                    throw $e;
+            }
+        }
+        return $data;
     }
 
     /**
