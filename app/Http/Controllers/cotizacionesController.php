@@ -45,7 +45,6 @@ class cotizacionesController extends Controller
             $validate = Validator::make($params_array, [
                 'idCliente'       => 'required',
                 'idEmpleado'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
-                'idStatus'   => 'required',
                 'subtotal'   => 'required',
                 'total'   => 'required',
             ]);
@@ -530,9 +529,9 @@ class cotizacionesController extends Controller
                     $pdf->MultiCell(76,10,$prodC->descripcion,1,'C',false,0);
                     $pdf->MultiCell(16,10,$prodC->nombreMedida,1,'C',false,0);
                     $pdf->MultiCell(15,10,$prodC->cantidad,1,'C',false,0);
-                    $pdf->MultiCell(15,10,'$'. $prodC->precio,1,'C',false,0);
-                    $pdf->MultiCell(16,10,'$'. $prodC->descuento,1,'C',false,0);
-                    $pdf->MultiCell(20,10,'$'. $prodC->subtotal,1,'C',false,0);
+                    $pdf->MultiCell(15,10,'$'. number_format($prodC->precio,2),1,'C',false,0);
+                    $pdf->MultiCell(16,10,'$'. number_format($prodC->descuento,2),1,'C',false,0);
+                    $pdf->MultiCell(20,10,'$'. number_format($prodC->subtotal,2),1,'C',false,0);
                     $pdf->Ln(); // Nueva línea
 
                     if($contRegistros == 18){
@@ -555,13 +554,13 @@ class cotizacionesController extends Controller
             }
 
             $pdf->setXY(145,$posY+10);
-            $pdf->Cell(0,10,'SUBTOTAL:          $'. $Cotiza->subtotal,0,1,'L',false);
+            $pdf->Cell(0,10,'SUBTOTAL:          $'. number_format($Cotiza->subtotal,2),0,1,'L',false);
 
             $pdf->setXY(145,$posY+15);
-            $pdf->Cell(0,10,'DESCUENTO:      $'. $Cotiza->descuento,0,1,'L',false);
+            $pdf->Cell(0,10,'DESCUENTO:      $'. number_format($Cotiza->descuento,2),0,1,'L',false);
 
             $pdf->setXY(145,$posY+20);
-            $pdf->Cell(0,10,'TOTAL:                 $'. $Cotiza->total,0,1,'L',false);
+            $pdf->Cell(0,10,'TOTAL:                 $'. number_format($Cotiza->total,2),0,1,'L',false);
 
             $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
             $pdf->setXY(135,$posY+25);

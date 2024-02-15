@@ -12,6 +12,7 @@ use App\Productos_medidas;
 use App\models\Monitoreo;
 use App\models\historialproductos_medidas;
 use Carbon\Carbon;
+use App\Clases\clsHelpers;
 
 class ProductoController extends Controller
 {
@@ -744,16 +745,16 @@ class ProductoController extends Controller
 
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
-
+// dd($params_array);
         if(!empty($params_array)){
 
             //limpiamos los datos
             //Eliminamos el array de permisos para que unicamente quede el array que contiene
             //los datos del producto y del usuario sin los permisos claro ...
-            unset($params_array['permisos']);
-            $params_array = array_map('trim', $params_array);
+            // unset($params_array['permisos']);
+            $params_array['producto'] = array_map('trim', $params_array['producto']);
             //validamos los datos que llegaron
-            $validate = Validator::make($params_array, [
+            $validate = Validator::make($params_array['producto'], [
                 'idMarca'           =>  'required',
                 'idDep'             =>  'required',
                 'idCat'             =>  'required',
@@ -774,7 +775,6 @@ class ProductoController extends Controller
                     'status'    =>  'error',
                     'code'      =>  '404',
                     'message_system'   =>  'Fallo la validacion de los datos del producto',
-                    'message_validation' => $validate->getMessage(),
                     'errors'    =>  $validate->errors()
                 );
             }else{
@@ -782,29 +782,30 @@ class ProductoController extends Controller
                     DB::beginTransaction();
                     DB::enableQueryLog();
                     //consultamos el producto antes de actualizarlo
-                    $antProducto= Producto::where('idProducto',$params_array['idProducto'])->get();
+                    $antProducto= Producto::where('idProducto',$params_array['producto']['idProducto'])->get();
+                    
                     //actualizamos
-                    $producto = Producto::where('idProducto',$params_array['idProducto'])->update([
-                                    'idMarca' => $params_array['idMarca'],
-                                    'idDep' => $params_array['idDep'],
-                                    'idCat' => $params_array['idCat'],
-                                    'claveEx' => $params_array['claveEx'],
-                                    'cbarras' => $params_array['cbarras'],
-                                    'descripcion' => $params_array['descripcion'],
-                                    'stockMin' => $params_array['stockMin'],
-                                    'stockMax' => $params_array['stockMax'],
-                                    'imagen' => $params_array['imagen'],
+                    $producto = Producto::where('idProducto',$params_array['producto']['idProducto'])->update([
+                                    'idMarca' => $params_array['producto']['idMarca'],
+                                    'idDep' => $params_array['producto']['idDep'],
+                                    'idCat' => $params_array['producto']['idCat'],
+                                    'claveEx' => $params_array['producto']['claveEx'],
+                                    'cbarras' => $params_array['producto']['cbarras'],
+                                    'descripcion' => $params_array['producto']['descripcion'],
+                                    'stockMin' => $params_array['producto']['stockMin'],
+                                    'stockMax' => $params_array['producto']['stockMax'],
+                                    'imagen' => $params_array['producto']['imagen'],
                                     //'statuss' => $params_array['statuss'],
-                                    'ubicacion' => $params_array['ubicacion'],
-                                    'claveSat' => $params_array['claveSat'],
-                                    'tEntrega' => $params_array['tEntrega'],
-                                    'idAlmacen' => $params_array['idAlmacen'],
+                                    'ubicacion' => $params_array['producto']['ubicacion'],
+                                    'claveSat' => $params_array['producto']['claveSat'],
+                                    'tEntrega' => $params_array['producto']['tEntrega'],
+                                    'idAlmacen' => $params_array['producto']['idAlmacen'],
                                 ]);
                     //consultamos el producto que se actualizo
-                    $producto = Producto::where('idProducto',$params_array['idProducto'])->get();
+                    $producto = Producto::where('idProducto',$params_array['producto']['idProducto'])->get();
 
                     //obtenemos direccion ip
-                    $ip = $_SERVER['REMOTE_ADDR'];
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
                     //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
                      foreach($antProducto[0]['attributes'] as $clave => $valor){
@@ -814,9 +815,9 @@ class ProductoController extends Controller
                             if($clave == $clave2 && $valor !=  $valor2){
                                 //insertamos el movimiento realizado
                                 $monitoreo = new Monitoreo();
-                                $monitoreo -> idUsuario =  $params_array['sub'];
+                                $monitoreo -> idUsuario =  $params_array['idEmpleado'];
                                 $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." del producto";
-                                $monitoreo -> folioNuevo =  $params_array['idProducto'];
+                                $monitoreo -> folioNuevo =  $params_array['producto']['idProducto'];
                                 $monitoreo -> pc =  $ip;
                                 $monitoreo ->save();
                             }
@@ -824,17 +825,32 @@ class ProductoController extends Controller
                      }
                     //insertamos el movimiento realizado en general del producto modificado
                     $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
                     $monitoreo -> accion =  "Modificacion de producto";
-                    $monitoreo -> folioNuevo =  $params_array['idProducto'];
+                    $monitoreo -> folioNuevo =  $params_array['producto']['idProducto'];
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
+
+
+                    $conecctions = [];
+                    foreach($params_array['sucursales'] as $data){
+                        if($data['isSelected']){
+                            $conecctions[] =$data['connection'];
+                        }
+                    }
+
+                    $data_updateExt = array() ;
+                    if(count($conecctions) > 0){
+                        $data_updateExt = $this->updateProductoMultiSuc($conecctions,$producto,$params_array['idEmpleado']);
+                    }
+
                     //generamos respuesta
                     $data = array(
                         'status'    =>  'success',
                         'code'      =>  '200',
                         'message'   =>  'El producto se a guardado correctamente',
-                        'producto'  =>  $producto
+                        'producto'  =>  $producto,
+                        'productoext' => $data_updateExt,
                     );
 
                     /******GUARDACONSULTA */
@@ -874,6 +890,83 @@ class ProductoController extends Controller
         return response()->json($data, $data['code']);
     }
 
+    public function updateProductoMultiSuc($connections,$producto,$idEmpleado){
+        
+        for($i=0; $i<count($connections); $i++){
+            
+            try{
+                DB::connection($connections[$i])->beginTransaction();
+                DB::connection($connections[$i])->table('producto')
+                        ->where('idProducto','=', $producto[0]['attributes']['idProducto'])
+                        ->update([
+                            'idMarca'=> $producto[0]['attributes']['idMarca'],
+                            'idDep'=> $producto[0]['attributes']['idDep'],
+                            'idCat'=> $producto[0]['attributes']['idCat'],
+                            'claveEx'=> $producto[0]['attributes']['claveEx'],
+                            'cbarras'=> $producto[0]['attributes']['cbarras'],
+                            'descripcion'=> $producto[0]['attributes']['descripcion'],
+                            'stockMin'=> $producto[0]['attributes']['stockMin'],
+                            'stockMax'=> $producto[0]['attributes']['stockMax'],
+                            'imagen'=> $producto[0]['attributes']['imagen'],
+                            // 'statuss'=> $producto[0]['attributes']['statuss'],
+                            'ubicacion'=> $producto[0]['attributes']['ubicacion'],
+                            'claveSat'=> $producto[0]['attributes']['claveSat'],
+                            'tEntrega'=> $producto[0]['attributes']['tEntrega'],
+                            'idAlmacen'=> $producto[0]['attributes']['idAlmacen'],
+                            // 'existenciaG'=> $producto[0]['attributes']['existenciaG'],
+                            'created_at'=> $producto[0]['attributes']['created_at'],
+                            'updated_at'=> $producto[0]['attributes']['updated_at'],
+                            ]);
+
+                //consultamos el producto que se actualizo
+                $producto_new =  DB::connection($connections[$i])
+                                ->table('producto')
+                                ->where('idProducto',$producto[0]['attributes']['idProducto'])
+                                ->get();
+                            
+                    //obtenemos direccion ip
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                    //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
+                     foreach($producto[0]['attributes'] as $clave => $valor){
+                         foreach($producto_new[0] as $clave2 => $valor2){
+                            //verificamos que la clave sea igua ejem: claveEx == claveEx
+                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                            if($clave == $clave2 && $valor !=  $valor2){
+                                //insertamos el movimiento realizado
+                                $monitoreo = new Monitoreo();
+                                $monitoreo -> idUsuario =  $idEmpleado;
+                                $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." del producto";
+                                $monitoreo -> folioNuevo =  $producto[0]['attributes']['idProducto'];
+                                $monitoreo -> pc =  $ip;
+                                $monitoreo ->save();
+                            }
+                         }
+                     }
+                    //insertamos el movimiento realizado en general del producto modificado
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $idEmpleado;
+                    $monitoreo -> accion =  "Modificacion de producto";
+                    $monitoreo -> folioNuevo =  $producto[0]['attributes']['idProducto'];
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
+                    //generamos respuesta
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'El producto se a guardado correctamente',
+                        'producto'  =>  $producto
+                    );
+    
+                    DB::connection($connections[$i])->commit();
+            }catch (\Exception $e){
+                DB::connection($connections[$i])->rollback();
+                    throw $e;
+            }
+        }
+        return $data;
+    }
+
     /**
      * Actualiza las medidas por producto
      *
@@ -888,24 +981,17 @@ class ProductoController extends Controller
                 DB::beginTransaction();
                 DB::enableQueryLog();
                 //obtemos el id del usuario
-                $idEmpleado = $params_array['sub'];
+                $idEmpleado = $params_array['idEmpleado'];
 
                 //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
-
-                //eliminamos los datos del empleado
-                //o algo mas tecnico: eliminamos los elementos que no son arrays
-                $params_array = array_filter($params_array, function($item) { return is_array($item); });
-                //Eliminamos el array de permisos para que unicamente quede el array que contiene las medidas
-                unset($params_array['permisos']);
-                //var_dump($params_array);
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
                 //eliminamos los registros que tengan ese idProdcuto
                 Productos_medidas::where('idProducto',$idProducto)->delete();
 
                 //insertamos las nuevas medidas
-                foreach($params_array AS $param => $paramdata){
-
+                foreach($params_array['lista_productoMed'] AS $param => $paramdata){
+                    
                     $productos_medidas = new Productos_medidas();
                     $productos_medidas -> idProducto = $idProducto;
                     $productos_medidas -> idMedida = $paramdata['idMedida'];
@@ -913,29 +999,19 @@ class ProductoController extends Controller
                     $productos_medidas -> precioCompra = $paramdata['preciocompra'];
 
                     $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
-                    if($paramdata['precio1'] > 0 ){
-                        $productos_medidas -> precio1 = $paramdata['precio1'];
-                    }
+                    $productos_medidas -> precio1 = $paramdata['precio1'];
 
                     $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
-                    if($paramdata['precio2'] > 0){
-                        $productos_medidas -> precio2 = $paramdata['precio2'];
-                    }
+                    $productos_medidas -> precio2 = $paramdata['precio2'];
 
                     $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
-                    if($paramdata['precio3'] > 0){
-                        $productos_medidas -> precio3 = $paramdata['precio3'];
-                    }
+                    $productos_medidas -> precio3 = $paramdata['precio3'];
 
                     $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
-                    if($paramdata['precio4'] > 0){
-                        $productos_medidas -> precio4 = $paramdata['precio4'];
-                    }
+                    $productos_medidas -> precio4 = $paramdata['precio4'];
 
                     $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
-                    if($paramdata['precio5'] > 0){
-                        $productos_medidas -> precio5 = $paramdata['precio5'];
-                    }
+                    $productos_medidas -> precio5 = $paramdata['precio5'];
                     $productos_medidas -> idStatus = 31;
 
                     $productos_medidas -> save();
@@ -972,12 +1048,25 @@ class ProductoController extends Controller
                 $monitoreo -> pc =  $ip;
                 $monitoreo ->save();
 
+                /**Actualiza precio multisuc */
+                $conecctions = [];
+                foreach($params_array['sucursales'] as $data){
+                    if($data['isSelected']){
+                        $conecctions[] =$data['connection'];
+                    }
+                }
+                $data_updatePreciosMulti = array() ;
+                if(count($conecctions) > 0){
+                    $data_updatePreciosMulti = $this->updatePrecioProductoMultiSuc($idProducto,$idEmpleado,$params_array['lista_productoMed'],$conecctions);
+                }
+                /*** */
 
                 $data = array(
                     'code' => 200,
                     'status' => 'success',
                     'message' => 'Precios actualizados correctamente',
-                    'productos_medidas' => $productos_medidas
+                    'productos_medidas' => $productos_medidas,
+                    'precios_ext'=> $data_updatePreciosMulti,
                 );
 
                 /******GUARDACONSULTA */
@@ -1014,6 +1103,101 @@ class ProductoController extends Controller
             );
         }
         return response()->json($data,$data['code']);
+    }
+
+    public function updatePrecioProductoMultiSuc($idProducto,$idEmpleado,$lista_precios_medida,$conecctions){
+        for($i= 0;$i<count($conecctions);$i++){
+            try{
+                DB::connection($conecctions[$i])->beginTransaction();
+                //obtenemos direccion ip
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                //Eliminamos medidas a actualizar
+                DB::connection($conecctions[$i])->table('productos_medidas')->where('idProducto',$idProducto)->delete();
+                //Insertamos nuevas medidas
+                foreach($lista_precios_medida as $param => $paramdata){
+                    //insermedida
+                    DB::connection($conecctions[$i])->table('productos_medidas')->insert([
+                        'idProducto'=> $idProducto,
+                        'idMedida'=> $paramdata['idMedida'],
+                        'unidad'=> $paramdata['unidad'],
+                        'precioCompra'=> $paramdata['preciocompra'],
+
+                        'porcentaje1'=> $paramdata['porcentaje1'],
+                        'precio1'=> $paramdata['precio1'],
+
+                        'porcentaje2'=> $paramdata['porcentaje2'],
+                        'precio2'=> $paramdata['precio2'],
+
+                        'porcentaje3'=> $paramdata['porcentaje3'],
+                        'precio3'=> $paramdata['precio3'],
+
+                        'porcentaje4'=> $paramdata['porcentaje4'],
+                        'precio4'=> $paramdata['precio4'],
+
+                        'porcentaje5'=> $paramdata['porcentaje5'],
+                        'precio5'=> $paramdata['precio5'],
+
+                        'idStatus' => 31,
+
+                        'created_at'=> Carbon::now(),
+                        'updated_at'=> Carbon::now(),
+                    ]);
+                    //agregamos monitoreo
+                    $ultimaMedida = DB::connection($conecctions[$i])
+                                        ->table('productos_medidas')
+                                            ->latest()->first()->idProdMedida;
+
+                    DB::connection($conecctions[$i])->table('monitoreo')->insert([
+                        'idUsuario'=> $idEmpleado,
+                        'accion'=> "Alta de medida ".$ultimaMedida." para el producto",
+                        'folioNuevo'=> $idProducto,
+                        'pc'=> $ip,
+                        'created_at'=> Carbon::now(),
+                        'updated_at'=> Carbon::now(),
+                    ]);
+                }
+
+                //Obtenemos la lista de precios actualizada
+                $actListaPrecio = DB::connection($conecctions[$i])
+                                    ->table('productos_medidas')
+                                    ->select('productos_medidas.*','medidas.nombre as nombreMedida')
+                                    ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
+                                    ->where('idProducto','=',$idProducto)
+                                    ->orderBy('productos_medidas.idProdMedida','asc')
+                                    ->get();
+                //insertamos en historial de precios
+                // $listaPrecioArray = $actListaPrecio->toArray();
+                // DB::connection($conecctions[$i])->table('historialproductos_medidas')->insert($listaPrecioArray);
+                $historialData = [];
+
+                foreach ($actListaPrecio as $item) {
+                    $historialData[] = (array) $item; // Convertir cada objeto stdClass a un array asociativo
+                }
+
+                DB::connection($conecctions[$i])->table('historialproductos_medidas')->insert($historialData);
+
+                DB::connection($conecctions[$i])->table('monitoreo')->insert([
+                    'idUsuario'=> $idEmpleado,
+                    'accion'=> "Actualizacion de precios del producto",
+                    'folioNuevo'=> $idProducto,
+                    'pc'=> $ip,
+                    'created_at'=> Carbon::now(),
+                    'updated_at'=> Carbon::now(),
+                ]);
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Precios actualizados correctamente ext',
+                );
+                DB::connection($conecctions[$i])->commit();
+            }catch (\Exception $e){
+                DB::connection($conecctions[$i])->rollback();
+                    throw $e;
+            }
+        }
+        return $data;
     }
 
     /**
@@ -1711,6 +1895,14 @@ class ProductoController extends Controller
             'existencia_por_med' => $existencia_por_med
         ]);
     }
+
+    // public function getConnections(){
+    //     $clsHelpers = new clsHelpers();
+    //     // dd($clsHelpers->getConnections());
+    //     return response()->json([
+    //         "connections" => $clsHelpers->getConnections(),
+    //     ]);
+    // }
 
 
      /****Funcion extra */
