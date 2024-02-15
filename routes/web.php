@@ -79,7 +79,7 @@ Route::get('/prueba', function(){
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
     Route::put('/api/productos/updatePrecioProducto/{idProducto}', 'ProductoController@updatePrecioProducto');//actualizacion de los datos del producto
 
-
+    
     Route::get('/api/productos/existencia/{idProducto}', 'ProductoController@existencia');
     
     Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
@@ -249,6 +249,7 @@ Route::get('/prueba', function(){
 
     /****** SUCURSALES */
     Route::get('/api/sucursales/index','SucursalController@index');
+    Route::get('/api/productos/getConnections', 'ProductoController@getConnections');
 
 
 /**************************************************************************************+ */
