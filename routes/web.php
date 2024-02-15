@@ -238,12 +238,12 @@ Route::get('/prueba', function(){
     /******TRASPASOS */
     Route::get('/api/traspasos/newIndex/{tipoTraspaso}/{str_traspaso}','TraspasosController@newIndex');
     Route::post('/api/traspasos/registerTraspaso','TraspasosController@registerTraspaso');
+    Route::post('/api/traspasos/registerTraspasoUsoInterno','TraspasosController@registerUsoInterno');
     Route::post('/api/traspasos/cancelarTraspaso','TraspasosController@cancelarTraspaso');
     Route::get('/api/traspasos/generatePDF/{idTraspaso}/{idempleado}/{tipoTraspaso}','TraspasosController@generatePDF');
     Route::get('/api/traspasos/showMejorado/{idTraspaso}/{tipoTraspaso}','TraspasosController@showMejorado');
     Route::post('/api/traspasos/updateTraspaso','TraspasosController@updateTraspaso');
     Route::post('/api/traspasos/recibirTraspaso','TraspasosController@recibirTraspaso');
-
 
 
 

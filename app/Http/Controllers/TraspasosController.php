@@ -116,13 +116,13 @@ class TraspasosController extends Controller
             if($params_array['tipoTraspaso']== 'Envia'){
                 $validate = Validator::make($params_array['traspaso'],[
                     'sucursalE' =>  'required',
-                    'sucursalR' =>  'required'
+                    'sucursalR' =>  'required|different:sucursalE'
                 ]);
             }elseif($params_array['tipoTraspaso']== 'Recibe'){
                 $validate = Validator::make($params_array['traspaso'],[
                     'sucursalE' =>  'required',
-                    'sucursalR' =>  'required',
-                    'folio'     =>  'required|unique:traspasoR'
+                    'sucursalR' =>  'required|different:sucursalE',
+                    'folio'     =>  'required'
                 ]);
             }else{
 
@@ -221,6 +221,84 @@ class TraspasosController extends Controller
 
     }
 
+    public function registerUsoInterno(Request $request){
+        $json = $request -> input('json',null);
+        $params_array = json_decode($json, true);
+
+        if(!empty($params_array)){
+
+            if($params_array['tipoTraspaso'] == 'Uso interno'){
+                $validate = Validator::make($params_array['traspaso'],[
+                    'sucursalE' =>  'required',
+                    'sucursalR' =>  'required|same:sucursalE'
+                ]);
+            }
+
+            if($validate->fails()){
+                $data = array(
+                    'code'      =>  '404',
+                    'status'    =>  'error',
+                    'message'   =>  'Fallo la validación de los datos del traspaso',
+                    'errors'    =>  $validate->errors()
+                );
+            }else{
+                //var_dump($params_array);
+
+                DB::beginTransaction();
+
+                $traspasoNuevo = new traspasoe();
+                $tipoTraspaso = $params_array['tipoTraspaso'];
+                $traspasoNuevo->sucursalE = $params_array['traspaso']['sucursalE'];
+                $traspasoNuevo->sucursalR = $params_array['traspaso']['sucursalR'];
+                $traspasoNuevo->idEmpleado = $params_array['traspaso']['idEmpleado'];
+                $traspasoNuevo->idStatus = 39;
+                
+                if(isset($params_array['traspaso']['observaciones'])){
+                    $traspasoNuevo->observaciones = $params_array['traspaso']['observaciones'];
+                }
+
+                $traspasoNuevo->save();
+               
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                $Traspaso = traspasoe::latest('idTraspasoE')->value('idTraspasoE');
+
+                //insertamos el movimiento que se hizo en general
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario =  $params_array['identity']['sub'];
+                $monitoreo -> accion =  "Alta de traspaso, ".$tipoTraspaso;
+                $monitoreo -> folioNuevo =  $Traspaso;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
+
+                /**INICIO INSERCION DE PRODUCTOS */
+
+                $dataProductos = $this->registerProductosTraspaso($Traspaso,$tipoTraspaso,$params_array['lista_producto_traspaso'],$params_array['identity']['sub']);
+                
+                /**FIN INSERCION DE PRODUCTOS */
+
+                DB::commit();
+
+                $data = array(
+                    'code' => 200,
+                    'status' => 'success',
+                    'message' => 'Traspaso registrado correctamente',
+                    'traspaso' => $Traspaso,
+                    'dataProductos' => $dataProductos
+                );
+            }
+        }else{
+            $data= array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            );
+        }
+        return response()->json($data, $data['code']);
+
+    }
+
     public function registerProductosTraspaso($Traspaso,$tipoTraspaso,$productosTraspaso,$idEmpleado){
         if(count($productosTraspaso) >= 1 && !empty($productosTraspaso)){
             try{
@@ -239,7 +317,7 @@ class TraspasosController extends Controller
                     $stockAnterior = $Producto -> existenciaG;
 
                     //Actualizamos existenciaG
-                    if($tipoTraspaso == 'Envia'){
+                    if($tipoTraspaso == 'Envia' || $tipoTraspaso ==  'Uso interno' ){
                         $Producto -> existenciaG = $Producto -> existenciaG - $medidaMenor;
                     }elseif($tipoTraspaso == 'Recibe'){
                         $Producto -> existenciaG = $Producto -> existenciaG + $medidaMenor;
@@ -252,10 +330,11 @@ class TraspasosController extends Controller
 
                     //insertamos el movimiento de existencia que se le realizo al producto
                     moviproduc::insertMoviproduc($paramdata,$accion = "Alta de traspaso, ".$tipoTraspaso,
-                                                $Traspaso,$medidaMenor,$stockAnterior,$stockActualizado,$idEmpleado);
+                                                $Traspaso,$medidaMenor,$stockAnterior,$stockActualizado,$idEmpleado,
+                                                $_SERVER['REMOTE_ADDR']);
 
                     //Agregamos los productos del traspaso
-                    if($tipoTraspaso == 'Envia'){
+                    if($tipoTraspaso == 'Envia' || $tipoTraspaso ==  'Uso interno' ){
                         $producto_traspaso = new Productos_traspasoE();
                         $producto_traspaso -> idTraspasoE = $Traspaso;
                     }elseif($tipoTraspaso == 'Recibe'){
@@ -420,7 +499,7 @@ class TraspasosController extends Controller
         //dd($idTraspaso,$idEmpleado,$tipoTraspaso);
         $Empresa = Empresa::first();
 
-        if($tipoTraspaso == 'Envia'){
+        if($tipoTraspaso == 'Envia' || $tipoTraspaso == 'Uso interno' ){
             $tabla = 'traspasoE';
             $tablaProd = 'productos_traspasoE';
         }elseif($tipoTraspaso == 'Recibe'){
@@ -780,7 +859,8 @@ class TraspasosController extends Controller
                             $paramdata['igualMedidaMenor'],
                             $stockanterior,
                             $stockactualizado,
-                            $params_array['idEmpleado']
+                            $params_array['idEmpleado'],
+                            $_SERVER['REMOTE_ADDR']
                         );
                     }
 
@@ -1036,7 +1116,9 @@ class TraspasosController extends Controller
                     //Obtenemos la existencia del producto actualizado
                         $stockActualizado = Producto::find($paramdata['idProducto'])->existenciaG;
                     //insertamos el movimiento de existencia que se le realizo al producto
-                        moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$paramdata['igualMedidaMenor'],$stockAnterior,$stockActualizado,$params_array['identity']['sub']);
+                        moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$paramdata['igualMedidaMenor'],
+                        $stockAnterior,$stockActualizado,$params_array['identity']['sub'],
+                        $_SERVER['REMOTE_ADDR']);
 
                 }
 
@@ -1063,7 +1145,9 @@ class TraspasosController extends Controller
                     //Obtenemos la existencia del producto actualizado
                         $stockActualizado = Producto::find($paramdata['idProducto'])->existenciaG;
                     //insertamos el movimiento de existencia que se le realizo al producto
-                        moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$medidaMenor,$stockAnterior,$stockActualizado,$params_array['identity']['sub']);
+                        moviproduc::insertMoviproduc($paramdata,$accion,$idTraspaso,$medidaMenor,$stockAnterior,
+                        $stockActualizado,$params_array['identity']['sub'],
+                        $_SERVER['REMOTE_ADDR']);
 
 
                     //Agregamos los productos del traspaso
@@ -1361,7 +1445,10 @@ class TraspasosController extends Controller
                                     $paramdataArray = get_object_vars($paramdata);
 
                                     //insertamos el movimiento de existencia que se le realizo al producto
-                                        moviproduc::insertMoviproduc($paramdataArray,$accion = "Ingreso de traspaso, RECIBE",$idTraspaso,$medidaMenor,$stockAnterior,$stockActualizado,$idEmpleado);
+                                        moviproduc::insertMoviproduc($paramdataArray,
+                                        $accion = "Ingreso de traspaso, RECIBE",$idTraspaso,$medidaMenor,
+                                        $stockAnterior,$stockActualizado,$idEmpleado,
+                                        $_SERVER['REMOTE_ADDR']);
                                     
                                 }
 
