@@ -197,7 +197,7 @@ class cotizacionesController extends Controller
                 'idCotiza'      =>  'required',
                 'idCliente'     =>  'required',
                 'idEmpleado'    =>  'required',
-                'idStatus'      =>  'required',
+                'idStatusCaja'      =>  'required',
                 'subtotal'      =>  'required',
                 'descuento'      =>  'required',
                 'total'         =>  'required'
@@ -209,7 +209,6 @@ class cotizacionesController extends Controller
                     'status'    =>  'error',
                     'code'      =>  '404',
                     'message_system'   =>  'Fallo la validacion de los datos del producto',
-                    'message_validation' => $validate->getMessage(),
                     'errors'    =>  $validate->errors()
                 );
             } else{
@@ -224,7 +223,7 @@ class cotizacionesController extends Controller
                         'idCliente'     => $params_array['idCliente'],
                         'cdireccion'    => $params_array['cdireccion'],
                         'idEmpleado'    => $params_array['idEmpleado'],
-                        'idStatus'      => $params_array['idStatus'],
+                        'idStatus'      => $params_array['idStatusCaja'],
                         'observaciones' => $params_array['observaciones'],
                         'subtotal'      => $params_array['subtotal'],
                         'descuento'     => $params_array['descuento'],
