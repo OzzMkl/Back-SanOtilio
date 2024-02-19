@@ -117,7 +117,7 @@ class ClienteController extends Controller
                     $ip = $_SERVER['REMOTE_ADDR'];
                     //insertamos movimiento en monitoreo
                     $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
                     $monitoreo -> accion =  "Alta de cliente";
                     $monitoreo -> folioNuevo =  $idCliente;
                     $monitoreo -> pc =  $ip;
@@ -158,6 +158,7 @@ class ClienteController extends Controller
     public function registerCdireccion(Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json,true);
+        
         if(!empty($params_array)){
             $params_array = array_map('trim',$params_array);
 
@@ -204,7 +205,7 @@ class ClienteController extends Controller
                     $ip = $_SERVER['REMOTE_ADDR'];
                     //insertamos movimiento en monitoreo
                     $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $params_array['sub'];
+                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
                     $monitoreo -> accion =  "Alta de direcion de cliente";
                     $monitoreo -> folioNuevo =  $idCliente;
                     $monitoreo -> pc =  $ip;
