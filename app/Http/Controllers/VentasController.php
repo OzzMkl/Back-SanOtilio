@@ -388,7 +388,7 @@ class VentasController extends Controller
                                 ]);
 
                         //obtenemos ip
-                        $ip = $_SERVER['REMOTE_ADDR'];
+                        $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
                     
                         //insertamos el movimiento realizado
                         $monitoreo = new Monitoreo();
@@ -411,7 +411,7 @@ class VentasController extends Controller
                         $data = [
                             'code' => 200,
                             'status' => 'success',
-                            'message' => 'venta modificada exitosamente',
+                            'message' => 'Venta '.$idVenta.' modificada exitosamente',
                             'data_productos' => $dataProductos
                         ];
     
