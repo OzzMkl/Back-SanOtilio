@@ -60,6 +60,34 @@ class ProductoController extends Controller
         ]);
     }
 
+    public function newIndex($type, $search){
+        $productos = DB::table('producto')
+            ->join('marca', 'marca.idMarca','=','producto.idMarca')
+            ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+            ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion',
+                        'producto.existenciaG','marca.nombre as nombreMarca',
+                        'departamentos.nombre as nombreDep')
+            ->where('statuss',31);
+            //ClaveExterna
+            if($type == 1 && $search != 'null'){
+                $productos->where('producto.claveEx','like','%'.$search.'%');
+            }
+            //Descripcion
+            if($type == 2 && $search != 'null'){
+                $productos->where('producto.descripcion','like','%'.$search.'%');
+            }
+            //codigo de barras
+            if($type == 3 && $search != 'null'){
+                $productos->where('producto.cbarras','like','%'.$search.'%');
+            }
+            $productos = $productos->paginate(5);
+        return response()->json([
+            'code'          =>  200,
+            'status'        => 'success',
+            'productos'   =>  $productos
+        ]);
+    }
+
     /**
      * Trae todo los datos del producto, nombre de la marca
      * nombre de la categoria y nombre del departamento
@@ -1596,6 +1624,23 @@ class ProductoController extends Controller
 
             }
 
+            // Inicializamos los arrays para almacenar los nombres de las medidas y los precios
+            // $medidas = [];
+            // $precios = [];
+
+            // // Recorremos los resultados y construimos los arrays
+            // foreach ($productos_medidas as $medida) {
+            //     // Agregamos el nombre de la medida al array de medidas
+            //     $medidas[] = $medida->nombreMedida;
+                
+            //     // Agregamos los precios al array de precios correspondiente
+            //     $precios['precio1'][] = $medida->precio1;
+            //     $precios['precio2'][] = $medida->precio2;
+            //     $precios['precio3'][] = $medida->precio3;
+            //     $precios['precio4'][] = $medida->precio4;
+            //     $precios['precio5'][] = $medida->precio5;
+            // }
+            
             $imagen = Producto::findOrFail($idProducto)->imagen;
             $data = [
                 'code'          =>  200,
@@ -1604,7 +1649,9 @@ class ProductoController extends Controller
                 'Producto_cl'   => $producto->claveEx,
                 'productoMedida'   =>  $productos_medidas,
                 'existencia_por_med' => $existencia_por_med2,
-                'imagen'        => $imagen
+                'imagen'        => $imagen,
+                // 'head_nombre_medidas' => $medidas,
+                // 'body_precios' => $precios,
             ];
         } catch(\Exception $e){
             $data = [

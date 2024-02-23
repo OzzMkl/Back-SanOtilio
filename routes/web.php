@@ -65,6 +65,7 @@ Route::get('/prueba', function(){
     /*******bancos */
     Route::get('/api/banco/index','BancoController@index');//mostrar BANcos
     /*******PRODUCTOS */
+    Route::get('/api/productos/newIndex/{type}/{search}','ProductoController@newIndex');//mostrar productos activos
     Route::get('/api/productos/index','ProductoController@index');//mostrar productos activos
     Route::get('/api/productos/indexPV','ProductoController@indexPV');//mostrar productos activos
     Route::get('/api/productos/productosDes','ProductoController@productoDes');//mostrar proveedores deshabilitados
