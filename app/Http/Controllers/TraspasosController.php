@@ -1474,6 +1474,17 @@ class TraspasosController extends Controller
                                 );
                             
                             DB::commit();
+
+                            //Actualización de statuss y folio en sucursalE
+                            DB::connection($connection)->beginTransaction();
+                            DB::connection($connection)->table('traspasoE')
+                                ->where('idTraspasoE','=',$TraspasoSR->folio)
+                                ->update([
+                                    'folio' => $idTraspaso,
+                                    'idStatus' => 50,
+                                    'updated_at' =>  Carbon::now()
+                                ]);
+                            DB::connection($connection)->commit();
                         
                             $data =  array(
                                 'code'      =>  200,
