@@ -423,7 +423,7 @@ class ClienteController extends Controller
             $monitoreo -> idUsuario = $params_array['sub'];
             $monitoreo -> accion = "Modificacion de direcion del cliente";
             $monitoreo -> folioNuevo = $idCliente;
-            $monitoreo -> pc = $ip;
+            $monitoreo -> pc = gethostbyaddr($_SERVER['REMOTE_ADDR']);
             $monitoreo ->save();
 
             $data =  array(
