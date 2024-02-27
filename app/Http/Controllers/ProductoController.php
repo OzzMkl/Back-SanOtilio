@@ -13,6 +13,7 @@ use App\models\Monitoreo;
 use App\models\historialproductos_medidas;
 use Carbon\Carbon;
 use App\Clases\clsHelpers;
+use App\models\Empresa;
 
 class ProductoController extends Controller
 {
@@ -1943,13 +1944,44 @@ class ProductoController extends Controller
         ]);
     }
 
-    // public function getConnections(){
-    //     $clsHelpers = new clsHelpers();
-    //     // dd($clsHelpers->getConnections());
-    //     return response()->json([
-    //         "connections" => $clsHelpers->getConnections(),
-    //     ]);
-    // }
+    public function getExistenciaMultiSucursal($idProducto){
+
+        $empresa = Empresa::first();
+
+        $sucursal_con = DB::table('sucursal')
+                            ->whereNotNull('connection')
+                            ->where('idSuc','<>', $empresa->idSuc)
+                            ->get();
+
+        $arrExistencias = [];
+        for($i = 0; $i < count($sucursal_con); $i++){
+            try{
+                $e = DB::connection($sucursal_con[$i]->connection)
+                            ->table('producto')
+                            ->where('idProducto','=', $idProducto)
+                            ->first();
+                $arrExistencias[$sucursal_con[$i]->connection] = $this->searchProductoMedida($e->idProducto);
+
+            } catch(\Exception $e){
+                $data =  array(
+                        'code'    => 400,
+                        'status'  => 'error',
+                        'message' => 'Fallo al obtener la informacion en la sucursal '.$sucursal_con[$i]->connection,
+                        'error'   => $e
+                    );
+                    break;
+            }
+        }
+        
+        $data = array(
+            'code'=> 200,
+            'status' => 'success',
+            'existencias' => $arrExistencias,
+            'sucursales' => $sucursal_con
+        );
+
+        return response()->json($data);
+    }
 
 
      /****Funcion extra */

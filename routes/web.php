@@ -94,6 +94,8 @@ Route::get('/prueba', function(){
 
     Route::get('/api/productos/searchProductoMedida/{idProducto}', 'ProductoController@searchProductoMedida');//Busca las medidas de los productos con status 31
     Route::get('/api/productos/searchProductoMedidaI/{idProducto}', 'ProductoController@searchProductoMedidaI');//buscar las medidas de los productos con status 32
+
+    Route::get('/api/productos/getExistenciaMultiSucursal/{idProducto}', 'ProductoController@getExistenciaMultiSucursal');
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos
