@@ -83,7 +83,7 @@ Route::get('/prueba', function(){
     
     Route::get('/api/productos/existencia/{idProducto}', 'ProductoController@existencia');
     
-    Route::get('/api/productos/searchclaveEx/{producto}', 'ProductoController@getProductClaveex');
+    Route::get('/api/productos/getIdProductByClaveEx/{producto}', 'ProductoController@getIdProductByClaveEx');
     Route::get('/api/productos/getExistenciaG/{idProducto}/{idProdMedida}/{cantidad}', 'ProductoController@getExistenciaG');
     Route::get('/api/productos/searchClaveExterna/{claveex}', 'ProductoController@searchClaveEx');//buscar por clave externa productos con status 1
     Route::get('/api/productos/searchCodbar/{codbar}', 'ProductoController@searchCodbar');//buscar por codigo de barras productos con status 1

@@ -1358,31 +1358,26 @@ class ProductoController extends Controller
     }
 
     //REVISAR SI SE OCUPA///////////////////////////////////
-    public function getProductClaveex($claveExterna){
-        $producto = DB::table('producto')
-        ->join('medidas', 'medidas.idMedida','=','producto.idMedida')
-        ->join('marca', 'marca.idMarca','=','producto.idMarca')
-        ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
-        ->join('categoria', 'categoria.idCat','=','producto.idCat')
-        //->join('subcategoria', 'subcategoria.idSubCat','=','producto.idSubCat')
-        ->join('almacenes','almacenes.idAlmacen','=','producto.idAlmacen')
-        //->join('pelote','pelote.idProducto','=','producto.idProducto')
-        ->select('producto.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca','departamentos.nombre as nombreDep','categoria.nombre as nombreCat','subcategoria.nombre as nombreSubCat','almacenes.nombre as nombreAlmacen')
-        ->where('producto.claveEx',$claveExterna)
-        ->get();
-        if(is_object($producto)){
-            $data = [
-                'code'          => 200,
-                'status'        => 'success',
-                'producto'   =>  $producto
-            ];
-        }else{
-            $data = [
-                'code'          => 400,
-                'status'        => 'error',
-                'message'       => 'El producto no existe'
-            ];
+    public function getIdProductByClaveEx($claveExterna){
+        $idProducto = Producto::where('claveEx',$claveExterna)
+                            ->value('idProducto');                  
+        
+        if($idProducto){
+            // $data_producto = $this->showTwo($idProducto);
+            $data = array(
+                'code'=> 200,
+                'status'=> 'success',
+                // 'data'=> $data_producto->getData(),
+                'idProducto' => $idProducto,
+            );
+        } else{
+            $data = array(
+                'code'=> 400,
+                'status'=> 'error',
+                'message'=> 'Producto no encontrado'
+            );
         }
+
         return response()->json($data, $data['code']);
     }
     ///////////////////////////////////////////////////////
