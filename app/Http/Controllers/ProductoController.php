@@ -1939,6 +1939,7 @@ class ProductoController extends Controller
         $sucursal_con = DB::table('sucursal')
                             ->whereNotNull('connection')
                             ->where('idSuc','<>', $empresa->idSuc)
+                            ->where('connection','<>', 'hostinger')//Revisar como hacerlo variable
                             ->get();
 
         $arrExistencias = [];
@@ -1957,7 +1958,7 @@ class ProductoController extends Controller
                         'message' => 'Fallo al obtener la informacion en la sucursal '.$sucursal_con[$i]->connection,
                         'error'   => $e
                     );
-                    break;
+                    // break;
             }
         }
         
