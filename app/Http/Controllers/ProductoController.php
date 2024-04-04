@@ -204,17 +204,11 @@ class ProductoController extends Controller
             $validate = Validator::make($params_array['producto'], [
                 'idMarca'           =>  'required',
                 'idDep'             =>  'required',
-                'idCat'             =>  'required',
-                'claveEx'           =>  'required',
+                'claveEx'           =>  'required | unique:producto',
                 'descripcion'       =>  'required',
                 'stockMin'          =>  'required',
                 'stockMax'          =>  'required',
-                //'statuss'           =>  'required',
-                'ubicacion'         =>  'required',
-                //'claveSat'          =>  'required',
                 'tEntrega'          =>  'required',
-                'idAlmacen'         =>  'required',
-                'existenciaG'       =>  'required'
             ]);
             //si falla creamos la respuesta a enviar
             if($validate->fails()){
@@ -313,8 +307,7 @@ class ProductoController extends Controller
                     $data = array(
                         'code'      => 400,
                         'status'    => 'Error',
-                        'message'   => $e->getMessage(),
-                        'error'     => $e
+                        'error'     => $e,
                     );
                 }
             }
@@ -334,6 +327,8 @@ class ProductoController extends Controller
      * dentro de la funcion tambien se registran los precios
      */
     function registraProductoMultiSucursal($producto,$idEmpleado,$lista_precios_medida){
+        $arr_ProductoMultisucursal_ok = [];
+        $arr_ProductoMultisucursal_error = [];
         $sucursal_con = DB::table('sucursal')
                         ->whereNotNull('connection')
                         ->where('connection', '<>', 'matriz')
@@ -379,22 +374,29 @@ class ProductoController extends Controller
                             'message'   =>  'El producto se a guardado correctamente',
                             'producto'  =>  $producto,
                             'data_preciosMultiSucursal'  =>  $data_registroPrecioMultiSucursal,
+                            'nombre_sucursal' => $sucursal_con[$i]->connection
                         );
+
+                        $arr_ProductoMultisucursal_ok [] = $data;
+
 
                         DB::connection($sucursal_con[$i]->connection)->commit();
                 } catch (\Exception $e) {
                     DB::connection($sucursal_con[$i]->connection)->rollback();
-                    throw $e;
-                    // $data =  array(
-                    //     'code'    => 400,
-                    //     'status'  => 'error',
-                    //     'message' => 'Fallo al registrar el producto en la sucursal '.$sucursal_con[$i]->connection,
-                    //     'error'   => $e
-                    // );
+                    // throw $e;
+                    $data =  array(
+                        'code'    => 400,
+                        'status'  => 'error',
+                        'message' => 'Fallo al registrar el producto en la sucursal '.$sucursal_con[$i]->connection,
+                        'error'   => $e,
+                        'nombre_sucursal' => $sucursal_con[$i]->connection,
+                    );
+
+                    $arr_ProductoMultisucursal_error [] = $data;
                     // break;
                 }
             }
-        return $data;
+        return ['sucursales_guardadas' => $arr_ProductoMultisucursal_ok, 'sucursales_fallidas' => $arr_ProductoMultisucursal_error];
     }
 
     /**
@@ -508,14 +510,14 @@ class ProductoController extends Controller
                 DB::commit();
             } catch(\Exception $e){
                 DB::rollback();
-                throw $e;
-                // $data = array(
-                //     'code' => 400,
-                //     'status' => 'error',
-                //     'message_system' => 'Algo salio mal rollback precios',
-                //     'messsage_exception' => $e->getMessage(),
-                //     'errors' => $e
-                // );
+                // throw $e;
+                $data = array(
+                    'code' => 400,
+                    'status' => 'error',
+                    'message_system' => 'Algo salio mal al guardar los precios.',
+                    'messsage_exception' => $e->getMessage(),
+                    'errors' => $e
+                );
             }
         } else {
             $data = array(
@@ -614,13 +616,13 @@ class ProductoController extends Controller
 
                 } catch (\Exception $e) {
                     DB::connection($connection)->rollback();
-                    throw $e;
-                    // $data =  array(
-                    //     'code'    => 400,
-                    //     'status'  => 'error',
-                    //     'message' => 'Fallo al registrar el producto en la sucursal '.$sucursal_con[$i]->connection,
-                    //     'error'   => $e
-                    // );
+                    // throw $e;
+                    $data =  array(
+                        'code'    => 400,
+                        'status'  => 'error',
+                        'message' => 'Fallo al registrar el producto en la sucursal '.$connection,
+                        'error'   => $e
+                    );
                     // break;
                 }
         return $data;
@@ -778,25 +780,16 @@ class ProductoController extends Controller
         if(!empty($params_array)){
 
             //limpiamos los datos
-            //Eliminamos el array de permisos para que unicamente quede el array que contiene
-            //los datos del producto y del usuario sin los permisos claro ...
-            // unset($params_array['permisos']);
             $params_array['producto'] = array_map('trim', $params_array['producto']);
             //validamos los datos que llegaron
             $validate = Validator::make($params_array['producto'], [
                 'idMarca'           =>  'required',
                 'idDep'             =>  'required',
-                'idCat'             =>  'required',
                 'claveEx'           =>  'required',
                 'descripcion'       =>  'required',
                 'stockMin'          =>  'required',
                 'stockMax'          =>  'required',
-                //'statuss'           =>  'required',
-                'ubicacion'         =>  'required',
-                //'claveSat'          =>  'required',
                 'tEntrega'          =>  'required',
-                'idAlmacen'         =>  'required',
-                'existenciaG'       =>  'required'
             ]);
             //si falla creamos la respuesta a enviar
             if($validate->fails()){
