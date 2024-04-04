@@ -1358,6 +1358,7 @@ class TraspasosController extends Controller
         $tablaProd = 'productos_traspasoR';
         $idTraspaso = $params_array['idTraspaso'];
         $idEmpleado = $params_array['idEmpleado'];
+        $observaciones = $params_array['observaciones'];
 
         if(!empty($params_array)){
             //Obtener información del traspaso en sucursal destino
@@ -1462,7 +1463,11 @@ class TraspasosController extends Controller
                                 );
 
                             //Actualizamos
-                                $Traspaso = TraspasoR::where('idTraspasoR',$idTraspaso)->update([ 'idStatus' => 43 ]);
+                                $Traspaso = TraspasoR::where('idTraspasoR',$idTraspaso)
+                                                ->update([
+                                                    'idStatus' => 43,
+                                                    'observaciones' => $observaciones
+                                                ]);
 
                             //Registramos acción en monitoreo
                                 Monitoreo::insertMonitoreo(
