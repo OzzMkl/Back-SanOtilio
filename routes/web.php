@@ -73,7 +73,6 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/getImageProduc/{filname}', 'ProductoController@getImageProduc');
     Route::post('/api/productos/register','ProductoController@register');
     Route::post('/api/productos/registraPrecioProducto','ProductoController@registraPrecioProducto');
-    Route::get('/api/productos/getlastproduct','ProductoController@getlastproduct');
     Route::get('/api/productos/{producto}','ProductoController@show');//sacar producto por id
     Route::get('/api/productos/showTwo/{producto}','ProductoController@showTwo');//sacar producto por id
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto

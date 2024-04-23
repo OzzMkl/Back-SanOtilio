@@ -628,16 +628,6 @@ class ProductoController extends Controller
         return $data;
     }
 
-    public function getLastProduct(){
-        $productos = Producto::latest('idProducto')->first()->cbarras;
-        $productos = $productos+1;
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'productos'   =>  $productos
-        ]);
-    }
-
     /************ */
 
     /**
