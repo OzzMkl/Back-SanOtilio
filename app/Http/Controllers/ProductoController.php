@@ -638,41 +638,6 @@ class ProductoController extends Controller
         ]);
     }
 
-    /**
-     * CONSULTA MAL ECHA REVISAR EL WHERE
-     */
-    public function show($idProducto){
-
-        $producto = DB::table('producto as allproducts')
-        ->join('medidas', 'medidas.idMedida','=','allproducts.idMedida')
-        ->join('marca', 'marca.idMarca','=','allproducts.idMarca')
-        ->join('departamentos', 'departamentos.idDep','=','allproducts.idDep')
-        ->join('categoria', 'categoria.idCat','=','allproducts.idCat')
-        //->join('subcategoria', 'subcategoria.idSubCat','=','allproducts.idSubCat')
-        ->join('almacenes','almacenes.idAlmacen','=','allproducts.idAlmacen')
-        ->join('producto', 'producto.idProducto','=','allproducts.idProductoS')
-        //->join('pelote','pelote.idProducto','=','allproducts.idProducto')
-        ->select('producto.*','allproducts.*','medidas.nombre as nombreMedida','marca.nombre as nombreMarca',
-                 'departamentos.nombre as nombreDep','categoria.nombre as nombreCat',
-                 'almacenes.nombre as nombreAlmacen','producto.claveEx as claveExProductoSiguiente')
-        ->where('allproducts.idProducto','=',$idProducto)
-        ->get();
-
-        if(is_object($producto)){
-            $data = [
-                'code'          => 200,
-                'status'        => 'success',
-                'producto'   =>  $producto
-            ];
-        }else{
-            $data = [
-                'code'          => 400,
-                'status'        => 'error',
-                'message'       => 'El producto no existe'
-            ];
-        }
-        return response()->json($data, $data['code']);
-    }
     /************ */
 
     /**
