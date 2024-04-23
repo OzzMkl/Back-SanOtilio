@@ -1272,7 +1272,10 @@ class ProductoController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    //REVISAR SI SE OCUPA///////////////////////////////////
+    /**
+     * Busca el producto por claveEx y retorna solamente su idProducto
+     * 
+     */
     public function getIdProductByClaveEx($claveExterna){
         $idProducto = Producto::where('claveEx',$claveExterna)
                             ->value('idProducto');                  
