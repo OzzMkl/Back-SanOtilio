@@ -168,10 +168,6 @@ class VentasController extends Controller
                     $ventasg->updated_at = Carbon::now();
                     $ventasg->save();
 
-                    //obtemos id de la ultima venta insertada
-                    // $ultimaVenta = Ventasg::latest('idVenta')->pluck('idVenta')->first();
-                    $ultimaVenta = Ventasg::latest('idVenta')->value('idVenta');
-
                     //obtenemos ip
                     $ip = $_SERVER['REMOTE_ADDR'];
 
@@ -189,7 +185,7 @@ class VentasController extends Controller
                         $monitoreo -> idUsuario =  $params_array['ventasg']['idEmpleado'];
                         $monitoreo -> accion =  "Cotizacion pasada a venta";
                         $monitoreo -> folioAnterior =  $params_array['ventasg']['idCotiza'];
-                        $monitoreo -> folioNuevo =  $ultimaVenta;
+                        $monitoreo -> folioNuevo =  $ventasg->idVenta;
                         $monitoreo -> pc =  $ip;
                         $monitoreo->created_at = Carbon::now();
                         $monitoreo->updated_at = Carbon::now();
@@ -202,7 +198,7 @@ class VentasController extends Controller
                     $monitoreo = new Monitoreo();
                     $monitoreo -> idUsuario =  $params_array['ventasg']['idEmpleado'];
                     $monitoreo -> accion =  "Alta de venta";
-                    $monitoreo -> folioNuevo =  $ultimaVenta;
+                    $monitoreo -> folioNuevo =  $ventasg->idVenta;
                     $monitoreo -> pc =  $ip;
                     $monitoreo->created_at = Carbon::now();
                     $monitoreo->updated_at = Carbon::now();
@@ -216,7 +212,7 @@ class VentasController extends Controller
                     $data = array(
                         'status'    =>  'success',
                         'code'      =>  200,
-                        'message'   =>  'Venta creada pero sin productos',
+                        'message'   =>  'Venta creada exitosamente',
                         'data_productos' => $dataProductos
                     );
 
@@ -249,14 +245,6 @@ class VentasController extends Controller
 
                 //Creamos instancia para poder ocupar las funciones
                 $clsMedMen = new clsProducto();
-
-                //consultamos la ultima venta realizada
-                // $ventasg = Ventasg::latest('idVenta')->first();
-                //obtenemos direccion ip
-                // $ip = $_SERVER['REMOTE_ADDR'];
-
-                // $arrProductosVentas = [];
-                // $arrMovimientos = [];
 
                 //recorremos la lista de productos
                 foreach($lista_productosVenta as $param => $paramdata){
