@@ -1277,7 +1277,10 @@ class ProductoController extends Controller
      * 
      */
     public function getIdProductByClaveEx($claveExterna){
+        //Proximo a modificar
+        $status = 31;
         $idProducto = Producto::where('claveEx',$claveExterna)
+                            ->where('statuss',$status)
                             ->value('idProducto');                  
         
         if($idProducto){
