@@ -213,6 +213,7 @@ class VentasController extends Controller
                         'status'    =>  'success',
                         'code'      =>  200,
                         'message'   =>  'Venta creada exitosamente',
+                        'idVenta'   =>  $ventasg->idVenta,
                         'data_productos' => $dataProductos
                     );
 
