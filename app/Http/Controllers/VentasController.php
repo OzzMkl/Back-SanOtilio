@@ -131,8 +131,7 @@ class VentasController extends Controller
         $params_array = json_decode($json,true);
 
         if(!empty($params) && !empty($params_array)){
-            //eliminamos espacios vacios
-            // $params_array = array_map('trim',$params_array);
+
             //validamos los datos
             $validate = Validator::make($params_array['ventasg'], [
                 'idCliente'       => 'required',
@@ -169,7 +168,7 @@ class VentasController extends Controller
                     $ventasg->save();
 
                     //obtenemos ip
-                    $ip = $_SERVER['REMOTE_ADDR'];
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
                     /****   
                      * Verificamos si la venta viene de alguna cotizacion 
