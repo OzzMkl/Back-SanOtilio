@@ -12,6 +12,7 @@ use App\models\Productos_cotizaciones;
 use App\models\Monitoreo;
 use App\models\Empresa;
 use TCPDF;
+use Carbon\Carbon;
 
 class cotizacionesController extends Controller
 {
@@ -39,12 +40,10 @@ class cotizacionesController extends Controller
         $params_array = json_decode($json,true);
 
         if(!empty($params) && !empty($params_array)){
-            //eliminamos espacios vacios
-            $params_array = array_map('trim',$params_array);
             //validamos los datos
-            $validate = Validator::make($params_array, [
+            $validate = Validator::make($params_array['ventasg'], [
                 'idCliente'       => 'required',
-                'idEmpleado'      => 'required',//comprobar si el usuario existe ya (duplicado) y comparamos con la tabla
+                'idEmpleado'      => 'required',
                 'subtotal'   => 'required',
                 'total'   => 'required',
             ]);
@@ -52,46 +51,58 @@ class cotizacionesController extends Controller
                 $data = array(
                     'status'    => 'error',
                     'code'      => 404,
-                    'message'   => 'Fallo! La orden de compra no se ha creado',
+                    'message'   => 'Validacion fallida, la cotizacion no se genero.',
                     'errors'    => $validate->errors()
                 );
             }else{
-                $cotizacion = new Cotizacion();
-                $cotizacion->idCliente = $params_array['idCliente'];
-                if(isset($params_array['cdireccion'])){
-                    $cotizacion->cdireccion = $params_array['cdireccion'];
+                try{
+                    DB::beginTransaction();
+                    
+                    $cotizacion = new Cotizacion();
+                    $cotizacion->idCliente = $params_array['ventasg']['idCliente'];
+                    $cotizacion->cdireccion = $params_array['ventasg']['cdireccion'];
+                    $cotizacion->idEmpleado = $params_array['ventasg']['idEmpleado'];
+                    $cotizacion->idStatus = 34;
+                    $cotizacion->observaciones = $params_array['ventasg']['observaciones'];
+                    $cotizacion->descuento = $params_array['ventasg']['descuento'];
+                    $cotizacion->subtotal = $params_array['ventasg']['subtotal'];
+                    $cotizacion->total = $params_array['ventasg']['total'];
+                    $cotizacion->created_at = Carbon::now();
+                    $cotizacion->updated_at = Carbon::now();
+                    $cotizacion->save();
+
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                    //insertamos el movimiento realizado
+                    $monitoreo = new Monitoreo();
+                    $monitoreo -> idUsuario =  $params_array['ventasg']['idEmpleado'];
+                    $monitoreo -> accion =  "Alta de cotizacion";
+                    $monitoreo -> folioNuevo =  $cotizacion->idCotiza;
+                    $monitoreo -> pc =  $ip;
+                    $monitoreo ->save();
+
+                    //Insercion de productos
+                    $dataProductos = $this->guardarProductosCotizacion($cotizacion->idCotiza,$params_array['lista_productoVentag']);
+
+                    $data = array(
+                        'status'    =>  'success',
+                        'code'      =>  200,
+                        'message'   =>  'Cotizacion registrada correctamente',
+                        'idCotiza'  => $cotizacion->idCotiza,
+                        'data_productos' => $dataProductos,
+                    );
+                
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'message'   => $e->getMessage(),
+                        'error'     => $e
+                    );
                 }
-                $cotizacion->idEmpleado = $params_array['idEmpleado'];
-                $cotizacion->idStatus = 34;
-                if(isset($params_array['observaciones'])){
-                    $cotizacion->observaciones = $params_array['observaciones'];
-                }
-                if(isset($params_array['descuento'])){
-                    $cotizacion->descuento = $params_array['descuento'];
-                }
-                $cotizacion->subtotal = $params_array['subtotal'];
-                $cotizacion->total = $params_array['total'];
-
-                $cotizacion->save();
-
-                //consultamos la cotizacion ingresada
-                $idCotiza = Cotizacion::latest('idCotiza')->first()->idCotiza;
-                //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
-
-                //insertamos el movimiento realizado
-                $monitoreo = new Monitoreo();
-                $monitoreo -> idUsuario =  $params_array['idEmpleado'];
-                $monitoreo -> accion =  "Alta de cotizacion";
-                $monitoreo -> folioNuevo =  $idCotiza;
-                $monitoreo -> pc =  $ip;
-                $monitoreo ->save();
-
-                $data = array(
-                    'status'    =>  'success',
-                    'code'      =>  200,
-                    'message'   =>  'Cotizacion creada pero sin productos'
-                );
+                
             }
         }else{
             $data = array(
@@ -103,32 +114,41 @@ class cotizacionesController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    public function guardarProductosCotiza(Request $request){   
-        $json = $request -> input('json',null);//recogemos los datos enviados por post en formato json
-        $params_array = json_decode($json,true);//decodifiamos el json
-        if(!empty($params_array)){
-            //consultamos la ulitma cotizacion que se reazalizo
-            $Cotizacion = Cotizacion::latest('idCotiza')->first();
-            //recoremos la lista de productos mandada
-            foreach($params_array as $param => $paramdata){
-                $productos_cotizacion = new Productos_cotizaciones();
-                $productos_cotizacion->idCotiza = $Cotizacion->idCotiza;
-                $productos_cotizacion->idProducto = $paramdata['idProducto'];
-                $productos_cotizacion->idProdMedida = $paramdata['idProdMedida'];
-                $productos_cotizacion->precio = $paramdata['precio'];
-                $productos_cotizacion->cantidad = $paramdata['cantidad'];
-                if(isset($paramdata['descuento'])){
+    public function guardarProductosCotizacion($idCotiza,$lista_productosVenta){   
+        
+        if( count($lista_productosVenta) && !empty($lista_productosVenta) && $idCotiza){
+            try{
+                DB::beginTransaction();
+                //recoremos la lista de productos mandada
+                foreach($lista_productosVenta as $param => $paramdata){
+
+                    $productos_cotizacion = new Productos_cotizaciones();
+                    $productos_cotizacion->idCotiza = $idCotiza;
+                    $productos_cotizacion->idProducto = $paramdata['idProducto'];
+                    $productos_cotizacion->idProdMedida = $paramdata['idProdMedida'];
+                    $productos_cotizacion->precio = $paramdata['precio'];
+                    $productos_cotizacion->cantidad = $paramdata['cantidad'];
                     $productos_cotizacion->descuento = $paramdata['descuento'];
+                    $productos_cotizacion->subtotal = $paramdata['subtotal'];
+                    $productos_cotizacion->created_at = Carbon::now();
+                    $productos_cotizacion->updated_at = Carbon::now();
+
+                    //guardamos el producto
+                    $productos_cotizacion->save();
                 }
-                $productos_cotizacion->subtotal = $paramdata['subtotal'];
-                //guardamos el producto
-                $productos_cotizacion->save();
+
                 //Si todo es correcto mandamos el ultimo producto insertado
                 $data =  array(
-                    'status'        => 'success',
                     'code'          =>  200,
-                    'Productos_cotizacion'       =>  $productos_cotizacion
+                    'status'        => 'success',
+                    'mesage'       =>  'Productos registrados correctamente',
                 );
+
+                DB::commit();
+            } catch (\Exception $e){
+                DB::rollBack();
+                // propagamos el error
+                throw $e;
             }
         }else{
             //Si el array esta vacio o mal echo mandamos mensaje de error
@@ -138,7 +158,7 @@ class cotizacionesController extends Controller
                 'message'       =>  'Los datos enviados no son correctos'
             );
         }
-        return response()->json($data, $data['code']);
+        return $data;
     }
 
     public function consultaUltimaCotiza(){
