@@ -172,21 +172,21 @@ class cotizacionesController extends Controller
 
     public function detallesCotizacion($idCotiza){
         $Cotiza = DB::table('cotizaciones')
-        ->join('cliente','cliente.idCliente','=','cotizaciones.idCliente')
-        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
-        ->join('empleado','empleado.idEmpleado','=','cotizaciones.idEmpleado')
-        ->join('statuss','statuss.idStatus','=','cotizaciones.idStatus')
-        ->select('cotizaciones.*',
-        DB::raw("CONCAT(cliente.nombre,' ',cliente.Apaterno,' ',cliente.Amaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
-        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
-        ->where('cotizaciones.idCotiza','=',$idCotiza)
-        ->get();
+            ->join('cliente','cliente.idCliente','=','cotizaciones.idCliente')
+            ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+            ->join('empleado','empleado.idEmpleado','=','cotizaciones.idEmpleado')
+            ->join('statuss','statuss.idStatus','=','cotizaciones.idStatus')
+            ->select('cotizaciones.*',
+            DB::raw("CONCAT(cliente.nombre,' ',cliente.Apaterno,' ',cliente.Amaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+            ->where('cotizaciones.idCotiza','=',$idCotiza)
+            ->first();
         $productosCotiza = DB::table('productos_cotizaciones')
-        ->join('producto','producto.idProducto','=','productos_cotizaciones.idProducto')
-        ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_cotizaciones.idProdMedida')
-        ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion', 'historialproductos_medidas.nombreMedida as nombreMedida')
-        ->where('productos_cotizaciones.idCotiza','=',$idCotiza)
-        ->get();
+            ->join('producto','producto.idProducto','=','productos_cotizaciones.idProducto')
+            ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_cotizaciones.idProdMedida')
+            ->select('productos_cotizaciones.*','producto.claveEx as claveEx','producto.descripcion as descripcion', 'historialproductos_medidas.nombreMedida as nombreMedida')
+            ->where('productos_cotizaciones.idCotiza','=',$idCotiza)
+            ->get();
         if(is_object($Cotiza)){
             $data = [
                 'code'          => 200,
@@ -204,22 +204,18 @@ class cotizacionesController extends Controller
         return response()->json($data, $data['code']);
     }
 
-    public function actualizaCotizacion($idCotiza, Request $request){
+    public function updateCotizacion($idCotiza, Request $request){
         $json = $request -> input('json',null);
         $params_array = json_decode($json, true);
 
         if(!empty($params_array)){
-            //eliminar espacios vacios
-            $params_array = array_map('trim', $params_array);
-            
 
-            $validate = Validator::make($params_array,[
+            $validate = Validator::make($params_array['cotizacion'],[
                 'idCotiza'      =>  'required',
                 'idCliente'     =>  'required',
                 'idEmpleado'    =>  'required',
-                'idStatusCaja'      =>  'required',
+                'idStatus'      =>  'required',
                 'subtotal'      =>  'required',
-                'descuento'      =>  'required',
                 'total'         =>  'required'
             ]);
 
@@ -228,7 +224,7 @@ class cotizacionesController extends Controller
                 $data = array(
                     'status'    =>  'error',
                     'code'      =>  '404',
-                    'message_system'   =>  'Fallo la validacion de los datos del producto',
+                    'message_system'   =>  'Fallo la validacion de los datos',
                     'errors'    =>  $validate->errors()
                 );
             } else{
@@ -236,59 +232,43 @@ class cotizacionesController extends Controller
                     DB::beginTransaction();
 
                     //consultamos cotizacion antes de actualizar
-                    $antCotiza = Cotizacion::where('idCotiza',$idCotiza)->first();
+                    // $antCotiza = Cotizacion::where('idCotiza',$idCotiza)->first();
 
                     //actualizamos
                     $cotizacion = Cotizacion::where('idCotiza', $idCotiza)->update([
-                        'idCliente'     => $params_array['idCliente'],
-                        'cdireccion'    => $params_array['cdireccion'],
-                        'idEmpleado'    => $params_array['idEmpleado'],
-                        'idStatus'      => $params_array['idStatusCaja'],
-                        'observaciones' => $params_array['observaciones'],
-                        'subtotal'      => $params_array['subtotal'],
-                        'descuento'     => $params_array['descuento'],
-                        'total'         => $params_array['total'],
+                        'idCliente'     => $params_array['cotizacion']['idCliente'],
+                        'cdireccion'    => $params_array['cotizacion']['cdireccion'],
+                        // 'idStatus'      => $params_array['cotizacion']['idStatus'],
+                        'observaciones' => $params_array['cotizacion']['observaciones'],
+                        'subtotal'      => $params_array['cotizacion']['subtotal'],
+                        'descuento'     => $params_array['cotizacion']['descuento'],
+                        'total'         => $params_array['cotizacion']['total'],
 
                     ]);
 
-                    //consultamos la cotizacion actualizada
-                    $newCotiza = Cotizacion::where('idCotiza',$idCotiza)->first();
-
                     //obtenemos direccion ip
-                    $ip = $_SERVER['REMOTE_ADDR'];
+                    $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+
+                    //insertamos productos
+                    $dataProductos = $this->updateProductosCotizacion($idCotiza, $params_array['lista_productoVentag']);
 
                     //insertamos el movimiento realizado en general de la cotizacion modificada
                     $monitoreo = new Monitoreo();
-                    $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                    $monitoreo -> idUsuario =  $params_array['identity']['sub'];
                     $monitoreo -> accion =  "Modificacion de cotizacion";
-                    $monitoreo -> folioNuevo =  $params_array['idCotiza'];
+                    $monitoreo -> folioNuevo =  $idCotiza;
                     $monitoreo -> pc =  $ip;
+                    $monitoreo->created_at = Carbon::now();
+                    $monitoreo->updated_at = Carbon::now();
                     $monitoreo ->save();
 
-                    //Verificamos los cambios que se realizaron para insertar el antes y el despues
-                    foreach($antCotiza->getAttributes() as $clave => $valor){
-                        foreach($newCotiza->getAttributes() as $clave2 => $valor2){
-                            //verifica,os que la clave sea igual
-                            //y que los valores sean diferentes para guardar el movimiento
-                            if($clave == $clave2 && $valor != $valor2){
-                                //insertamos el movimiento realizado
-                                $monitoreo = new Monitoreo();
-                                $monitoreo -> idUsuario =  $params_array['idEmpleado'];
-                                $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de cotizacion";
-                                $monitoreo -> folioNuevo =  $params_array['idCotiza'];
-                                $monitoreo -> pc =  $ip;
-                                $monitoreo ->save();
-                            }
-
-                        }
-                    }
 
                     //generemos respuesta
                     $data = array(
                         'code'          =>  200,
                         'status'        =>  'success',
-                        'message'       =>  'Cotizacion modificada correctamente',
-                        'cotizacion'    => $newCotiza
+                        'message'       =>  'Cotizacion #'.$idCotiza.' modificada correctamente',
+                        'data_productos'=>  $dataProductos
                     );
 
                     DB::commit();
@@ -312,27 +292,20 @@ class cotizacionesController extends Controller
         return response()->json($data,$data['code']);
     }
 
-    public function actualizaProductosCotiza($idCotiza, Request $req){
-        //recogemos los datos enviados por post en formato json
-        $json = $req -> input('json',null);
-        //decodifiamos el json
-        $params_array = json_decode($json,true);
+    public function updateProductosCotizacion($idCotiza, $lista_productosVenta){
         
-        if(!empty($params_array)){
+        if( count($lista_productosVenta) > 0 && !empty($lista_productosVenta) && !empty($idCotiza)){
             try{
                 DB::beginTransaction();
                 
-                //Obtenemos el id del empleado que genero/modifico la cotizacion
-                $idEmpleado = Cotizacion::where('idCotiza','=',$idCotiza)->pluck('idEmpleado')->first();
-
                 //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
                 
                 //eliminamos los registros que tengab ese idOrd
                 Productos_cotizaciones::where('idCotiza',$idCotiza)->delete();
 
                 //recorremos el array para asignar todos los productos
-                foreach($params_array as $param => $paramdata){
+                foreach($lista_productosVenta as $param => $paramdata){
 
                     $productos_cotizacion = new Productos_cotizaciones();
                     $productos_cotizacion->idCotiza = $idCotiza;
@@ -340,41 +313,27 @@ class cotizacionesController extends Controller
                     $productos_cotizacion->idProdMedida = $paramdata['idProdMedida'];
                     $productos_cotizacion->precio = $paramdata['precio'];
                     $productos_cotizacion->cantidad = $paramdata['cantidad'];
-                    if(isset($paramdata['descuento'])){
-                        $productos_cotizacion->descuento = $paramdata['descuento'];
-                    }
+                    $productos_cotizacion->descuento = $paramdata['descuento'];
                     $productos_cotizacion->subtotal = $paramdata['subtotal'];
-
+                    $productos_cotizacion->created_at = Carbon::now();
+                    $productos_cotizacion->updated_at = Carbon::now();
                     //guardamos el producto
                     $productos_cotizacion->save();
                     
                 }
 
-                //insertamos el movimiento realizado
-                $monitoreo = new Monitoreo();
-                $monitoreo -> idUsuario =  $idEmpleado;
-                $monitoreo -> accion =  "Modificacion de productos en cotizacion";
-                $monitoreo -> folioNuevo =  $idCotiza;
-                $monitoreo -> pc =  $ip;
-                $monitoreo ->save();
-
                 //Si todo es correcto mandamos el ultimo producto insertado
                 $data =  array(
                     'code'          =>  200,
                     'status'        => 'success',
-                    'Productos_cotizacion'       =>  $params_array
+                    'message'       => 'Productos actualizados correctamente'
                 );
                 DB::commit();
 
             } catch(\Exception $e){
                 DB::rollback();
-                $data = array(
-                    'code' => 400,
-                    'status' => 'error',
-                    'message_system' => 'Algo salio mal rollback',
-                    'messsage' => $e->getMessage(),
-                    'errors' => $e
-                );
+                //Propagamos el error ocurrido
+                throw $e;
             }
 
         } else{
@@ -385,7 +344,7 @@ class cotizacionesController extends Controller
                 'message'       =>  'Los datos enviados son incorrectos'
             );
         }
-        return response()->json($data, $data['code']);
+        return $data;
     }
 
     public function generatePDF($idCotiza){
@@ -608,7 +567,7 @@ class cotizacionesController extends Controller
         
         return response($contenido)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
+            ->header('Content-Disposition', "attachment; filename=\"$nombrepdf\"");
     }
 
 }
