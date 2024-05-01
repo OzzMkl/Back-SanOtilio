@@ -359,9 +359,6 @@ class VentasController extends Controller
                     try{
                         DB::beginTransaction();
     
-                        //Consultamos venta a actualizar
-                        //$antVenta = Ventasg::where('idVenta',$idVenta)->firts();
-    
                         //actualizamos valores de venta
                         $ventag = Ventasg::where('idVenta',$idVenta)->update([
                                     'idCliente' => $params_array['ventasg']['idCliente'],
@@ -399,7 +396,7 @@ class VentasController extends Controller
                         $data = [
                             'code' => 200,
                             'status' => 'success',
-                            'message' => 'Venta '.$idVenta.' modificada exitosamente',
+                            'message' => 'Venta #'.$idVenta.' modificada exitosamente',
                             'data_productos' => $dataProductos
                         ];
     
@@ -415,13 +412,6 @@ class VentasController extends Controller
                             'error'     => $e
                         );
                     }
-                // } else{
-                //     $data = array(
-                //         'code'      =>  404,
-                //         'status'    =>  'error',
-                //         'message'   =>  'La venta no tiene el status correcto',
-                //     );
-                // }
             }
         } else{
             $data = array(
@@ -440,7 +430,7 @@ class VentasController extends Controller
                 $clsMedMen = new clsProducto();
 
                 //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
                 //Consultamos productos a eliminar
                 $lista_prodVen_ant = Productos_ventasg::where('idVenta',$ventasg['idVenta'])->get();
