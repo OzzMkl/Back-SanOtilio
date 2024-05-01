@@ -209,8 +209,7 @@ Route::get('/prueba', function(){
     Route::post('/api/cotizaciones/guardarProductosCotiza','cotizacionesController@guardarProductosCotiza');
     Route::get('/api/cotizaciones/consultaUltimaCotiza','cotizacionesController@consultaUltimaCotiza');
     Route::get('/api/cotizaciones/detallesCotizacion/{idCotiza}','cotizacionesController@detallesCotizacion');
-    Route::put('/api/cotizaciones/actualizaCotizacion/{idCotiza}','cotizacionesController@actualizaCotizacion');
-    Route::put('/api/cotizaciones/actualizaProductosCotizacion/{idCotiza}','cotizacionesController@actualizaProductosCotiza');
+    Route::put('/api/cotizaciones/updateCotizacion/{idCotiza}','cotizacionesController@updateCotizacion');
     
     Route::get('/api/cotizaciones/generatePDF/{idCotiza}','cotizacionesController@generatePDF');
     /*******EMPRESA */
