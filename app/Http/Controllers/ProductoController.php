@@ -14,6 +14,7 @@ use App\models\historialproductos_medidas;
 use Carbon\Carbon;
 use App\Clases\clsHelpers;
 use App\models\Empresa;
+use App\models\inventario\Historial_producto;
 
 class ProductoController extends Controller
 {
@@ -1915,6 +1916,12 @@ class ProductoController extends Controller
 
         $numDecimales = strlen($numeroString) - $decimalPosi -1;
         return $numDecimales;
+    }
+
+    function test_prod(){
+        $producto = Producto::with('marca','departamento','categoria','status','almacen')->find(100180);
+
+        return response()->json($producto);
     }
 
 }
