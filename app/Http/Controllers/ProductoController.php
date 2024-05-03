@@ -255,7 +255,10 @@ class ProductoController extends Controller
                     //una vez guardado mandamos mensaje de OK
 
                     //consultamos el ultimo producto ingresado
-                    $ultimoProducto = Producto::latest('idProducto')->first();
+                    $ultimoProducto = Producto::with('marca','departamento','categoria','status','almacen')
+                                        ->find($producto->idProducto);
+                    //Insertamos el registro del producto al historial
+                    Historial_producto::insertHistorial_producto($ultimoProducto);
 
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -361,6 +364,34 @@ class ProductoController extends Controller
                             'updated_at' =>  $producto->updated_at,
                         ]);
 
+                        //Registramos historial
+                        DB::connection($sucursal_con[$i]->connection)->table('historial_producto')->insert([
+                            'idProducto' => $producto->idProducto,
+                            'idMarca' => $producto->idMarca,
+                            'nombreMarca' => $producto->marca->nombre,
+                            'idDep' => $producto->idDep,
+                            'nombreDep' => $producto->departamento->nombre,
+                            'idCat' => $producto->idCat,
+                            'nombreCat' => $producto->categoria->nombre,
+                            'claveEx' => $producto->claveEx,
+                            'cbarras' => $producto->cbarras,
+                            'descripcion' => $producto->descripcion,
+                            'stockMin' => $producto->stockMin,
+                            'stockMax' => $producto->stockMax,
+                            'imagen' => $producto->imagen,
+                            'idStatus' => $producto->statuss,
+                            'nombreStatus' => $producto->status->nombre,
+                            'ubicacion' => $producto->ubicacion,
+                            'claveSat' => $producto->claveSat,
+                            'tEntrega' => $producto->tEntrega,
+                            'idAlmacen' => $producto->idAlmacen,
+                            'nombreAlmacen' => $producto->almacen->nombre,
+                            'existenciaG' => $producto->existenciaG,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
+
+                        //registramos precios
                         $data_registroPrecioMultiSucursal = $this->registraPrecioProductoMultiSucursal(
                                                                 $idEmpleado,
                                                                 $producto->idProducto,
@@ -759,11 +790,9 @@ class ProductoController extends Controller
                 try{
                     DB::beginTransaction();
                     DB::enableQueryLog();
-                    //consultamos el producto antes de actualizarlo
-                    $antProducto= Producto::where('idProducto',$params_array['producto']['idProducto'])->first();
                     
                     //actualizamos
-                    $producto = Producto::where('idProducto',$params_array['producto']['idProducto'])->update([
+                    $producto = Producto::where('idProducto',$idProducto)->update([
                                     'idMarca' => $params_array['producto']['idMarca'],
                                     'idDep' => $params_array['producto']['idDep'],
                                     'idCat' => $params_array['producto']['idCat'],
@@ -779,7 +808,11 @@ class ProductoController extends Controller
                                     'idAlmacen' => $params_array['producto']['idAlmacen'],
                                 ]);
                     //consultamos el producto que se actualizo
-                    $producto = Producto::where('idProducto',$params_array['producto']['idProducto'])->first();
+                    // $producto = Producto::with()->where('idProducto',$params_array['producto']['idProducto'])->first();
+                    $producto = Producto::with('marca','departamento','categoria','status','almacen')
+                                        ->find($idProducto);
+                    //agregamos actualizacion a historial
+                    Historial_producto::insertHistorial_producto($producto); 
 
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -869,11 +902,32 @@ class ProductoController extends Controller
                                 'updated_at'=> $producto->updated_at,
                                 ]);
     
-                        //consultamos el producto que se actualizo
-                        $producto_new =  DB::connection($connections[$i]['connection'])
-                                    ->table('producto')
-                                    ->where('idProducto',$producto->idProducto)
-                                    ->get();
+                        //Registramos historial
+                        DB::connection($connections[$i]['connection'])->table('historial_producto')->insert([
+                            'idProducto' => $producto->idProducto,
+                            'idMarca' => $producto->idMarca,
+                            'nombreMarca' => $producto->marca->nombre,
+                            'idDep' => $producto->idDep,
+                            'nombreDep' => $producto->departamento->nombre,
+                            'idCat' => $producto->idCat,
+                            'nombreCat' => $producto->categoria->nombre,
+                            'claveEx' => $producto->claveEx,
+                            'cbarras' => $producto->cbarras,
+                            'descripcion' => $producto->descripcion,
+                            'stockMin' => $producto->stockMin,
+                            'stockMax' => $producto->stockMax,
+                            'imagen' => $producto->imagen,
+                            'idStatus' => $producto->statuss,
+                            'nombreStatus' => $producto->status->nombre,
+                            'ubicacion' => $producto->ubicacion,
+                            'claveSat' => $producto->claveSat,
+                            'tEntrega' => $producto->tEntrega,
+                            'idAlmacen' => $producto->idAlmacen,
+                            'nombreAlmacen' => $producto->almacen->nombre,
+                            'existenciaG' => $producto->existenciaG,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
                                 
                         //obtenemos direccion ip
                         $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -1916,12 +1970,6 @@ class ProductoController extends Controller
 
         $numDecimales = strlen($numeroString) - $decimalPosi -1;
         return $numDecimales;
-    }
-
-    function test_prod(){
-        $producto = Producto::with('marca','departamento','categoria','status','almacen')->find(100180);
-
-        return response()->json($producto);
     }
 
 }
