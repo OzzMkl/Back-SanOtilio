@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\models\Sucursal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -1952,6 +1953,47 @@ class ProductoController extends Controller
             'sucursales' => $sucursal_con
         );
 
+        return response()->json($data);
+    }
+
+    public function getProductoNUBE($idProducto){
+        $sucursal = Sucursal::where([
+                        ['nombre','=','NUBE'],
+                        ['connection','=','hostinger']
+                    ])
+                    ->first();
+
+        if(!empty($sucursal)){
+            try{
+                $producto = DB::connection($sucursal->connection)
+                                ->table('producto')
+                                ->where('idProducto','=', $idProducto)
+                                ->first();
+                $producto_medidas = DB::connection($sucursal->connection)
+                                ->table('productos_medidas')
+                                ->where('idProducto','=', $idProducto)
+                                ->get();
+                $data = array(
+                    'code' => 200,
+                    'status'=> 'success',   
+                    'producto'=> $producto,
+                    'producto_medidas' => $producto_medidas,
+                );
+            } catch(\Exception $e){
+                $data =  array(
+                    'code'    => 400,
+                    'status'  => 'error',
+                    'message' => 'Fallo al obtener la informacion en la sucursal ',
+                    'error'   => $e
+                );
+            }
+        } else{
+            $data = array(
+                'code'=> 400,
+                'status'=> 'error',
+                'message'=> 'No se encontro el catalogo'
+            );
+        }
         return response()->json($data);
     }
 

@@ -12,5 +12,6 @@ class Sucursal extends Model
         'nombre',
         'direccion',
         'horario',
+        'connection',
     ];
 }
