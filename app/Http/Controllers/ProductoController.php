@@ -808,8 +808,7 @@ class ProductoController extends Controller
                                     'tEntrega' => $params_array['producto']['tEntrega'],
                                     'idAlmacen' => $params_array['producto']['idAlmacen'],
                                 ]);
-                    //consultamos el producto que se actualizo
-                    // $producto = Producto::with()->where('idProducto',$params_array['producto']['idProducto'])->first();
+                    
                     $producto = Producto::with('marca','departamento','categoria','status','almacen')
                                         ->find($idProducto);
                     //agregamos actualizacion a historial
@@ -828,7 +827,10 @@ class ProductoController extends Controller
 
                     $dataPrecios = $this->updatePrecioProducto($params_array['idEmpleado'],$producto->idProducto,$params_array['lista_productosMedida']);
 
-                    $data_ProductosmultisucursalExt = $this->updateProductoMultiSuc($producto, $params_array['idEmpleado'],$params_array['sucursales'],$params_array['lista_productosMedida']);
+                    $data_ProductosmultisucursalExt = [];
+                    if($params_array['update_local'] == false){
+                        $data_ProductosmultisucursalExt = $this->updateProductoMultiSuc($producto, $params_array['idEmpleado'],$params_array['sucursales'],$params_array['lista_productosMedida']);
+                    }
 
                     //generamos respuesta
                     $data = array(
@@ -1008,7 +1010,7 @@ class ProductoController extends Controller
                     $productos_medidas -> idProducto = $idProducto;
                     $productos_medidas -> idMedida = $paramdata['idMedida'];
                     $productos_medidas -> unidad = $paramdata['unidad'];
-                    $productos_medidas -> precioCompra = $paramdata['preciocompra'];
+                    $productos_medidas -> precioCompra = $paramdata['preciocompra'] ?? $paramdata['precioCompra'];
 
                     $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
                     $productos_medidas -> precio1 = $paramdata['precio1'];
@@ -1967,11 +1969,20 @@ class ProductoController extends Controller
             try{
                 $producto = DB::connection($sucursal->connection)
                                 ->table('producto')
+                                ->join('marca','marca.idMarca','producto.idMarca')
+                                ->join('departamentos','departamentos.idDep','producto.idDep')
+                                // ->join('categoria','categoria.idCat','producto.idCat')
+                                // ->join('statuss','statuss.idStatus','producto.statuss')
+                                // ->join('almacenes','almacenes.idAlmacen','producto.idAlmacen')
                                 ->where('idProducto','=', $idProducto)
+                                // ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep','categoria.nombre as nombreCat','statuss.nombre as nombreStatus','almacenes.nombre as nombreAlmacen')
+                                ->select('producto.*','marca.nombre as nombreMarca','departamentos.nombre as nombreDep')
                                 ->first();
                 $producto_medidas = DB::connection($sucursal->connection)
                                 ->table('productos_medidas')
+                                ->join('medidas','medidas.idMedida','productos_medidas.idMedida')
                                 ->where('idProducto','=', $idProducto)
+                                ->select('productos_medidas.*','medidas.nombre as nombreMedida')
                                 ->get();
                 $data = array(
                     'code' => 200,
