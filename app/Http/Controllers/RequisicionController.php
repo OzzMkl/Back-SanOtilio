@@ -33,7 +33,7 @@ class RequisicionController extends Controller
                 //eliminar espacios vacios
                 $params_array = array_map('trim', $params_array);
                 //validamos los datos
-                $validate = Validator::make($params_array, [
+                $validate = Validator::make($params_array, [ 
                     'idEmpleado' => 'required',
                     'idStatus'   => 'required'
                 ]);
@@ -46,8 +46,10 @@ class RequisicionController extends Controller
                     );
                 }else{
                     try{
+                        
                         DB::beginTransaction();
                         $Requisicion = new Requisiciones();
+                        $Requisicion->idProveedor = $params_array['idProveedor'];
                         $Requisicion->observaciones = $params_array['observaciones'];
                         $Requisicion->idEmpleado = $params_array['idEmpleado'];
                         $Requisicion->idStatus = 29;
@@ -64,6 +66,7 @@ class RequisicionController extends Controller
                         $FolioRequisicion = Requisiciones::latest('idReq')->first()->idReq;
                         //obtenemos direccion ip
                         $ip = $_SERVER['REMOTE_ADDR'];
+                        
                         //insertamos el movimiento que se hizo en general
                         $monitoreo = new Monitoreo();
                         $monitoreo -> idUsuario =  $params_array['idEmpleado'];
@@ -198,8 +201,10 @@ class RequisicionController extends Controller
     public function showMejorado($idReq){
         $Requisicion = DB::table('requisicion')
             ->join('empleado','empleado.idEmpleado','=','requisicion.idEmpleado')
+            ->leftjoin('proveedores','proveedores.idProveedor','=','requisicion.idProveedor')
             ->select('requisicion.*',
-                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                        'proveedores.nombre as nombreProveedor')
             ->where('requisicion.idReq','=',$idReq)
             ->get();
 
@@ -232,7 +237,6 @@ class RequisicionController extends Controller
 
     }
 
-
     public function generatePDF($idReq,$idEmpleado){
 
 
@@ -241,9 +245,13 @@ class RequisicionController extends Controller
 
         $Requisicion = DB::table('requisicion')
             ->join('empleado','empleado.idEmpleado','=','requisicion.idEmpleado')
+            ->leftjoin('proveedores','proveedores.idProveedor','=','requisicion.idProveedor')
             ->select('requisicion.*',
                         DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
-                        DB::raw('DATE_FORMAT(requisicion.created_at, "%d/%m/%Y") as created_at'))
+                        DB::raw('DATE_FORMAT(requisicion.created_at, "%d/%m/%Y") as created_at'),
+                        'proveedores.nombre as nombreProveedor'
+                    )
+
             ->where('requisicion.idReq','=',$idReq)
             ->first();
 
@@ -269,7 +277,7 @@ class RequisicionController extends Controller
             $monitoreo -> folioNuevo =  $Requisicion->idReq;
             $monitoreo -> pc =  $ip;
             $monitoreo ->save();
-
+ 
             //CREACION DEL PDF
             $pdf = new TCPDF('P', 'MM','A4','UTF-8');
             //ELIMINAMOS CABECERAS Y PIE DE PAGINA
@@ -317,10 +325,15 @@ class RequisicionController extends Controller
 
             $pdf->SetFont('helvetica', '', 9); // Establece la fuente
             $pdf->setXY(60,38);
-            $pdf->Cell(0, 10, 'EMPLEADO: '. strtoupper($Requisicion->nombreEmpleado), 0, 1); // Agrega un texto
+            $pdf->Cell(0, 10, 'PROVEEDOR: '. strtoupper($Requisicion->nombreProveedor), 0, 1); // Agrega un texto
 
             $pdf->setXY(157,38);
             $pdf->Cell(0, 10, 'FECHA: '. substr($Requisicion->created_at,0,10), 0, 1); // Agrega un texto
+
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(60,43);
+            $pdf->Cell(0, 10, 'EMPLEADO: '. strtoupper($Requisicion->nombreEmpleado), 0, 1); // Agrega un texto
+
 
             $mytime = date('d/m/Y H:i:s');
             $pdf->setXY(153,43);
@@ -436,15 +449,74 @@ class RequisicionController extends Controller
 
     }
 
-    public function listaRequisiciones(){
-        $Requisicion = DB::table('requisicion')
-        ->join('empleado','empleado.idEmpleado','=','requisicion.idEmpleado')
-        ->select('requisicion.*',
-                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
-        ->where('requisicion.idStatus','=',29)
-        ->orwhere('requisicion.idStatus','=',36)
-        ->orderBy('requisicion.idReq','desc')
-        ->paginate(10);
+    public function listaRequisiciones($tipoRequisicion,$str_requisicion){
+        
+
+        if(!empty($tipoRequisicion)){
+            
+
+             switch ($tipoRequisicion) {
+                case 'Recibidas':
+                    $idStatus = 29;
+                    break;
+                
+                case 'Rechazadas':
+                    $idStatus = 51;
+                    break;
+
+                case 'Aceptadas':
+                    $idStatus = 37;
+                    break;
+
+                case 'Canceladas':
+                    $idStatus = 30;
+                    break;
+                
+                //Default Recibidas
+                default: 
+                    $idStatus = 29;
+                    break;
+             }
+
+            if($str_requisicion != 'vacio'){
+                $Requisicion = DB::table('requisicion')
+                ->join('empleado','empleado.idEmpleado','requisicion.idEmpleado')
+                ->select('requisicion.*',
+                            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                ->where([
+                   [ 'requisicion.idStatus','=',$idStatus],
+                    ['requisicion.idReq','=',$str_requisicion]
+                ])
+                ->orderBy('requisicion.idReq','desc')
+                ->paginate(10);
+            
+            } elseif($str_requisicion == 'vacio' ){
+                $Requisicion = DB::table('requisicion')
+                ->join('empleado','empleado.idEmpleado','requisicion.idEmpleado')
+                ->select('requisicion.*',
+                            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+
+                ->where('requisicion.idStatus','=',$idStatus)
+                ->orderBy('requisicion.idReq','desc')
+                ->paginate(10);
+
+            }
+        }else{
+            $data= array(
+                'code'      =>  400,
+                'status'    => 'Error!',
+                'message'   =>  'json vacio'
+            );
+        }
+
+        // $Requisicion = DB::table('requisicion')
+        // ->join('empleado','empleado.idEmpleado','=','requisicion.idEmpleado')
+        // ->select('requisicion.*',
+        //             DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        // ->where('requisicion.idStatus','=',29)
+        // ->orwhere('requisicion.idStatus','=',36)
+        // ->orderBy('requisicion.idReq','desc')
+        // ->paginate(10);
 
         return response()->json([
             'code'          =>  200,
@@ -465,7 +537,8 @@ class RequisicionController extends Controller
             $validate = Validator::make($params_array, [
                 'idReq'         => 'required',
                 'idEmpleado'    => 'required',
-                'idStatus'      => 'required'
+                'idStatus'      => 'required',
+                'idProveedor'   => 'required'
             ]);
             if($validate->fails()){
                 $data = array(
@@ -487,6 +560,7 @@ class RequisicionController extends Controller
                     $Requisicion = Requisiciones::where('idReq',$params_array['idReq'])->update([
                         'idStatus'       => $params_array['idStatus'],
                         'observaciones'  => $params_array['observaciones'],
+                        'idProveedor'    => $params_array['idProveedor']                        
                     ]);
 
                     //consultamos la requisicion que se actualizo
@@ -798,13 +872,134 @@ class RequisicionController extends Controller
 
     }
 
+    public function aceptarReq($idReq,$idEmpleado){
+        try{
+                DB::beginTransaction();
+                DB::enableQueryLog();
+                //Comparacion de datos para saber que cambios se realizaron
+                $antReq = Requisiciones::where('idReq',$idReq)->get();
 
+                //actualizamos
+                $Requisicion = Requisiciones::where('idReq',$idReq)->update([
+                    'idStatus' => 37
+                ]);
 
+                //consultamos la requisicion que se actualizo
+                $requisicion = Requisiciones::where('idReq',$idReq)->get();
 
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
 
+                //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
+                foreach($antReq[0]['attributes'] as $clave => $valor){
+                    foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
+                       //verificamos que la clave sea igua ejem: claveEx == claveEx
+                       // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                       if($clave == $clave2 && $valor !=  $valor2){
+                           //insertamos el movimiento realizado
+                           $monitoreo = new Monitoreo();
+                           $monitoreo -> idUsuario =  $idEmpleado;
+                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la requiscion";
+                           $monitoreo -> folioNuevo =  $idReq;
+                           $monitoreo -> pc =  $ip;
+                           $monitoreo ->save();
+                       }
+                    }
+                }
 
+                //insertamos el movimiento que se hizo
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario = $idEmpleado;
+                $monitoreo -> accion =  "Acepta la requisicion";
+                $monitoreo -> folioNuevo =  $idReq;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
 
+                $data = array(
+                    'code'      =>  200,
+                    'status'    =>  'success',
+                    'message'   =>  'Requisicion aceptada'
+                );
 
+                /****** */
+                DB::commit();
 
+        }catch (\Exception $e){
+            DB::rollBack();
+            $data = array(
+                'code'      => 400,
+                'status'    => 'Error',
+                'message'   => $e->getMessage(),
+                'error'     => $e
+            );
+        }
+
+        return response()->json($data, $data['code']);
+    }
+
+    public function rechazarReq($idReq,$idEmpleado){
+        try{
+                DB::beginTransaction();
+                DB::enableQueryLog();
+                //Comparacion de datos para saber que cambios se realizaron
+                $antReq = Requisiciones::where('idReq',$idReq)->get();
+
+                //actualizamos
+                $Requisicion = Requisiciones::where('idReq',$idReq)->update([
+                    'idStatus' => 51
+                ]);
+
+                //consultamos la requisicion que se actualizo
+                $requisicion = Requisiciones::where('idReq',$idReq)->get();
+
+                //obtenemos direccion ip
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
+                foreach($antReq[0]['attributes'] as $clave => $valor){
+                    foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
+                       //verificamos que la clave sea igua ejem: claveEx == claveEx
+                       // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
+                       if($clave == $clave2 && $valor !=  $valor2){
+                           //insertamos el movimiento realizado
+                           $monitoreo = new Monitoreo();
+                           $monitoreo -> idUsuario =  $idEmpleado;
+                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la requiscion";
+                           $monitoreo -> folioNuevo =  $idReq;
+                           $monitoreo -> pc =  $ip;
+                           $monitoreo ->save();
+                       }
+                    }
+                }
+
+                //insertamos el movimiento que se hizo
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario = $idEmpleado;
+                $monitoreo -> accion =  "Rechaza la requisicion";
+                $monitoreo -> folioNuevo =  $idReq;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
+
+                $data = array(
+                    'code'      =>  200,
+                    'status'    =>  'success',
+                    'message'   =>  'Requisicion rechazada'
+                );
+
+                /****** */
+                DB::commit();
+
+        }catch (\Exception $e){
+            DB::rollBack();
+            $data = array(
+                'code'      => 400,
+                'status'    => 'Error',
+                'message'   => $e->getMessage(),
+                'error'     => $e
+            );
+        }
+
+        return response()->json($data, $data['code']);
+    }
 
 }
