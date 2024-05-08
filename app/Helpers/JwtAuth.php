@@ -5,6 +5,7 @@
 namespace App\Helpers;
 
 
+use App\models\Empresa;
 use Firebase\JWT\JWT;
 use Iluminate\Support\Facades\DB;
 use App\Empleado;//tabla de empleados
@@ -28,6 +29,8 @@ class JwtAuth{
         ])->first();
 
         if(is_object($user)){
+            //Obtenemos empresa
+            $empresa = Empresa::first();
             //traemos los permisos
             $permissions = Permisos::where([
                 'idRol' => $user->idRol
@@ -48,6 +51,7 @@ class JwtAuth{
                     'amaterno'  =>  $user->aMaterno,
                     'idRol'     =>  $user->idRol,
                     'permisos'  =>  $permissions,
+                    'empresa'   =>  $empresa,
                     'iat'       =>  time(),
                     'exp'       =>  time() + (7*24*60*60)//durara una semana
 

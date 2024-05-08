@@ -73,7 +73,6 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/getImageProduc/{filname}', 'ProductoController@getImageProduc');
     Route::post('/api/productos/register','ProductoController@register');
     Route::post('/api/productos/registraPrecioProducto','ProductoController@registraPrecioProducto');
-    Route::get('/api/productos/getlastproduct','ProductoController@getlastproduct');
     Route::get('/api/productos/{producto}','ProductoController@show');//sacar producto por id
     Route::get('/api/productos/showTwo/{producto}','ProductoController@showTwo');//sacar producto por id
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto
@@ -96,6 +95,7 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/searchProductoMedidaI/{idProducto}', 'ProductoController@searchProductoMedidaI');//buscar las medidas de los productos con status 32
 
     Route::get('/api/productos/getExistenciaMultiSucursal/{idProducto}', 'ProductoController@getExistenciaMultiSucursal');
+    Route::get('/api/productos/getProductoNUBE/{idProducto}', 'ProductoController@getProductoNUBE');
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos
@@ -213,8 +213,7 @@ Route::get('/prueba', function(){
     Route::post('/api/cotizaciones/guardarProductosCotiza','cotizacionesController@guardarProductosCotiza');
     Route::get('/api/cotizaciones/consultaUltimaCotiza','cotizacionesController@consultaUltimaCotiza');
     Route::get('/api/cotizaciones/detallesCotizacion/{idCotiza}','cotizacionesController@detallesCotizacion');
-    Route::put('/api/cotizaciones/actualizaCotizacion/{idCotiza}','cotizacionesController@actualizaCotizacion');
-    Route::put('/api/cotizaciones/actualizaProductosCotizacion/{idCotiza}','cotizacionesController@actualizaProductosCotiza');
+    Route::put('/api/cotizaciones/updateCotizacion/{idCotiza}','cotizacionesController@updateCotizacion');
     
     Route::get('/api/cotizaciones/generatePDF/{idCotiza}','cotizacionesController@generatePDF');
     /*******EMPRESA */

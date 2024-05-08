@@ -3,6 +3,7 @@
 namespace App\models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Monitoreo extends Model
 {
@@ -22,7 +23,9 @@ class Monitoreo extends Model
             'folioAnterior' => $folioAnterior,
             'folioNuevo' => $folioNuevo,
             'pc' => $ip,
-            'motivo' => $motivo
+            'motivo' => $motivo,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
         ]);
 
         $monitoreo ->save();

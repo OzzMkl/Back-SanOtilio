@@ -8,7 +8,12 @@ class Productos_cotizaciones extends Model
 {
     protected $table = 'productos_cotizaciones';
     protected $fillable = [
-        'idCotiza','idProducto','idProdMedida','precio','cantidad',
-        'descuento','subtotal'
+        'idCotiza',
+        'idProducto',
+        'idProdMedida',
+        'precio',
+        'cantidad',
+        'descuento',
+        'subtotal'
     ];
 }

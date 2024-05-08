@@ -9,8 +9,13 @@ class Cotizacion extends Model
     protected $table = 'cotizaciones';
     protected $primaryKey = 'idCotiza';
     protected $fillable = [
-        'idCliente','cdireccion','idEmpleado','idStatus',
-        'observaciones','subtotal','descuento',
+        'idCliente',
+        'cdireccion',
+        'idEmpleado',
+        'idStatus',
+        'observaciones',
+        'subtotal',
+        'descuento',
         'total'
     ];
 }
