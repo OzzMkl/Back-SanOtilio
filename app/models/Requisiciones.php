@@ -9,6 +9,6 @@ class Requisiciones extends Model
     protected $table = 'requisicion';
     protected $primaryKey = 'idReq';
     protected  $fillable = [
-        'observaciones','idEmpleado','idStatus','idOrd'
+        'idProveedor','observaciones','idEmpleado','idStatus','idOrd'
     ];
 }
