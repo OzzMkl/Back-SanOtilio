@@ -119,6 +119,7 @@ Route::get('/prueba', function(){
     Route::get('/api/impuesto/index','ImpuestoController@index');
     Route::get('/api/impuesto/show/{idImpuesto}','ImpuestoController@show');//sacar impuesto por id
     /***********Requisicion */
+    Route::get('/api/requisicion/listaRequisiciones/{tipoRequisicion}/{str_requisicion}','RequisicionController@listaRequisiciones');
     Route::post('/api/requisicion/register','RequisicionController@registerRequisicion');
     Route::post('/api/requisicion/registerLista','RequisicionController@registerProductosRequisicion');
     Route::get('/api/requisicion/updateidOrden','RequisicionController@updateidOrden');
@@ -126,11 +127,13 @@ Route::get('/prueba', function(){
     Route::get('/api/requisicion/getLastReq','RequisicionController@getLastReq');
     Route::get('/api/requisicion/showMejorado/{idReq}','RequisicionController@showMejorado');
     Route::get('/api/requisicion/generatePDF/{idOrd}/{idEmpleado}','RequisicionController@generatePDF');
-    Route::get('/api/requisicion/listaRequisiciones','RequisicionController@listaRequisiciones');
     Route::get('/api/requisicion/generarOrden','RequisicionController@generarOrden');
     Route::put('/api/requisicion/updateRequisicion/{idReq}','RequisicionController@updateRequisicion');
     Route::put('/api/requisicion/updateProductosReq/{idReq}','RequisicionController@updateProductosReq');
     Route::put('/api/requisicion/deshabilitarReq/{idReq}/{idEmpleado}','RequisicionController@deshabilitarReq');
+    Route::put('/api/requisicion/aceptarReq/{idReq}/{idEmpleado}','RequisicionController@aceptarReq');
+    Route::put('/api/requisicion/rechazarReq/{idReq}/{idEmpleado}','RequisicionController@rechazarReq');
+
     
 
 
