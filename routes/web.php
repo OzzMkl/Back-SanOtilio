@@ -96,6 +96,8 @@ Route::get('/prueba', function(){
 
     Route::get('/api/productos/getExistenciaMultiSucursal/{idProducto}', 'ProductoController@getExistenciaMultiSucursal');
     Route::get('/api/productos/getProductoNUBE/{idProducto}', 'ProductoController@getProductoNUBE');
+    Route::get('/api/productos/getHistorialProducto/{idProducto}', 'ProductoController@getHistorialProducto');
+    Route::get('/api/productos/getHistorialProductoPrecio/{idProducto}', 'ProductoController@getHistorialProductoPrecio');
     /************DEPARTAMENTOS*/
     Route::get('/api/departamentos/index','DepartamentoController@index');//mostrar departamentos
     Route::get('/api/departamentos/longitud','DepartamentoController@getLongitud');//mostrar departamentos

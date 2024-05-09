@@ -1918,6 +1918,10 @@ class ProductoController extends Controller
         ]);
     }
 
+    /**
+     * Nos muestra todas las existencias de las sucursales disponibles
+     * Se omite la coneccion hacia hostinger
+     */
     public function getExistenciaMultiSucursal($idProducto){
 
         $empresa = Empresa::first();
@@ -1958,6 +1962,11 @@ class ProductoController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Esta funcion permite consultar el producto registrado en nuestra nube (hostinger)
+     * Retornamos el resultado del producto y producto_medidas
+     * Actualmente se utiliza para buscar el producto en la nube y luego actualizar con esta informacion
+     */
     public function getProductoNUBE($idProducto){
         $sucursal = Sucursal::where([
                         ['nombre','=','NUBE'],
@@ -2008,6 +2017,47 @@ class ProductoController extends Controller
         return response()->json($data);
     }
 
+
+    public function getHistorialProducto($idProducto){
+        if($idProducto){
+            $historial_producto = Historial_producto::where('idProducto',$idProducto)->get();
+
+            $data = array(
+                'code' => 200,
+                'status' => 'success',
+                'historial_producto' => $historial_producto
+            );
+            
+
+        } else{
+            $data = array(
+                'code'=> 400,
+                'status'=> 'error',
+                'message'=> 'El valor recibido es incorrecto'
+            );
+        }
+        return response()->json($data);
+    }
+    public function getHistorialProductoPrecio($idProducto){
+        if($idProducto){
+            $historial_producto = historialproductos_medidas::where('idProducto',$idProducto)->get();
+
+            $data = array(
+                'code' => 200,
+                'status' => 'success',
+                'historial_producto' => $historial_producto
+            );
+            
+
+        } else{
+            $data = array(
+                'code'=> 400,
+                'status'=> 'error',
+                'message'=> 'El valor recibido es incorrecto'
+            );
+        }
+        return response()->json($data);
+    }
 
      /****Funcion extra */
     function cuentaDecimales($numero){
