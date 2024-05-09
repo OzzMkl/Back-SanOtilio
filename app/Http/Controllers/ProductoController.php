@@ -259,7 +259,7 @@ class ProductoController extends Controller
                     $ultimoProducto = Producto::with('marca','departamento','categoria','status','almacen')
                                         ->find($producto->idProducto);
                     //Insertamos el registro del producto al historial
-                    Historial_producto::insertHistorial_producto($ultimoProducto);
+                    Historial_producto::insertHistorial_producto($ultimoProducto, $params_array['empleado']['sub']);
 
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -481,6 +481,7 @@ class ProductoController extends Controller
                         /**hisotiroa*/
                         $historialPM = new historialproductos_medidas();
                         $historialPM -> idProdMedida = $ultimaMedida;
+                        $historialPM -> idEmpleado = $idEmpleado;
                         $historialPM -> idProducto = $idProducto;
                         $historialPM -> idMedida = $paramdata['idMedida'];
                         $historialPM -> nombreMedida = $nomMedida[0]->nombre;
@@ -604,6 +605,7 @@ class ProductoController extends Controller
                         /**Historial*/
                         DB::connection($connection)->table('historialproductos_medidas')->insert([
                             'idProdMedida'=> $ultimaMedida,
+                            'idEmpleado'=> $idEmpleado,
                             'idProducto'=> $idProducto,
                             'idMedida'=> $paramdata['idMedida'],
                             'nombreMedida'=> $nomMedida,
@@ -812,7 +814,7 @@ class ProductoController extends Controller
                     $producto = Producto::with('marca','departamento','categoria','status','almacen')
                                         ->find($idProducto);
                     //agregamos actualizacion a historial
-                    Historial_producto::insertHistorial_producto($producto); 
+                    Historial_producto::insertHistorial_producto($producto, $params_array['idEmpleado']); 
 
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -1048,7 +1050,11 @@ class ProductoController extends Controller
                                     ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
                                     ->where('idProducto','=',$idProducto)
                                     ->orderBy('productos_medidas.idProdMedida','asc')
-                                    ->get();
+                                    ->get()
+                                    ->map(function ($obj) use($idEmpleado){
+                                        $obj->idEmpleado = $idEmpleado;
+                                        return $obj;
+                                    });
 
                 //insertamos en historial de precios
                 $listaPrecioArray = $actListaPrecio->toArray();
@@ -1165,7 +1171,11 @@ class ProductoController extends Controller
                                     ->join('medidas', 'medidas.idMedida','=','productos_medidas.idMedida')
                                     ->where('idProducto','=',$idProducto)
                                     ->orderBy('productos_medidas.idProdMedida','asc')
-                                    ->get();
+                                    ->get()
+                                    ->map(function ($obj) use($idEmpleado){
+                                        $obj->idEmpleado = $idEmpleado;
+                                        return $obj;
+                                    });
                 
                 $historialData = [];
 
@@ -2020,7 +2030,11 @@ class ProductoController extends Controller
 
     public function getHistorialProducto($idProducto){
         if($idProducto){
-            $historial_producto = Historial_producto::where('idProducto',$idProducto)->get();
+            $historial_producto = Historial_producto::join('empleado','empleado.idEmpleado','historial_producto.idEmpleado')
+                                    ->select('historial_producto.*',
+                                                DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                                    ->where('idProducto',$idProducto)
+                                    ->get();
 
             $data = array(
                 'code' => 200,

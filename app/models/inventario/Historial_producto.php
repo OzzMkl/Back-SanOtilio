@@ -11,6 +11,7 @@ class Historial_producto extends Model
     protected $table = 'historial_producto';
     protected $primaryKey = 'idHistorialProducto';
     protected  $fillable = [
+        'idEmpleado',
         'idProducto',
         'idMarca',
         'nombreMarca',
@@ -34,9 +35,10 @@ class Historial_producto extends Model
         'existenciaG',
     ];
 
-    public static function insertHistorial_producto($producto_with_relations){
+    public static function insertHistorial_producto($producto_with_relations,$idEmpleado){
         
         $historial = new self([
+            'idEmpleado' => $idEmpleado,
             'idProducto' => $producto_with_relations['idProducto'],
             'idMarca' => $producto_with_relations['idMarca'],
             'nombreMarca' => $producto_with_relations['marca']['nombre'],
