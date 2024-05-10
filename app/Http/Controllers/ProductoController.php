@@ -14,7 +14,6 @@ use App\Productos_medidas;
 use App\models\Monitoreo;
 use App\models\historialproductos_medidas;
 use Carbon\Carbon;
-use App\Clases\clsHelpers;
 use App\models\Empresa;
 use App\models\inventario\Historial_producto;
 
@@ -2064,7 +2063,10 @@ class ProductoController extends Controller
     }
     public function getHistorialProductoPrecio($idProducto){
         if($idProducto){
-            $historial_producto = historialproductos_medidas::where('idProducto', $idProducto)
+            $historial_producto = historialproductos_medidas::join('empleado','empleado.idEmpleado','historialproductos_medidas.idEmpleado')
+                                    ->select('historialproductos_medidas.*',
+                                                DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                                    ->where('idProducto', $idProducto)
                                     ->orderBy('created_at', 'desc')
                                     ->get();
 
