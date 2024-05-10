@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Medidas;
 use App\models\Sucursal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -447,7 +448,7 @@ class ProductoController extends Controller
 
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
-
+                    $dateNow = Carbon::now();
                     foreach($lista_precios_medida AS $param => $paramdata){
 
                         $productos_medidas = new Productos_medidas();
@@ -471,20 +472,22 @@ class ProductoController extends Controller
                         $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
                         $productos_medidas -> precio5 = $paramdata['precio5'];
                         $productos_medidas -> idStatus = 31;
-
+                        $productos_medidas -> created_at = $dateNow;
+                        $productos_medidas -> updated_at = $dateNow;
                         $productos_medidas -> save();
 
                         //consulta la ultima medida ingresada
-                        $ultimaMedida = Productos_medidas::latest('idProdMedida')->first()->idProdMedida;
-                        $nomMedida = DB::table('medidas')->where('idMedida',$paramdata['idMedida'])->get();
+                        // $ultimaMedida = Productos_medidas::latest('idProdMedida')->first()->idProdMedida;
+                        // $nomMedida = DB::table('medidas')->where('idMedida',$paramdata['idMedida'])->get();
+                        $nomMedida = Medidas::find($productos_medidas->idMedida)->value('nombre');
 
                         /**hisotiroa*/
                         $historialPM = new historialproductos_medidas();
-                        $historialPM -> idProdMedida = $ultimaMedida;
+                        $historialPM -> idProdMedida = $productos_medidas->idProdMedida;
                         $historialPM -> idEmpleado = $idEmpleado;
                         $historialPM -> idProducto = $idProducto;
                         $historialPM -> idMedida = $paramdata['idMedida'];
-                        $historialPM -> nombreMedida = $nomMedida[0]->nombre;
+                        $historialPM -> nombreMedida = $nomMedida;
                         $historialPM -> unidad = $paramdata['unidad'];
                         $historialPM -> precioCompra = $paramdata['preciocompra'];
 
@@ -504,13 +507,15 @@ class ProductoController extends Controller
                         $historialPM -> precio5 = $paramdata['precio5'];
 
                         $historialPM -> idStatus = 31;
+                        $historialPM -> created_at = $dateNow;
+                        $historialPM -> updated_at = $dateNow;
                         $historialPM -> save();
                         /** */
 
                         //insertamos el movimiento realizado
                         $monitoreo = new Monitoreo();
                         $monitoreo -> idUsuario =  $idEmpleado;
-                        $monitoreo -> accion =  "Alta de medida ".$ultimaMedida." para el producto";
+                        $monitoreo -> accion =  "Alta de medida ".$productos_medidas->idProdMedida." para el producto";
                         $monitoreo -> folioNuevo =  $idProducto;
                         $monitoreo -> pc =  $ip;
                         $monitoreo ->save();
@@ -571,7 +576,7 @@ class ProductoController extends Controller
                     DB::connection($connection)->beginTransaction();
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
-
+                    $dateNow = Carbon::now();
                     foreach($lista_precios_medida AS $param => $paramdata){
 
                         DB::connection($connection)->table('productos_medidas')->insert([
@@ -596,6 +601,8 @@ class ProductoController extends Controller
                             'precio5' => $paramdata['precio5'],
 
                             'idStatus' => 31,
+                            'created_at' => $dateNow,
+                            'updated_at' => $dateNow,
                         ]);
 
                         //consulta la ultima medida ingresada
@@ -628,6 +635,8 @@ class ProductoController extends Controller
                             'precio5'=> $paramdata['precio5'],
 
                             'idStatus' => 31,
+                            'created_at' => $dateNow,
+                            'updated_at' => $dateNow,
                         ]);
 
                         //insertamos el movimiento realizado
@@ -2034,6 +2043,7 @@ class ProductoController extends Controller
                                     ->select('historial_producto.*',
                                                 DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
                                     ->where('idProducto',$idProducto)
+                                    ->orderBy('idHistorialProducto','desc')
                                     ->get();
 
             $data = array(
@@ -2054,24 +2064,42 @@ class ProductoController extends Controller
     }
     public function getHistorialProductoPrecio($idProducto){
         if($idProducto){
-            $historial_producto = historialproductos_medidas::where('idProducto',$idProducto)->get();
+            $historial_producto = historialproductos_medidas::where('idProducto', $idProducto)
+                                    ->orderBy('created_at', 'desc')
+                                    ->get();
 
-            $data = array(
+            // Inicializamos un array vacío para almacenar los resultados agrupados por fecha
+            $historial_agrupado = [];
+
+            // Iteramos sobre los resultados y organizamos en el nuevo array por fecha
+            foreach ($historial_producto as $registro) {
+                // Convertimos la fecha de creación a un formato legible
+                $fecha_modificacion = date('Y-m-d H:i:s', strtotime($registro->created_at));
+
+                // Si la fecha aún no está presente en el array agrupado, la inicializamos
+                if (!isset($historial_agrupado[$fecha_modificacion])) {
+                    $historial_agrupado[$fecha_modificacion] = [];
+                }
+
+                // Añadimos el registro actual al array agrupado bajo la fecha correspondiente
+                $historial_agrupado[$fecha_modificacion][] = $registro;
+            }
+
+            $data = [
                 'code' => 200,
                 'status' => 'success',
-                'historial_producto' => $historial_producto
-            );
-            
-
-        } else{
-            $data = array(
+                'historial_producto_precio' => $historial_agrupado
+            ];
+        } else {
+            $data = [
                 'code'=> 400,
                 'status'=> 'error',
                 'message'=> 'El valor recibido es incorrecto'
-            );
+            ];
         }
         return response()->json($data);
     }
+
 
      /****Funcion extra */
     function cuentaDecimales($numero){
