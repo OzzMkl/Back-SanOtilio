@@ -8,7 +8,8 @@ class historialproductos_medidas extends Model
 {
     protected $table = 'historialproductos_medidas';
     protected $fillable = [
-        'idProductoMedida',
+        'idProdMedida',
+        'idEmpleado',
         'idProducto',
         'idMedida',
         'nombreMedida',
