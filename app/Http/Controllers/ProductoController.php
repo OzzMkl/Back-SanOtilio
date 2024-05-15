@@ -368,6 +368,7 @@ class ProductoController extends Controller
                         //Registramos historial
                         DB::connection($sucursal_con[$i]->connection)->table('historial_producto')->insert([
                             'idProducto' => $producto->idProducto,
+                            'idEmpleado' => $idEmpleado,
                             'idMarca' => $producto->idMarca,
                             'nombreMarca' => $producto->marca->nombre,
                             'idDep' => $producto->idDep,
@@ -640,7 +641,7 @@ class ProductoController extends Controller
 
                         //insertamos el movimiento realizado
                         DB::connection($connection)->table('monitoreo')->insert([
-                            'idUsuario'=> $ultimaMedida,
+                            'idUsuario'=> $idEmpleado,
                             'accion'=> "Alta de medida ".$ultimaMedida." para el producto",
                             'folioNuevo'=> $idProducto,
                             'pc'=> $ip,
@@ -918,6 +919,7 @@ class ProductoController extends Controller
                         //Registramos historial
                         DB::connection($connections[$i]['connection'])->table('historial_producto')->insert([
                             'idProducto' => $producto->idProducto,
+                            'idEmpleado' => $idEmpleado,
                             'idMarca' => $producto->idMarca,
                             'nombreMarca' => $producto->marca->nombre,
                             'idDep' => $producto->idDep,
@@ -2035,7 +2037,231 @@ class ProductoController extends Controller
         return response()->json($data);
     }
 
+    public function getAllProductoNUBE($type, $search){
+        $sucursal = Sucursal::where([
+                        ['nombre','=','NUBE'],
+                        ['connection','=','hostinger']
+                    ])
+                    ->first();
+        if(!empty($sucursal)){
+            try{
+                $productos = DB::connection($sucursal->connection)
+                            ->table('producto')
+                            ->join('marca', 'marca.idMarca','=','producto.idMarca')
+                            ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
+                            ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion',
+                                        'producto.existenciaG','marca.nombre as nombreMarca',
+                                        'departamentos.nombre as nombreDep')
+                            ->where('statuss',31);
+                    //ClaveExterna
+                    if($type == 1 && $search != 'null'){
+                        $productos->where('producto.claveEx','like','%'.$search.'%');
+                    }
+                    //Descripcion
+                    if($type == 2 && $search != 'null'){
+                        $productos->where('producto.descripcion','like','%'.$search.'%');
+                    }
+                    //codigo de barras
+                    if($type == 3 && $search != 'null'){
+                        $productos->where('producto.cbarras','like','%'.$search.'%');
+                    }
+                    $productos = $productos->paginate(5);
 
+                $data = array(
+                    'code'          =>  200,
+                    'status'        => 'success',
+                    'catalogo_nube'   =>  $productos
+                );
+            } catch(\Exception $e){
+                $data =  array(
+                    'code'    => 400,
+                    'status'  => 'error',
+                    'message' => 'Fallo al obtener la informacion en la sucursal',
+                    'error'   => $e
+                );
+            }
+        } else{
+            $data = array(
+                'code'=> 400,
+                'status'=> 'error',
+                'message'=> 'No se encontro el catalogo'
+            );
+        }
+
+        return response()->json($data);
+    }
+
+    public function registerProductoByNUBE(Request $request){
+
+        $json = $request -> input('json', null);
+        $params = json_decode($json);
+        $params_array = json_decode($json, true);
+
+        if( !empty($params_array)){
+            $params_array['producto'] = array_map('trim', $params_array['producto']);
+
+            $validate = Validator::make($params_array['producto'], [
+                'idMarca'           =>  'required',
+                'idDep'             =>  'required',
+                'claveEx'           =>  'required | unique:producto',
+                'descripcion'       =>  'required',
+                'stockMin'          =>  'required',
+                'stockMax'          =>  'required',
+                'tEntrega'          =>  'required',
+            ]);
+            //si falla creamos la respuesta a enviar
+            if($validate->fails()){
+                $data = array(
+                    'code'      =>  400,
+                    'status'    =>  'error',
+                    'message'   =>  'Fallo la validacion de los datos del producto',
+                    'errors'    =>  $validate->errors()
+                );
+            }else{
+                try{
+                    DB::beginTransaction();
+
+                        $producto = new Producto();
+                        $producto->idProducto = $params_array['producto']['idProducto'];
+                        $producto->idMarca = $params_array['producto']['idMarca'];
+                        $producto->idDep = $params_array['producto']['idDep'];
+                        $producto->idCat = $params_array['producto']['idCat'];
+                        $producto->claveEx = $params_array['producto']['claveEx'];
+                        $producto->cbarras = $params_array['producto']['cbarras'];
+                        $producto->descripcion = $params_array['producto']['descripcion'];
+                        $producto->stockMin = $params_array['producto']['stockMin'];
+                        $producto->stockMax = $params_array['producto']['stockMax'];
+                        $producto->imagen = $params_array['producto']['imagen'];
+                        $producto->statuss = $params_array['producto']['statuss'];
+                        $producto->ubicacion = $params_array['producto']['ubicacion'];
+                        $producto->claveSat = $params_array['producto']['claveSat'];
+                        $producto->tEntrega = $params_array['producto']['tEntrega'];
+                        $producto->idAlmacen = $params_array['producto']['idAlmacen'];
+                        $producto->existenciaG = 0;
+                        $producto -> created_at = Carbon::now();
+                        $producto -> updated_at = Carbon::now();
+                        //guardamos
+                        $producto->save();
+
+                        //Consultamos el producto insertado
+                        $productoWith = Producto::with('marca','departamento','categoria','status','almacen')
+                                            ->find($producto->idProducto);
+                        
+                        //Registramos en el historial
+                        Historial_producto::insertHistorial_producto($productoWith, $params_array['idEmpleado']);
+
+                        //obtenemos direccion ip
+                        $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+                        //insertamos el movimiento realizado
+                        $monitoreo = new Monitoreo();
+                        $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                        $monitoreo -> accion =  "Alta de producto desde catalogo";
+                        $monitoreo -> folioNuevo =  $productoWith->idProducto;
+                        $monitoreo -> pc =  $ip;
+                        $monitoreo ->save();
+
+                        //Registramos los precios
+                        foreach($params_array['lista_productosMedida'] as $param => $paramdata){
+
+                            $productos_medidas = new Productos_medidas();
+                            $productos_medidas -> idProducto = $productoWith->idProducto;
+                            $productos_medidas -> idMedida = $paramdata['idMedida'];
+                            $productos_medidas -> unidad = $paramdata['unidad'];
+                            $productos_medidas -> precioCompra = $paramdata['precioCompra'];
+
+                            $productos_medidas -> porcentaje1 = $paramdata['porcentaje1'];
+                            $productos_medidas -> precio1 = $paramdata['precio1'];
+
+                            $productos_medidas -> porcentaje2 = $paramdata['porcentaje2'];
+                            $productos_medidas -> precio2 = $paramdata['precio2'];
+
+                            $productos_medidas -> porcentaje3 = $paramdata['porcentaje3'];
+                            $productos_medidas -> precio3 = $paramdata['precio3'];
+
+                            $productos_medidas -> porcentaje4 = $paramdata['porcentaje4'];
+                            $productos_medidas -> precio4 = $paramdata['precio4'];
+
+                            $productos_medidas -> porcentaje5 = $paramdata['porcentaje5'];
+                            $productos_medidas -> precio5 = $paramdata['precio5'];
+                            $productos_medidas -> idStatus = 31;
+                            $productos_medidas -> created_at = Carbon::now();
+                            $productos_medidas -> updated_at = Carbon::now();
+                            $productos_medidas -> save();
+
+                            $nomMedida = Medidas::find($productos_medidas->idMedida)->value('nombre');
+
+                            /**hisotiroa*/
+                            $historialPM = new historialproductos_medidas();
+                            $historialPM -> idProdMedida = $productos_medidas->idProdMedida;
+                            $historialPM -> idEmpleado = $params_array['idEmpleado'];
+                            $historialPM -> idProducto = $productoWith->idProducto;
+                            $historialPM -> idMedida = $paramdata['idMedida'];
+                            $historialPM -> nombreMedida = $nomMedida;
+                            $historialPM -> unidad = $paramdata['unidad'];
+                            $historialPM -> precioCompra = $paramdata['precioCompra'];
+
+                            $historialPM -> porcentaje1 = $paramdata['porcentaje1'];
+                            $historialPM -> precio1 = $paramdata['precio1'];
+
+                            $historialPM -> porcentaje2 = $paramdata['porcentaje2'];
+                            $historialPM -> precio2 = $paramdata['precio2'];
+
+                            $historialPM -> porcentaje3 = $paramdata['porcentaje3'];
+                            $historialPM -> precio3 = $paramdata['precio3'];
+
+                            $historialPM -> porcentaje4 = $paramdata['porcentaje4'];
+                            $historialPM -> precio4 = $paramdata['precio4'];
+
+                            $historialPM -> porcentaje5 = $paramdata['porcentaje5'];
+                            $historialPM -> precio5 = $paramdata['precio5'];
+
+                            $historialPM -> idStatus = 31;
+                            $historialPM -> created_at = Carbon::now();
+                            $historialPM -> updated_at = Carbon::now();
+                            $historialPM -> save();
+                            /** */
+
+                            //insertamos el movimiento realizado
+                            $monitoreo = new Monitoreo();
+                            $monitoreo -> idUsuario =  $params_array['idEmpleado'];
+                            $monitoreo -> accion =  "Alta de medida ".$productos_medidas->idProdMedida." para el producto";
+                            $monitoreo -> folioNuevo =  $productoWith->idProducto;
+                            $monitoreo -> pc =  $ip;
+                            $monitoreo ->save();
+
+                        }
+
+                        $data = array(
+                            'code' => 200,
+                            'status' => 'success',
+                            'message' => 'Producto registrado correctamente'
+                        );
+
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'error'     => $e,
+                    );
+                }
+            }
+        } else{
+            $data = array(
+                'code' => 400,
+                'statis' => 'error',
+                'message' => 'Los valores no se recibieron correctamente.'
+            );
+        }
+        return response()->json($data);
+    }
+
+
+    /**
+     * Obtiene el historial de un producto
+     * NO ESTA PAGINADO
+     */
     public function getHistorialProducto($idProducto){
         if($idProducto){
             $historial_producto = Historial_producto::join('empleado','empleado.idEmpleado','historial_producto.idEmpleado')
@@ -2061,6 +2287,11 @@ class ProductoController extends Controller
         }
         return response()->json($data);
     }
+
+    /**
+     *  Obtiene el historial de precios de un producto
+     *  NO ESTA PAGINADO
+     */
     public function getHistorialProductoPrecio($idProducto){
         if($idProducto){
             $historial_producto = historialproductos_medidas::join('empleado','empleado.idEmpleado','historialproductos_medidas.idEmpleado')

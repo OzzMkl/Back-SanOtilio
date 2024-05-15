@@ -66,6 +66,7 @@ Route::get('/prueba', function(){
     Route::get('/api/banco/index','BancoController@index');//mostrar BANcos
     /*******PRODUCTOS */
     Route::get('/api/productos/newIndex/{type}/{search}','ProductoController@newIndex');//mostrar productos activos
+    Route::get('/api/productos/getAllProductoNUBE/{type}/{search}','ProductoController@getAllProductoNUBE');//mostrar catalogo de productos de la NUBE
     Route::get('/api/productos/index','ProductoController@index');//mostrar productos activos
     Route::get('/api/productos/indexPV','ProductoController@indexPV');//mostrar productos activos
     Route::get('/api/productos/productosDes','ProductoController@productoDes');//mostrar proveedores deshabilitados
@@ -78,6 +79,7 @@ Route::get('/prueba', function(){
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
     Route::put('/api/productos/updatePrecioProducto/{idProducto}', 'ProductoController@updatePrecioProducto');//actualizacion de los datos del producto
+    Route::post('/api/productos/registerProductoByNUBE','ProductoController@registerProductoByNUBE');
 
     
     Route::get('/api/productos/existencia/{idProducto}', 'ProductoController@existencia');
