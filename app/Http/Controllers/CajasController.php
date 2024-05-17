@@ -199,7 +199,11 @@ class CajasController extends Controller
                     $caja_movimientos->save();
 
                     //primero la buscamos
-                    $venta = Ventasg::find($idVenta);
+                    if($params_array['isCredito'] ==  true){
+                        $venta = Ventascre::find($idVenta);
+                    } else{
+                        $venta = Ventasg::find($idVenta);
+                    }
 
                     //Si la venta cuenta con saldo pendiente o ya tenia abonos
                     if($params_array['isSaldo'] == true || $params_array['tieneAbono'] == true){
@@ -269,8 +273,8 @@ class CajasController extends Controller
                     $dataVentaf = [];
                     if($venta->idStatusCaja == 3 && ($venta->idStatusEntregas == 6 || $venta->idStatusEntregas == 11)){
                         //guardamos la venta en ventas finalizadas y se elimina de ventasg
-                        $dataProductos = $this->guardaProductosVentaFinalizada($venta->idVenta);
-                        $dataVentaf = $this->guardaVentaFinalizada($venta);
+                        $dataProductos = $this->guardaProductosVentaFinalizada($venta->idVenta, $params_array['isCredito']);
+                        $dataVentaf = $this->guardaVentaFinalizada($venta, $params_array['isCredito']);
                     }
 
                     DB::commit();
@@ -617,7 +621,7 @@ class CajasController extends Controller
      * @description
      * Registra la venta en ventasf despues la elimina de ventasg
      */
-    function guardaVentaFinalizada($objVenta){
+    function guardaVentaFinalizada($objVenta, $isCredito){
         if($objVenta){
             try{
                 DB::beginTransaction();
@@ -638,9 +642,17 @@ class CajasController extends Controller
                 $venta_finalizada -> total = $objVenta -> total;
                 $venta_finalizada -> created_at = Carbon::now();
                 $venta_finalizada -> updated_at = Carbon::now();
+                if($isCredito){
+                    $venta_finalizada->idEmpleadoC = $objVenta->idEmpleadoC;
+                    $venta_finalizada->autorizaC = $objVenta->autorizaC;
+                }
                 $venta_finalizada -> save();
 
-                Ventasg::where('idVenta')->delete();
+                if($isCredito){
+                    Ventascre::where('idVenta',$objVenta->idVenta)->delete();
+                } else{
+                    Ventasg::where('idVenta',$objVenta->idVenta)->delete();
+                }
 
                 $data = array(
                     'code' => 200,
@@ -670,13 +682,18 @@ class CajasController extends Controller
      * registra los productos en productos_ventasf,
      * luego los elimina de la tabla productos_ventasg
      */
-    function guardaProductosVentaFinalizada($idVenta){
+    function guardaProductosVentaFinalizada($idVenta, $isCredito){
         if($idVenta){
             try{
                 DB::beginTransaction();
 
-                //Consultamos productos a eliminar
-                $lista_prodVen_ant = Productos_ventasg::where('idVenta',$idVenta)->get();
+                $lista_prodVen_ant = [];
+                if($isCredito){
+                    $lista_prodVen_ant = Productos_ventascre::where('idVenta',$idVenta)->get();
+                } else{
+                    //Consultamos productos a eliminar
+                    $lista_prodVen_ant = Productos_ventasg::where('idVenta',$idVenta)->get();
+                }
 
                 foreach($lista_prodVen_ant as $param => $paramdata){
                     $claveEx = Producto::select('claveEx')->where('idProducto',$paramdata['idProducto'])->value('claveEx');
@@ -694,8 +711,12 @@ class CajasController extends Controller
                     $producto_ventaf-> save();
                 }
 
-                //Eliminamos de la tabla
-                Productos_ventasg::where('idVenta',$idVenta)->delete();
+                if($isCredito){
+                    Productos_ventascre::where('idVenta',$idVenta)->delete();
+                } else{
+                    //Eliminamos de la tabla
+                    Productos_ventasg::where('idVenta',$idVenta)->delete();
+                }
 
                 $data = array(
                     'code' => 200,

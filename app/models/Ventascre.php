@@ -13,14 +13,14 @@ class Ventascre extends Model
         'cdireccion',
         'idTipoVenta',
         'autorizaV',//usuario que autorizo la venta algun jefe
-        'autorizaC',//usuario que autorizo la venta algun jefe
+        'autorizaC',//usuario que autorizo la venta A CREDITO algun jefe
         'observaciones',
         'idStatusCaja',
         'idStatusEntregas',
         'fecha',
         'idEmpleadoG',//Empleado que genero la venta
         'idEmpleadoC',//Empleado que movio a credito la venta
-        'idEmpleadoF',//Aun no se bien
+        'idEmpleadoF',//Usuarui que finalizo la venta
         'subtotal',
         'descuento',
         'total' 
