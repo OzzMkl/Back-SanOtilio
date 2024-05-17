@@ -101,7 +101,11 @@ class VentasController extends Controller
                  DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
                  DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
         ->where('ventasg.idVenta','=',$idVenta)
-        ->get();
+        ->get()
+        ->map(function ($obj) {
+            $obj->isCredito = false;
+            return $obj;
+        });
         $productosVenta = DB::table('productos_ventasg')
         ->join('producto','producto.idProducto','=','productos_ventasg.idProducto')
         ->join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ventasg.idProdMedida')
@@ -1143,13 +1147,16 @@ class VentasController extends Controller
                         DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
                         DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
                 ->where('ventascre.idVenta','=',$idVenta)
-                ->get();
+                ->first();
         $productosVenta = Productos_ventascre::
                 join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','Productos_ventascre.idProdMedida')
                 ->select('Productos_ventascre.*','Productos_ventascre.total as subtotal','historialproductos_medidas.nombreMedida')
                 ->where('Productos_ventascre.idVenta','=',$idVenta)
                 ->get();
         if(is_object($venta)){
+            //Agregamos propiedad de que es acredito
+            $venta->isCredito = true;
+
             $data = [
                 'code'          => 200,
                 'status'        => 'success',
