@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Clases\clsPDFHelpers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -399,53 +400,15 @@ class CajasController extends Controller
 
             if($venta && $productosVenta){
                 $monedaLiteral = new clsMonedaLiteral();
-
-                // Opcional: Especifica el formato de moneda si lo deseas
-                $currency = [
-                    'plural' => 'PESOS',
-                    'singular' => 'PESO',
-                    'centPlural' => 'CENTAVOS',
-                    'centSingular' => 'CENTAVO'
-                ];
                 //CREACION DEL PDF
-                $pdf = new TCPDF('P', 'MM','A4','UTF-8');
+                $pdf = new TCPDF('P', 'mm','A4',true,'UTF-8');
                 //ELIMINAMOS CABECERAS Y PIE DE PAGINA
                 $pdf-> setPrintHeader(false);
                 $pdf-> setPrintFooter(false);
                 //INSERTAMOS PAGINA
                 $pdf->AddPage();
-                //DECLARAMOS FUENTE Y TAMAÑO
-                $pdf->SetFont('helvetica', '', 18); // Establece la fuente
-                //Buscamos imagen y la decodificamos 
-                $file = base64_encode( \Storage::disk('images')->get('logo-solo2.png'));
-                //$file = base64_encode( \Storage::disk('images')->get('pe.jpg'));
-                //descodificamos y asignamos
-                $image = base64_decode($file);
-                //insertamos imagen se pone @ para especificar que es a base64
-                //              imagen,x1,y1,ancho,largo
-                $pdf->Image('@'.$image,10,9,25,25);
-                $pdf->setXY(40,8);
-                //ESCRIBIMOS
-                //        ancho,altura,texto,borde,salto de linea
-                $pdf->Cell(0, 10, $Empresa->nombreLargo, 0, 1); // Agrega un texto
-
-                $pdf->SetFont('helvetica', '', 9); // Establece la fuente
-                $pdf->setXY(45,15);
-                $pdf->Cell(0, 10, $Empresa->nombreCorto.': COLONIA '. $Empresa->colonia.', CALLE '. $Empresa->calle. ' #'. 
-                                    $Empresa->numero. ', '. $Empresa->ciudad. ', '. $Empresa->estado, 0, 1); // Agrega un texto
-
-                $pdf->setXY(60,20);
-                $pdf->Cell(0,10,'CORREOS: '. $Empresa->correo1. ', '. $Empresa->correo2);
-
-                $pdf->setXY(68,25);
-                $pdf->Cell(0,10,'TELEFONOS: '. $Empresa->telefono. ' ó '. $Empresa->telefono2. '   RFC: '. $Empresa->rfc);
-
-                $pdf->SetDrawColor(255,145,0);//insertamos color a pintar en RGB
-                $pdf->SetLineWidth(2.5);//grosor de la linea
-                $pdf->Line(10,37,200,37);//X1,Y1,X2,Y2
-
-                $pdf->SetLineWidth(5);//grosor de la linea
-                $pdf->Line(10,43,58,43);//X1,Y1,X2,Y2
+                
+                clsPDFHelpers::addHeader($pdf,$Empresa);
 
                 $pdf->SetFont('helvetica', 'B', 12); // Establece la fuente
                 $pdf->setXY(10,38);
@@ -481,85 +444,13 @@ class CajasController extends Controller
                 $pdf->SetLineWidth(2.5);//grosor de la linea
                 $pdf->Line(10,75,200,75);//X1,Y1,X2,Y2
 
-                $pdf->SetDrawColor(0,0,0);//insertamos color a pintar en RGB
-                $pdf->SetLineWidth(.2);//grosor de la linea
-
-                $pdf->SetFillColor(7, 149, 223  );//Creamos color de relleno para la tabla
-                $pdf->setXY(10,78);
-
-                //Contamos el numero de productos
-                $numRegistros = count($productosVenta);
-                //establecemos limite de productos por pagina
-                $RegistroPorPagina = 18;
-                //calculamos cuantas paginas van hacer
-                $paginas = ceil($numRegistros / $RegistroPorPagina);
-                $contRegistros = 0;
-
-
-                $pdf->SetTextColor(255, 255, 255);
-                $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
-                //INSERTAMOS CABECERAS TABLA
-                $pdf->Cell(32,10,'CLAVE EXTERNA',1,0,'C',true);
-                $pdf->Cell(75, 10, 'DESCRIPCION', 1,0,'C',true);
-                $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
-                $pdf->Cell(12, 10, 'CANT.', 1,0,'C',true);
-                $pdf->Cell(18, 10, 'PRECIO', 1,0,'C',true);
-                $pdf->Cell(16, 10, 'DESC.', 1,0,'C',true);
-                $pdf->Cell(20, 10, 'SUBTOTAL', 1,0,'C',true);
-                $pdf->Ln(); // Nueva línea3
-
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
-
-                //REALIZAMOS RECORRIDO DEL ARRAY DE PRODUCTOS
-                foreach($productosVenta as $prodC){
-                    /***
-                     * Verificamos que nuestro contador sea mayor a cero para no insertar pagina de mas
-                     * Utiliza el operador % (módulo) para verificar si el contador de registros es divisible
-                     * exactamente por el número de registros por página ($RegistroPorPagina).
-                     *  Si el resultado de esta expresión es igual a cero, significa que se ha alcanzado
-                     *  un múltiplo del número de registros por página y se necesita agregar una nueva página.
-                     */
-                    if( $contRegistros > 0 && $contRegistros % $RegistroPorPagina == 0){
-                        
-                        $pdf->AddPage();
-                        $pdf->SetTextColor(255, 255, 255);
-                        $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
-                        //CABECERAS TABLA
-                        $pdf->Cell(32,10,'CLAVE EXTERNA',1,0,'C',true);
-                        $pdf->Cell(75, 10, 'DESCRIPCION', 1,0,'C',true);
-                        $pdf->Cell(16, 10, 'MEDIDA', 1,0,'C',true);
-                        $pdf->Cell(12, 10, 'CANT.', 1,0,'C',true);
-                        $pdf->Cell(18, 10, 'PRECIO', 1,0,'C',true);
-                        $pdf->Cell(16, 10, 'DESC.', 1,0,'C',true);
-                        $pdf->Cell(20, 10, 'SUBTOTAL', 1,0,'C',true);
-                        $pdf->Ln(); // Nueva línea
-                    }
-                        
-                        $pdf->SetTextColor(0, 0, 0);
-                        $pdf->SetFont('helvetica', '', 9); // Establece la fuente
-                        $pdf->MultiCell(32,10,$prodC->claveEx,1,'C',false,0);
-                        $pdf->MultiCell(75,10,$prodC->descripcion,1,'C',false,0);
-                        $pdf->MultiCell(16,10,$prodC->nombreMedida,1,'C',false,0);
-                        $pdf->MultiCell(12,10,$prodC->cantidad,1,'C',false,0);
-                        $pdf->MultiCell(18,10,'$'. number_format($prodC->precio,2),1,'C',false,0);
-                        $pdf->MultiCell(16,10,'$'. number_format($prodC->descuento,2),1,'C',false,0);
-                        $pdf->MultiCell(20,10,'$'. number_format($prodC->subtotal,2),1,'C',false,0);
-                        $pdf->Ln(); // Nueva línea
-
-                        if($contRegistros == 18){
-                            $RegistroPorPagina = 25;
-                            $contRegistros = $contRegistros + 7;
-                        }
-
-                        $contRegistros++;
-                }
+                clsPDFHelpers::addPDFTableVentas($pdf, $productosVenta);
 
                 $posY= $pdf->getY();
 
                 if($posY > 241){
                     $pdf->AddPage();
-                    $posY = 0;
+                    // $posY = 0;
                 }
 
                 $pdf->setXY(145,$posY+10);
@@ -606,15 +497,13 @@ class CajasController extends Controller
 
                 
                 $contenido = $pdf->Output('', 'I'); // Descarga el PDF con el nombre 'mi-archivo-pdf.pdf'
-                $nombrepdf = 'mipdf.pdf';
             }
             
         } else{
            return response();
         }
         return response($contenido)
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', "attachment; filename=\"$nombrepdf\"");
+            ->header('Content-Type', 'application/pdf');
     }
 
     /**
