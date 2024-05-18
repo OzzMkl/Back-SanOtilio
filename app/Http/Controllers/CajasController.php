@@ -105,7 +105,7 @@ class CajasController extends Controller
                 //buscamos
                 $caja = Caja::find($params_array['idCaja']);
                 //actualizamos el valor
-                $caja->horaF = date("Y-m-d H:i:s");
+                $caja->horaF = Carbon::now();
                 //guardamos
                 $caja->save();
 
@@ -310,12 +310,18 @@ class CajasController extends Controller
     //trae los id de las cajas que no tienen horafinal registrada
     //dando a entender que la sesion de la caja sigue activa
     public function verificaSesionesCaja(){
-        $caja = DB::table('caja')
-            ->join('empleado','empleado.idEmpleado','caja.idEmpleado')
-            ->select('caja.*',
-            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
-            ->where('horaF',null)
-            ->get();
+        $caja = Caja::with(['empleado' => function ($query) {
+            $query->select('nombre');
+            $query->first();
+                    }])
+                    ->whereNull('horaF')
+                    ->get();
+        // DB::table('caja')
+        //     ->join('empleado','empleado.idEmpleado','caja.idEmpleado')
+        //     ->select('caja.*',
+        //     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+        //     ->where('horaF',null)
+        //     ->get();
 
         return response()->json([
             'code'  => 200,
@@ -372,6 +378,10 @@ class CajasController extends Controller
         ]);    
     }
 
+    /**
+     * Creacion de pdf para las ventas
+     * Actualmente su uso aplica solo para el modulo de CAJAS
+     */
     public function generatePDF($idVenta){
 
         if($idVenta){
@@ -504,6 +514,10 @@ class CajasController extends Controller
         }
         return response($contenido)
             ->header('Content-Type', 'application/pdf');
+    }
+
+    public function generatePDF_CorteCajas(){
+
     }
 
     /**
