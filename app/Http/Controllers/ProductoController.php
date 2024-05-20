@@ -1395,14 +1395,13 @@ class ProductoController extends Controller
 
         $igualMedidaMenor = 0;
         $lugar = 0;
-
         /**INICIAMOS CONVERSION */
         //verificamos si el producto tiene una medida
         if($count == 1){
             $igualMedidaMenor = $cantidad;
         } else{ //Desoues de dos medidas buscamos la posicion de la meida en la que se ingreso
             //Recorremos la lista de  productos medidas (listaPM)
-            while( $idProdMedida != $listaPM[$lugar]['attributes']['idProdMedida'] ){
+            while( $idProdMedida != $listaPM[$lugar]->idProdMedida ){
                 $lugar++;
             }
             if($lugar == $count-1){ //Si la medida a buscar es la mas baja se deja igual
@@ -1411,14 +1410,14 @@ class ProductoController extends Controller
             } elseif($lugar == 0){//Medida mas alta
                 $igualMedidaMenor = $cantidad;
                 while($lugar < $count){
-                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]->unidad;
                     $lugar++;
                 }
             } elseif($lugar > 0 && $lugar < $count-1){//medida intermedias
                 $igualMedidaMenor = $cantidad;
                 $count--;
                 while($lugar < $count){
-                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]->unidad;
                     $lugar++;
                 }
             }
