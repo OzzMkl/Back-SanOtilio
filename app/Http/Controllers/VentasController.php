@@ -775,9 +775,9 @@ class VentasController extends Controller
                                  ->get();
 
             //obtenemos direccion ip
-            $ip = $_SERVER['REMOTE_ADDR'];
+            $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);            
 
-            $datos_imp = Impresoras::where('ipVentas','=',$ip)
+            $datos_imp = Impresoras::where('pcVentas','=',$ip)
                             ->latest('idImpresora')
                             ->first();
 
@@ -880,10 +880,10 @@ class VentasController extends Controller
                     ->first();
 
         //obtenemos direccion ip
-        $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);            
         
         //Informacion de impresoras
-        $datos_imp = Impresoras::where('ipVentas','=',$ip)
+        $datos_imp = Impresoras::where('pcVentas','=',$ip)
                             ->latest('idImpresora')
                             ->first();
 
