@@ -331,53 +331,60 @@ class ClienteController extends Controller
              $params_array = array_map('trim', $params_array);
 
             //obtenemos la informacion antes de actualizar
-            $antCliente = Cliente::where('idCliente',$idCliente)->get();
-            //actualizamos
-            $cliente = Cliente::where('idCliente',$idCliente)->update([
-                'nombre' => $params_array['nombre'],
-                'aPaterno' => $params_array['aPaterno'],
-                'aMaterno' => $params_array['aMaterno'],
-                'rfc' => $params_array['rfc'],
-                'correo' => $params_array['correo'],
-                'credito' => $params_array['credito'],
-                //'idStatus' => $params_array['nombre'],
-                'idTipo' => $params_array['idTipo']
-            ]);
-            //consultamos el cliente ya actualizado
-            $newCliente = Cliente::where('idCliente',$idCliente)->get();
+            $antCliente = Cliente::find($idCliente);
 
-            //obtenemos direccion ip
-            $ip = $_SERVER['REMOTE_ADDR'];
-            /******* agregar codigo que verifica que se modifico */
-            foreach($antCliente[0]['attributes'] as $clave => $valor){
-                foreach($newCliente[0]['attributes'] as $clave2 => $valor2){
+            if($antCliente){
+                
+                //actualizamos
+                Cliente::where('idCliente',$idCliente)->update([
+                    'nombre' => $params_array['nombre'],
+                    'aPaterno' => $params_array['aPaterno'],
+                    'aMaterno' => $params_array['aMaterno'],
+                    'rfc' => $params_array['rfc'],
+                    'correo' => $params_array['correo'],
+                    'credito' => $params_array['credito'],
+                    //'idStatus' => $params_array['nombre'],
+                    'idTipo' => $params_array['idTipo']
+                ]);
 
-                    if($clave == $clave2 && $valor != $valor2){
+                //consultamos el cliente ya actualizado
+                $newCliente = Cliente::find($idCliente);
 
+                //obtenemos direccion ip
+                $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+                /******* agregar codigo que verifica que se modifico */
+                foreach ($antCliente->getAttributes() as $clave => $valor) {
+                    if (array_key_exists($clave, $newCliente->getAttributes()) && $valor != $newCliente->$clave) {
                         $monitoreo = new Monitoreo();
-                        $monitoreo -> idUsuario = $params_array['sub'];
-                        $monitoreo -> accion = "Modificacion de ".$clave." anterior: ".$valor." nuevo: ".$valor2." del cliente";
-                        $monitoreo -> folioNuevo = $idCliente;
-                        $monitoreo -> pc = $ip;
-                        $monitoreo ->save();
+                        $monitoreo->idUsuario = $params_array['sub'];
+                        $monitoreo->accion = "Modificación de $clave anterior: $valor nuevo: " . $newCliente->$clave . " del cliente";
+                        $monitoreo->folioNuevo = $idCliente;
+                        $monitoreo->pc = $ip;
+                        $monitoreo->save();
                     }
                 }
+                /******* */
+                //insertamos movimiento en monitoreo
+                $monitoreo = new Monitoreo();
+                $monitoreo -> idUsuario =  $params_array['sub'];
+                $monitoreo -> accion =  "Modificacion de cliente";
+                $monitoreo -> folioNuevo =  $idCliente;
+                $monitoreo -> pc =  $ip;
+                $monitoreo ->save();
 
+                $data = array(
+                    'code'         =>  200,
+                    'status'       =>  'success',
+                    'cliente'    =>  $params_array
+                ); 
+                
+            } else{
+                $data = [
+                    'code'    => 404,
+                    'status'  => 'error',
+                    'message' => 'Cliente no encontrado'
+                ];
             }
-            /******* */
-            //insertamos movimiento en monitoreo
-            $monitoreo = new Monitoreo();
-            $monitoreo -> idUsuario =  $params_array['sub'];
-            $monitoreo -> accion =  "Modificacion de cliente";
-            $monitoreo -> folioNuevo =  $idCliente;
-            $monitoreo -> pc =  $ip;
-            $monitoreo ->save();
-
-             $data = array(
-                'code'         =>  200,
-                'status'       =>  'success',
-                'cliente'    =>  $params_array
-            );
 
         }else{
             $data = array(
@@ -398,7 +405,7 @@ class ClienteController extends Controller
             Cdireccion::where('idCliente',$idCliente)->delete();
             
             //realimos la alta de las direcciones
-            foreach($params_array AS $param => $paramdata){
+            foreach($params_array['cdireccion'] AS $param => $paramdata){
                 $cdireccion = new Cdireccion();//creamos el modelo
                 $cdireccion-> idCliente = $idCliente;//asignamos el id desde el parametro que recibimos
                 $cdireccion-> pais = $paramdata['pais'];//asginamos segun el recorrido
