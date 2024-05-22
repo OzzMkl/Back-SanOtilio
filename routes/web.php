@@ -225,7 +225,7 @@ Route::get('/prueba', function(){
 
     /*******CAJAS */
     Route::post('/api/cajas/aperturaCaja','CajasController@aperturaCaja');
-    Route::put('/api/cajas/cierreCaja','CajasController@cierreCaja');
+    Route::post('/api/cajas/cierreCaja','CajasController@cierreCaja');
     Route::get('/api/cajas/verificarCaja/{idEmpleado}','CajasController@verificarCaja');
     Route::post('/api/cajas/cobroVenta/{idVenta}','CajasController@cobroVenta');
     Route::get('/api/cajas/verificaSesionesCaja','CajasController@verificaSesionesCaja');
@@ -234,6 +234,7 @@ Route::get('/prueba', function(){
     Route::get('/api/cajas/abonos_ventas/{idVenta}','CajasController@abonos_ventas');
     Route::get('/api/cajas/generatePDF/{idVenta}','CajasController@generatePDF');
     Route::post('/api/cajas/guardaVentaCredito','CajasController@guardaVentaCredito');
+    Route::post('/api/cajas/generatePDF_CorteCajas','CajasController@generatePDF_CorteCajas');
 
 
     /******ENTREGAS */
