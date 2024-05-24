@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Clases\clsPDFHelpers;
+use App\Empleado;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ use App\models\Ventasg;
 use App\models\Ventasf;
 use App\models\Ventascre;
 use App\models\Abono_venta;
+use Illuminate\Support\Facades\Storage;
 use Validator;
 use App\models\Empresa;
 use App\models\Productos_ventasg;
@@ -86,11 +88,10 @@ class CajasController extends Controller
     public function cierreCaja(Request $request){
         $json = $request -> input('json', null);
         $params_array = json_decode($json, true);
-
+        // dd($params_array);
         if(!empty($params_array)){
-            $params_array = array_map('trim',$params_array);
 
-            $validate = Validator::make($params_array,[
+            $validate = Validator::make($params_array['caja'],[
                 'idCaja'    => 'required'
             ]);
 
@@ -102,19 +103,51 @@ class CajasController extends Controller
                     'errors'    => $validate->errors()
                 );
             } else{
-                //buscamos
-                $caja = Caja::find($params_array['idCaja']);
-                //actualizamos el valor
-                $caja->horaF = Carbon::now();
-                //guardamos
-                $caja->save();
+                try{
+                    DB::beginTransaction();
 
-                $data= array(
-                    'code'  => 200,
-                    'status'    =>'success',
-                    'caja' => $caja
-                );
+                    $caja = Caja::findOrFail($params_array['caja']['idCaja']);
+                    
+                    if($caja->horaF == null){
+                        $caja->horaF = Carbon::now();
+                        $caja->save();
+                        //Insertamos movimiento
+                        Monitoreo::insertMonitoreo(
+                            $params_array['idEmpleado'],
+                            "Cierre de caja",
+                            null,
+                            $params_array['caja']['idCaja'],
+                            null
+                        );
+                        //guardamos imagen
+                        $img_data = base64_decode($params_array['imgChart']);
+                        $img_name = "chart-corte-caja.png";
+                        Storage::disk('public')->put('images/'.$img_name,$img_data);
+                        //generamos pdf
+                        $dataPdf = $this->generatePDF_CorteCajas($params_array['idEmpleado'], $params_array['caja'], $params_array['totales'], $img_name);
 
+                        //mandamos respuesta
+                        $data = array(
+                            'code' => 200,
+                            'status' => 'success',
+                            'pdf' => base64_encode($dataPdf)
+                        );
+                    } else{
+                        $data = array(
+                            'code' => 400,
+                            'status' => 'error',
+                        );
+                    }
+                    
+                    DB::commit();
+                } catch (\Exception $e){
+                    DB::rollBack();
+                    $data = array(
+                        'code'      => 400,
+                        'status'    => 'Error',
+                        'error'     => $e,
+                    );
+                }
             }
 
         } else{
@@ -310,18 +343,9 @@ class CajasController extends Controller
     //trae los id de las cajas que no tienen horafinal registrada
     //dando a entender que la sesion de la caja sigue activa
     public function verificaSesionesCaja(){
-        $caja = Caja::with(['empleado' => function ($query) {
-            $query->select('nombre');
-            $query->first();
-                    }])
+        $caja = Caja::with('empleado')
                     ->whereNull('horaF')
                     ->get();
-        // DB::table('caja')
-        //     ->join('empleado','empleado.idEmpleado','caja.idEmpleado')
-        //     ->select('caja.*',
-        //     DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
-        //     ->where('horaF',null)
-        //     ->get();
 
         return response()->json([
             'code'  => 200,
@@ -334,17 +358,78 @@ class CajasController extends Controller
      * que se realizaron de acuerdo al idCaja
      */
     public function movimientosSesionCaja($idCaja){
-        $caja = DB::table('caja_movimientos')
-            ->join('tipo_movimiento','tipo_movimiento.idTipo','caja_movimientos.idTipoMov')
-            ->join('tipo_pago','tipo_pago.idt','caja_movimientos.idTipoPago')
-            ->select('caja_movimientos.*','tipo_movimiento.nombre as nombreTipoMov','tipo_pago.tipo as nombreTipoPago')
-            ->where('idCaja',$idCaja)
-            ->get();
+        $caja = Caja::find($idCaja);
+        $caja_mov = Caja_movimientos::with('tipo_movimiento','tipo_pago')
+                    ->where('idCaja',$caja->idCaja)
+                    ->get();
+
+            $totales = array(
+                'total_cobros' => 0,
+
+                'total_efectivo' => 0,
+                'No_efectivo' => 0,
+
+                'total_tarjeta' => 0,
+                'No_tarjeta' => 0,
+
+                'total_transferencia' => 0,
+                'No_transferencia' => 0,
+
+                'total_credito' => 0,
+                'No_credito' => 0,
+
+                'total_cheque' => 0,
+                'No_cheque' => 0,
+
+                'total_deposito' => 0,
+                'No_deposito' => 0,
+
+                'total_cambio' => 0,
+                'total_final' => 0,
+            );
+
+            foreach($caja_mov as $mov){
+                if($mov->idTipoMov == 1 || $mov->idTipoMov == 2){
+                    $totales['total_cobros'] += $mov->pagoCliente;
+                    // $suma_cobros += $mov->pagoCliente;
+                }
+                if($mov->idTipoPago == 1){
+                    $totales['total_efectivo'] += $mov->pagoCliente;
+                    $totales['No_efectivo'] ++;
+                }
+                if($mov->idTipoPago == 2){
+                    $totales['total_tarjeta'] += $mov->pagoCliente;
+                    $totales['No_tarjeta'] ++;
+                }
+                if($mov->idTipoPago == 3){
+                    $totales['total_transferencia'] += $mov->pagoCliente;
+                    $totales['No_transferencia'] ++;
+                }
+                if($mov->idTipoPago == 4){
+                    $totales['total_credito'] += $mov->pagoCliente;
+                    $totales['No_credito'] ++;
+                }
+                if($mov->idTipoPago == 5){
+                    $totales['total_cheque'] += $mov->pagoCliente;
+                    $totales['No_cheque'] ++;
+                }
+                if($mov->idTipoPago == 6){
+                    $totales['total_deposito'] += $mov->pagoCliente;
+                    $totales['No_deposito'] ++;
+                }
+                if($mov->cambioCliente > 0){
+                    $totales['total_cambio'] += $mov->cambioCliente;
+                }
+            }
+            
+            $totales['total_final'] =( $caja->fondo + $totales['total_cobros']) - $totales['total_cambio'];
 
         return response()->json([
             'code'  => 200,
             'status'    => 'success',
-            'caja'  => $caja
+            'caja' => $caja,
+            'caja_mov'  => $caja_mov,
+            'totales' => $totales,
         ]);
     }
 
@@ -516,8 +601,128 @@ class CajasController extends Controller
             ->header('Content-Type', 'application/pdf');
     }
 
-    public function generatePDF_CorteCajas(){
+    public function generatePDF_CorteCajas($idEmpleadoCierre, $caja, $totales,$img_name){
+        // dd( );
+        if($idEmpleadoCierre && $caja && $totales && $img_name){
+            $file = base64_encode(Storage::disk('public')->get('images/'.$img_name));
+            $image = base64_decode($file);
+            $Empresa = Empresa::first();
 
+            $nameEmpleadoCierre = Empleado::where('idEmpleado',$idEmpleadoCierre)
+                        ->selectRaw("CONCAT(nombre, ' ', aPaterno, ' ', aMaterno) as full_name")
+                        ->first();
+
+            $nameCajero = Empleado::where('idEmpleado',$caja['idEmpleado'])
+                        ->selectRaw("CONCAT(nombre, ' ', aPaterno, ' ', aMaterno) as full_name")
+                        ->first();
+
+            $fecha = Carbon::now()->toDateTimeString();
+            // $img_decode = base64_decode($img); 
+
+            $pdf = new TCPDF('P', 'mm','A4',true,'UTF-8');
+            //ELIMINAMOS CABECERAS Y PIE DE PAGINA
+            $pdf-> setPrintHeader(false);
+            $pdf-> setPrintFooter(false);
+            //INSERTAMOS PAGINA
+            $pdf->AddPage();
+            
+            clsPDFHelpers::addHeader($pdf,$Empresa);
+
+            $pdf->SetFont('helvetica', 'B', 12); // Establece la fuente
+            $pdf->setXY(10,38);
+            $pdf->Cell(0, 10, 'CORTE DE CAJA', 0, 1); // Agrega un texto
+            $pdf->SetFont('helvetica', '', 9); // Establece la fuente
+            $pdf->setXY(60,38);
+            $pdf->Cell(0, 10, 'GENERA CORTE: '. strtoupper($nameEmpleadoCierre->full_name), 0, 1); // Agrega un texto
+            
+            $pdf->setXY(170,38);
+            $pdf->Cell(0, 10, 'FECHA: '. substr($fecha,0,10), 0, 1); // Agrega un texto
+
+            $pdf->setXY(60,43);
+            $pdf->Cell(0, 10, 'CAJERO: '. strtoupper($nameCajero->full_name), 0, 1); // Agrega un texto
+
+            $pdf->setXY(170,43);
+            $pdf->Cell(0, 10, 'HORA: '. substr($fecha, 11, 8), 0, 1); // Agrega un text
+
+            $pdf->SetDrawColor(255,145,0);//insertamos color a pintar en RGB
+            $pdf->SetLineWidth(2.5);//grosor de la linea
+            $pdf->Line(10,52,200,52);//X1,Y1,X2,Y2
+
+            $pdf->Image('@'.$image,95,55,100,80);
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 60, 58, 60); // X1, Y1, X2, Y2
+            $pdf->setXY(10,55);
+            $pdf->Cell(0, 10, 'EFECTIVO', 0, 1); // Agrega un texto
+            $pdf->setXY(60,55);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($totales['total_efectivo'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 70, 58, 70); // X1, Y1, X2, Y2
+            $pdf->setXY(10,65);
+            $pdf->Cell(0, 10, 'TARJETA', 0, 1); // Agrega un texto
+            $pdf->setXY(60,65);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($totales['total_tarjeta'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 80, 58, 80); // X1, Y1, X2, Y2
+            $pdf->setXY(10,75);
+            $pdf->Cell(0, 10, 'TRANSFERENCIA', 0, 1); // Agrega un texto
+            $pdf->setXY(60,75);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($totales['total_transferencia'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 90, 58, 90); // X1, Y1, X2, Y2
+            $pdf->setXY(10,85);
+            $pdf->Cell(0, 10, 'CREDITO', 0, 1); // Agrega un texto
+            $pdf->setXY(60,85);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($totales['total_credito'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 100, 58, 100); // X1, Y1, X2, Y2
+            $pdf->setXY(10,95);
+            $pdf->Cell(0, 10, 'CHEQUE', 0, 1); // Agrega un texto
+            $pdf->setXY(60,95);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($totales['total_cheque'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 110, 58, 110); // X1, Y1, X2, Y2
+            $pdf->setXY(10,105);
+            $pdf->Cell(0, 10, 'DEPOSITO', 0, 1); // Agrega un texto
+            $pdf->setXY(60,105);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($totales['total_deposito'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(5); // grosor de la línea
+            $pdf->Line(10, 120, 58, 120); // X1, Y1, X2, Y2
+            $pdf->setXY(10,115);
+            $pdf->Cell(0, 10, 'FONDO', 0, 1); // Agrega un texto
+            $pdf->setXY(60,115);
+            $pdf->Cell(0, 10, 'TOTAL: $'. number_format($caja['fondo'],2), 0, 1); // Agrega un texto
+
+            
+
+            $pdf->SetLineWidth(2.5); // grosor de la línea
+            $pdf->Line(150, 140, 200, 140); // X1, Y1, X2, Y2
+
+            $pdf->setXY(150,140);
+            $pdf->Cell(0, 10, 'Saldo inicial: $'. number_format($caja['fondo'],2), 0, 1); // Agrega un texto
+            $pdf->setXY(150,145);
+            $pdf->Cell(0, 10, 'Total efectivo: $'. number_format($totales['total_efectivo'],2), 0, 1); // Agrega un texto
+            $pdf->setXY(150,150);
+            $pdf->Cell(0, 10, 'Total neto: $'. number_format($totales['total_final'],2), 0, 1); // Agrega un texto
+
+            $pdf->SetLineWidth(2.5); // grosor de la línea
+            $pdf->Line(150, 160, 200, 160); // X1, Y1, X2, Y2
+
+
+            $contenido = $pdf->Output('', 'I');
+        } else{
+            return response();
+        }
+        return response($contenido)
+                ->header('Content-Type', 'application/pdf');
+        
+        // return $contenido;
     }
 
     /**
