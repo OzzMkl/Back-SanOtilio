@@ -189,7 +189,7 @@ class CompraController extends Controller
                         }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                             $igualMedidaMenor = $cantidadC;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]->unidad;
                                 $lugar++;
                                 //echo $igualMedidaMenor;
                             }
@@ -199,7 +199,7 @@ class CompraController extends Controller
                             $count--;
                             //echo $count;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]->unidad;
                                 $lugar++;
                             }
                             $Productos_compra-> igualMedidaMenor = $igualMedidaMenor;
@@ -336,7 +336,7 @@ class CompraController extends Controller
                         }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                             $igualMedidaMenor = $cantidadC;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]->unidad;
                                 $lugar++;
                                 //echo $igualMedidaMenor;
                             }
@@ -346,7 +346,7 @@ class CompraController extends Controller
                             $count--;
                             //echo $count;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]->unidad;
                                 $lugar++;
                             }
                             $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
@@ -512,7 +512,7 @@ class CompraController extends Controller
                         }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                             $igualMedidaMenor = $cantidadC;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]->unidad;
                                 $lugar++;
                                 //echo $igualMedidaMenor;
                             }
@@ -522,7 +522,7 @@ class CompraController extends Controller
                             $count--;
                             //echo $count;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]->unidad;
                                 $lugar++;
                             }
                             $Producto -> existenciaG = $Producto -> existenciaG + $igualMedidaMenor;
@@ -772,7 +772,7 @@ class CompraController extends Controller
                     DB::enableQueryLog();
 
                     //Compraracion de datos para saber que cambios se realizaron
-                    $antCompra = Compras::where('idCompra',$params_array['idCompra'])->get();
+                    $antCompra = Compras::find($params_array['idCompra']);
 
                     //actualizamos
                     $Compra = Compras::where('idCompra',$params_array['idCompra'])->update([
@@ -788,26 +788,27 @@ class CompraController extends Controller
                     ]);
                     
                     //consultamos la compra que se actualizo                                
-                    $compra = Compras::where('idCompra',$params_array['idCompra'])->get();
+                    $compra = Compras::find($params_array['idCompra']);
                     
                     //obtenemos direccion ip
                     $ip = $_SERVER['REMOTE_ADDR'];
                     
                     //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
-                    foreach($antCompra[0]['attributes'] as $clave => $valor){
-                        foreach($compra[0]['attributes'] as $clave2 => $valor2){
+                    foreach($antCompra->getAttributes() as $clave => $valor){
+                        //foreach($compra[0]['attributes'] as $clave2 => $valor2){
                            //verificamos que la clave sea igua ejem: claveEx == claveEx
                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                           if($clave == $clave2 && $valor !=  $valor2){
+                           //if($clave == $clave2 && $valor !=  $valor2){
+                            if(array_key_exists($clave,$compra->getAttributes()) && $valor != $compra->$clave){
                                //insertamos el movimiento realizado
                                $monitoreo = new Monitoreo();
                                $monitoreo -> idUsuario =  $params_array['sub'];
-                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la compra";
+                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$compra->$clave." de la compra";
                                $monitoreo -> folioNuevo =  $params_array['idCompra'];
                                $monitoreo -> pc =  $ip;
                                $monitoreo ->save();
                            }
-                        }
+                        //}
                     }
 
 
@@ -933,7 +934,7 @@ class CompraController extends Controller
                         }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                             $igualMedidaMenor = $cantidadC;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]->unidad;
                                 $lugar++;
                                 //echo $igualMedidaMenor;
                             }
@@ -943,7 +944,7 @@ class CompraController extends Controller
                             $count--;
                             //echo $count;
                             while($lugar < $count ){
-                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]->unidad;
                                 $lugar++;
                             }
                             $Productos_compra-> igualMedidaMenor = $igualMedidaMenor;

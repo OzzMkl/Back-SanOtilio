@@ -570,10 +570,8 @@ class RequisicionController extends Controller
 
                     //recorremos la requisicion para ver que atributo cambio y asi guardar la modificacion
                     foreach($antReq->getAttributes() as $clave => $valor){
-                        //foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
                            //verificamos que la clave sea igua ejem: claveEx == claveEx
                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                           //if($clave == $clave2 && $valor !=  $valor2){
                             if(array_key_exists($clave,$requisicion->getAttributes()) && $valor != $requisicion->$clave){
                                //insertamos el movimiento realizado
                                $monitoreo = new Monitoreo();
@@ -582,8 +580,7 @@ class RequisicionController extends Controller
                                $monitoreo -> folioNuevo =  $params_array['idReq'];
                                $monitoreo -> pc =  $ip;
                                $monitoreo ->save();
-                           }
-                        //}             
+                           }   
                     }
 
 
@@ -678,7 +675,7 @@ class RequisicionController extends Controller
                 DB::beginTransaction();
                 DB::enableQueryLog();
                 //Comparacion de datos para saber que cambios se realizaron
-                $antReq = Requisiciones::where('idReq',$idReq)->get();
+                $antReq = Requisiciones::find($idReq);
 
                 //actualizamos
                 $Requisicion = Requisiciones::where('idReq',$idReq)->update([
@@ -686,26 +683,25 @@ class RequisicionController extends Controller
                 ]);
 
                 //consultamos la requisicion que se actualizo
-                $requisicion = Requisiciones::where('idReq',$idReq)->get();
+                $requisicion = Requisiciones::find($idReq)  ;
 
                 //obtenemos direccion ip
                 $ip = $_SERVER['REMOTE_ADDR'];
 
                 //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
-                foreach($antReq[0]['attributes'] as $clave => $valor){
-                    foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
+                foreach($antReq->getAttributes() as $clave => $valor){
                        //verificamos que la clave sea igua ejem: claveEx == claveEx
                        // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                       if($clave == $clave2 && $valor !=  $valor2){
+                       if(array_key_exists($clave,$requisicion->getAttributes()) && $valor != $requisicion->$clave){
                            //insertamos el movimiento realizado
                            $monitoreo = new Monitoreo();
                            $monitoreo -> idUsuario =  $idEmpleado;
-                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la requiscion";
+                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$requisicion->$clave." de la requiscion";
                            $monitoreo -> folioNuevo =  $idReq;
                            $monitoreo -> pc =  $ip;
                            $monitoreo ->save();
                        }
-                    }
+                    
                 }
 
                 //insertamos el movimiento que se hizo
@@ -877,7 +873,7 @@ class RequisicionController extends Controller
                 DB::beginTransaction();
                 DB::enableQueryLog();
                 //Comparacion de datos para saber que cambios se realizaron
-                $antReq = Requisiciones::where('idReq',$idReq)->get();
+                $antReq = Requisiciones::find($idReq);
 
                 //actualizamos
                 $Requisicion = Requisiciones::where('idReq',$idReq)->update([
@@ -885,26 +881,24 @@ class RequisicionController extends Controller
                 ]);
 
                 //consultamos la requisicion que se actualizo
-                $requisicion = Requisiciones::where('idReq',$idReq)->get();
+                $requisicion = Requisiciones::find($idReq)  ;
 
                 //obtenemos direccion ip|
                 $ip = $_SERVER['REMOTE_ADDR'];
 
                 //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
-                foreach($antReq[0]['attributes'] as $clave => $valor){
-                    foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
+                foreach($antReq->getAttributes() as $clave => $valor){
                        //verificamos que la clave sea igua ejem: claveEx == claveEx
                        // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                       if($clave == $clave2 && $valor !=  $valor2){
+                       if(array_key_exists($clave,$requisicion->getAttributes()) && $valor != $requisicion->$clave){
                            //insertamos el movimiento realizado
                            $monitoreo = new Monitoreo();
                            $monitoreo -> idUsuario =  $idEmpleado;
-                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la requiscion";
+                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$requisicion->$clave." de la requiscion";
                            $monitoreo -> folioNuevo =  $idReq;
                            $monitoreo -> pc =  $ip;
                            $monitoreo ->save();
-                       }
-                    }
+                       }            
                 }
 
                 //insertamos el movimiento que se hizo
@@ -942,7 +936,7 @@ class RequisicionController extends Controller
                 DB::beginTransaction();
                 DB::enableQueryLog();
                 //Comparacion de datos para saber que cambios se realizaron
-                $antReq = Requisiciones::where('idReq',$idReq)->get();
+                $antReq = Requisiciones::find($idReq);
 
                 //actualizamos
                 $Requisicion = Requisiciones::where('idReq',$idReq)->update([
@@ -950,26 +944,25 @@ class RequisicionController extends Controller
                 ]);
 
                 //consultamos la requisicion que se actualizo
-                $requisicion = Requisiciones::where('idReq',$idReq)->get();
+                $requisicion = Requisiciones::find($idReq)  ;
 
                 //obtenemos direccion ip
                 $ip = $_SERVER['REMOTE_ADDR'];
 
                 //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
-                foreach($antReq[0]['attributes'] as $clave => $valor){
-                    foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
+                foreach($antReq->getAttributes() as $clave => $valor){
                        //verificamos que la clave sea igua ejem: claveEx == claveEx
                        // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                       if($clave == $clave2 && $valor !=  $valor2){
-                           //insertamos el movimiento realizado
+                        if(array_key_exists($clave,$requisicion->getAttributes()) && $valor != $requisicion->$clave){
+                            //insertamos el movimiento realizado
                            $monitoreo = new Monitoreo();
                            $monitoreo -> idUsuario =  $idEmpleado;
-                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la requiscion";
+                           $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$requisicion->$clave." de la requiscion";
                            $monitoreo -> folioNuevo =  $idReq;
                            $monitoreo -> pc =  $ip;
                            $monitoreo ->save();
                        }
-                    }
+                    
                 }
 
                 //insertamos el movimiento que se hizo

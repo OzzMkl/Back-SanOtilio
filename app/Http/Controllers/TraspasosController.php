@@ -193,6 +193,9 @@ class TraspasosController extends Controller
                 //if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
                 if($connection!=NULL  && $params_array['tipoTraspaso'] == 'Envia'){
                     $dataRegistroExternos = $this->registerTraspasoExterno($Traspaso,$params_array['traspaso']['sucursalR']);
+                    
+                }else{
+
                 }
 
                 /**FIN DE INSERCION EN SUCRSAL DESTINO */
@@ -200,15 +203,26 @@ class TraspasosController extends Controller
 
 
                 DB::commit();
+                if($connection!=NULL  && $params_array['tipoTraspaso'] == 'Envia'){
+                    $data = array(
+                        'code' => 200,
+                        'status' => 'success',
+                        'message' => 'Traspaso registrado correctamente',
+                        'traspaso' => $Traspaso,
+                        'dataProductos' => $dataProductos,
+                        'dataRegistroExternos' => $dataRegistroExternos
+                    );
+                }else{
+                    $data = array(
+                        'code' => 200,
+                        'status' => 'success',
+                        'message' => 'Traspaso registrado correctamente',
+                        'traspaso' => $Traspaso,
+                        'dataProductos' => $dataProductos
+                    );
+                }
 
-                $data = array(
-                    'code' => 200,
-                    'status' => 'success',
-                    'message' => 'Traspaso registrado correctamente',
-                    'traspaso' => $Traspaso,
-                    'dataProductos' => $dataProductos,
-                    'dataRegistroExternos' => $dataRegistroExternos
-                );
+                
             }
         }else{
             $data= array(
@@ -923,13 +937,17 @@ class TraspasosController extends Controller
                 //Llamar método de actualización en sucursalR
                 $registroSucursalR = $this->updateSucursalR($params_array);
 
+                $traspaso = TraspasoE::find($params_array['traspaso']['idTraspasoE']);
+
+
                 $data = array(
                     'status'    =>  'success',
                     'code'      =>  200,
                     'message'   =>  'Traspaso Local actualizado',
                     'connection' => $connection,
                     'registroSucursalE' =>   $registroSucursalE,
-                    'registroSucursalR' =>   $registroSucursalR
+                    'registroSucursalR' =>   $registroSucursalR,
+                    'traspaso' => $traspaso
                 );
 
             }else{
@@ -947,12 +965,16 @@ class TraspasosController extends Controller
             //Llamar método de actualizacion en sucursalE
             $registroSucursalE = $this->updateSucursalE($params_array);
 
+            $traspaso = TraspasoE::find($params_array['traspaso']['idTraspasoE']);
+
+
             $data = array(
                 'status'    =>  'success',
                 'code'      =>  200,
                 'message'   =>  'Traspaso Foráneo actualizado',
                 'connection' => $connection,
-                'registroSucursalE' =>   $registroSucursalE
+                'registroSucursalE' =>   $registroSucursalE,
+                'traspaso' => $traspaso
             );
 
         }
@@ -987,7 +1009,7 @@ class TraspasosController extends Controller
                     DB::enableQueryLog();
 
                     //Compraracion de datos para saber que cambios se realizaron
-                    $anTraspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->get();
+                    $anTraspaso = TraspasoE::find($params_array['traspaso']['idTraspasoE']);
                     //Actualizamos
                     $traspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->update([
                         'folio' => $params_array['traspaso']['folio'],
@@ -996,25 +1018,25 @@ class TraspasosController extends Controller
                         'observaciones' => $params_array['traspaso']['observaciones']
                     ]);
                     //Consultamos el traspaso que se actualizó
-                    $traspaso = TraspasoE::where('idTraspasoE',$params_array['traspaso']['idTraspasoE'])->get();
+                    $traspaso = TraspasoE::find($params_array['traspaso']['idTraspasoE']);
                     //Obtnemos direción IP
                     $ip = $_SERVER['REMOTE_ADDR'];
 
                     //Recorremos el traspaso para ver que atributo cambio y asi guardar la modificación
-                    foreach($anTraspaso[0]['attributes'] as $clave => $valor){
-                        foreach($traspaso[0]['attributes'] as $clave2 => $valor2){
+                    foreach($anTraspaso->getAttributes() as $clave => $valor){
+                        //foreach($traspaso[0]['attributes'] as $clave2 => $valor2){
                            //verificamos que la clave sea igua ejem: claveEx == claveEx
                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                           if($clave == $clave2 && $valor !=  $valor2){
+                           if(array_key_exists($clave,$traspaso->getAttributes()) && $valor != $traspaso->clave){
                                //insertamos el movimiento realizado
                                $monitoreo = new Monitoreo();
                                $monitoreo -> idUsuario =  $params_array['identity']['sub'];
-                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." del traspaso envia";
+                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$traspaso->$clave." del traspaso envia";
                                $monitoreo -> folioNuevo =  $params_array['traspaso']['idTraspasoE'];
                                $monitoreo -> pc =  $ip;
                                $monitoreo ->save();
                            }
-                        }
+                        //}
                     }
 
 
