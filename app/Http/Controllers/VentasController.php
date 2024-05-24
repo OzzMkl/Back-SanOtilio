@@ -364,17 +364,16 @@ class VentasController extends Controller
                         DB::beginTransaction();
     
                         //actualizamos valores de venta
-                        $ventag = Ventasg::where('idVenta',$idVenta)->update([
-                                    'idCliente' => $params_array['ventasg']['idCliente'],
-                                    'idTipoVenta' => $params_array['ventasg']['idTipoVenta'],
-                                    'observaciones' => $params_array['ventasg']['observaciones'],
-                                    //'idStatus' => 35,
-                                    // 'idEmpleado' => $params_array['ventasg']['idEmpleado'],
-                                    'subtotal' => $params_array['ventasg']['subtotal'],
-                                    'descuento' => $params_array['ventasg']['descuento'],
-                                    'total' => $params_array['ventasg']['total'],
-                                    'updated_at' => Carbon::now(),
-                                ]);
+                        $ventag = Ventasg::findOrFail($idVenta);
+                        $ventag->idCliente = $params_array['ventasg']['idCliente'];
+                        $ventag->idTipoVenta = $params_array['ventasg']['idTipoVenta'];
+                        $ventag->observaciones = $params_array['ventasg']['observaciones'];
+                        $ventag->subtotal = $params_array['ventasg']['subtotal'];
+                        $ventag->descuento = $params_array['ventasg']['descuento'];
+                        $ventag->total = $params_array['ventasg']['total'];
+                        $ventag->updated_at = Carbon::now();
+                        $ventag->save();
+                        
 
                         //obtenemos ip
                         $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -423,6 +422,23 @@ class VentasController extends Controller
                 'status'    =>  'error',
                 'message'   =>  'Los valores ingresado no se recibieron correctamente'
             );
+        }
+        if($data['status'] == 'success'){
+            // var_dump($params_array);
+            // die();
+            if($ventag->idTipoVenta == 1 || $ventag->idTipoVenta == 2 || $ventag->idTipoVenta == 3){
+                if($ventag->total >= 1000 || count($params_array['lista_productoVentag']) > 7){
+                    $this-> generaTicketPeque();
+                } else{
+                    if($ventag->idTipoVenta == 3){
+                        $this-> generaTicket(4);
+                    } else{
+                        $this-> generaTicket(3);
+                    }
+                }
+            } elseif($ventag->idTipoVenta == 4 || $ventag->idTipoVenta == 5 || $ventag->idTipoVenta == 6){
+                $this-> generaTicketPeque();
+            }
         }
         return response()->json($data,$data['code']);
     }
