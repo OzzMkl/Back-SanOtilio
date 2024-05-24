@@ -179,8 +179,8 @@ class CompraController extends Controller
                         $Productos_compra-> igualMedidaMenor = $cantidadC;
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
-                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                        while($idProdMedidaC != $listaPM[$lugar]->idProdMedida){
+                            //echo $listaPM[$lugar]->idProdMedida;
                             //echo $lugar;
                             $lugar++;
                         }
@@ -325,8 +325,8 @@ class CompraController extends Controller
                         $igualMedidaMenor = $cantidadC;
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
-                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                        while($idProdMedidaC != $listaPM[$lugar]->idProdMedida){
+                            //echo $listaPM[$lugar]->idProdMedida;
                             //echo $lugar;
                             $lugar++;
                         }
@@ -501,8 +501,8 @@ class CompraController extends Controller
                         $igualMedidaMenor = $Producto -> existenciaG + $cantidadC;
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
-                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                        while($idProdMedidaC != $listaPM[$lugar]->idProdMedida){
+                            //echo $listaPM[$lugar]->idProdMedida;
                             //echo $lugar;
                             $lugar++;
                         }
@@ -923,8 +923,8 @@ class CompraController extends Controller
                         $Productos_compra-> igualMedidaMenor = $cantidadC;
                     }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                         //Se hace un cilo que recorre listaPM
-                        while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                            //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                        while($idProdMedidaC != $listaPM[$lugar]->idProdMedida){
+                            //echo $listaPM[$lugar]->idProdMedida;
                             //echo $lugar;
                             $lugar++;
                         }

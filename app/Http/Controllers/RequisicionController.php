@@ -137,8 +137,8 @@ class RequisicionController extends Controller
                             $Productos_requisicion-> igualMedidaMenor = $cantidadC;
                         }else{//Dos medidas en adelante se busca la posicion de la medida en la que se ingreso la compra
                             //Se hace un cilo que recorre listaPM
-                            while($idProdMedidaC != $listaPM[$lugar]['attributes']['idProdMedida']){
-                                //echo $listaPM[$lugar]['attributes']['idProdMedida'];
+                            while($idProdMedidaC != $listaPM[$lugar]->idProdMedida){
+                                //echo $listaPM[$lugar]->idProdMedida;
                                 //echo $lugar;
                                 $lugar++;
                             }
@@ -147,7 +147,7 @@ class RequisicionController extends Controller
                             }elseif($lugar == 0){//Medida mas alta, multiplicar desde el principio ( lugar == 0)
                                 $igualMedidaMenor = $cantidadC;
                                 while($lugar < $count ){
-                                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]['attributes']['unidad'];
+                                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar]->unidad;
                                     $lugar++;
                                     //echo $igualMedidaMenor;
                                 }
@@ -157,7 +157,7 @@ class RequisicionController extends Controller
                                 $count--;
                                 //echo $count;
                                 while($lugar < $count ){
-                                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]['attributes']['unidad'];
+                                    $igualMedidaMenor = $igualMedidaMenor * $listaPM[$lugar+1]->unidad;
                                     $lugar++;
                                 }
                                 $Productos_requisicion-> igualMedidaMenor = $igualMedidaMenor;
@@ -537,8 +537,7 @@ class RequisicionController extends Controller
             $validate = Validator::make($params_array, [
                 'idReq'         => 'required',
                 'idEmpleado'    => 'required',
-                'idStatus'      => 'required',
-                'idProveedor'   => 'required'
+                'idStatus'      => 'required'
             ]);
             if($validate->fails()){
                 $data = array(
@@ -554,36 +553,37 @@ class RequisicionController extends Controller
                     DB::enableQueryLog();
 
                     //Comparacion de datos para saber que cambios se realizaron
-                    $antReq = Requisiciones::where('idReq',$params_array['idReq'])->get();
+                    $antReq = Requisiciones::find($params_array['idReq']);
 
                     //actualizamos
                     $Requisicion = Requisiciones::where('idReq',$params_array['idReq'])->update([
                         'idStatus'       => $params_array['idStatus'],
                         'observaciones'  => $params_array['observaciones'],
-                        'idProveedor'    => $params_array['idProveedor']                        
+                        'idProveedor'    => $params_array['idProveedor']??null
                     ]);
 
                     //consultamos la requisicion que se actualizo
-                    $requisicion = Requisiciones::where('idReq',$params_array['idReq'])->get();
+                    $requisicion = Requisiciones::find($params_array['idReq'])  ;
 
                     //obtenemos direccion ip
                     $ip = $_SERVER['REMOTE_ADDR'];
 
-                    //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
-                    foreach($antReq[0]['attributes'] as $clave => $valor){
-                        foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
+                    //recorremos la requisicion para ver que atributo cambio y asi guardar la modificacion
+                    foreach($antReq->getAttributes() as $clave => $valor){
+                        //foreach($requisicion[0]['attributes'] as $clave2 => $valor2){
                            //verificamos que la clave sea igua ejem: claveEx == claveEx
                            // y que los valores sean diferentes para guardar el movimiento Ejem: comex != comex-verde
-                           if($clave == $clave2 && $valor !=  $valor2){
+                           //if($clave == $clave2 && $valor !=  $valor2){
+                            if(array_key_exists($clave,$requisicion->getAttributes()) && $valor != $requisicion->$clave){
                                //insertamos el movimiento realizado
                                $monitoreo = new Monitoreo();
                                $monitoreo -> idUsuario =  $params_array['idEmpleado'];
-                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$valor2." de la requiscion";
+                               $monitoreo -> accion =  "Modificacion de ".$clave." anterior: ".$valor." nueva: ".$requisicion->$clave." de la requiscion";
                                $monitoreo -> folioNuevo =  $params_array['idReq'];
                                $monitoreo -> pc =  $ip;
                                $monitoreo ->save();
                            }
-                        }
+                        //}             
                     }
 
 
@@ -887,7 +887,7 @@ class RequisicionController extends Controller
                 //consultamos la requisicion que se actualizo
                 $requisicion = Requisiciones::where('idReq',$idReq)->get();
 
-                //obtenemos direccion ip
+                //obtenemos direccion ip|
                 $ip = $_SERVER['REMOTE_ADDR'];
 
                 //recorremos el producto para ver que atributo cambio y asi guardar la modificacion
