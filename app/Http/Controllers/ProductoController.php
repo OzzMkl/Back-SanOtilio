@@ -63,7 +63,10 @@ class ProductoController extends Controller
         ]);
     }
 
-    public function newIndex($type, $search){
+    public function newIndex($type, $search, Request $request){
+        // Decodificar las secuencias _d_ y _dinv_
+        $search = str_replace(['_d_', '_dinv_'], ['/', '\\'], $search);
+
         $productos = DB::table('producto')
             ->join('marca', 'marca.idMarca','=','producto.idMarca')
             ->join('departamentos', 'departamentos.idDep','=','producto.idDep')
@@ -73,17 +76,19 @@ class ProductoController extends Controller
             ->where('statuss',31);
             //ClaveExterna
             if($type == 1 && $search != 'null'){
-                $productos->where('producto.claveEx','like','%'.$search.'%');
+                $productos->where('producto.claveEx','like',$search.'%');
             }
             //Descripcion
             if($type == 2 && $search != 'null'){
-                $productos->where('producto.descripcion','like','%'.$search.'%');
+                $productos->where('producto.descripcion','like',$search.'%');
             }
             //codigo de barras
             if($type == 3 && $search != 'null'){
-                $productos->where('producto.cbarras','like','%'.$search.'%');
+                $productos->where('producto.cbarras','like',$search.'%');
             }
-            $productos = $productos->paginate(5);
+            $rows = $request->input('rows',100);
+            $productos = $productos->orderBy('producto.claveEx')
+                            ->paginate($rows);
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
@@ -1560,6 +1565,14 @@ class ProductoController extends Controller
                     } else {
                         $existencia_por_med['exisCal'] = $existencia;
                     }
+                    // Agregamos la propiedad precios
+                    $existencia_por_med['precios'] = [
+                        ['porcentaje' => $producto_medida->porcentaje1, 'precio' => $producto_medida->precio1],
+                        ['porcentaje' => $producto_medida->porcentaje2, 'precio' => $producto_medida->precio2],
+                        ['porcentaje' => $producto_medida->porcentaje3, 'precio' => $producto_medida->precio3],
+                        ['porcentaje' => $producto_medida->porcentaje4, 'precio' => $producto_medida->precio4],
+                        ['porcentaje' => $producto_medida->porcentaje5, 'precio' => $producto_medida->precio5],
+                    ];
                 }
                 $existencia_por_med2[$lugar] = $existencia_por_med;
                 //sino
@@ -1598,6 +1611,19 @@ class ProductoController extends Controller
                     //asignamos al array el nomnre de la medida y su existencia
                     $existencia_por_med['nombreMedida'] = $productos_medidas[$lugar]->nombreMedida;
                     $existencia_por_med['exisCal'] = $calculaE;
+
+
+
+                    // Agregamos la propiedad precios
+                    $existencia_por_med['precios'] = [
+                        ['porcentaje' => $productos_medidas[$lugar]->porcentaje1, 'precio' => $productos_medidas[$lugar]->precio1],
+                        ['porcentaje' => $productos_medidas[$lugar]->porcentaje2, 'precio' => $productos_medidas[$lugar]->precio2],
+                        ['porcentaje' => $productos_medidas[$lugar]->porcentaje3, 'precio' => $productos_medidas[$lugar]->precio3],
+                        ['porcentaje' => $productos_medidas[$lugar]->porcentaje4, 'precio' => $productos_medidas[$lugar]->precio4],
+                        ['porcentaje' => $productos_medidas[$lugar]->porcentaje5, 'precio' => $productos_medidas[$lugar]->precio5],
+                    ];
+
+
 
                     $existencia_por_med2[$lugar] = $existencia_por_med;
                     /**
@@ -2036,7 +2062,10 @@ class ProductoController extends Controller
         return response()->json($data);
     }
 
-    public function getAllProductoNUBE($type, $search){
+    public function getAllProductoNUBE($type, $search, Request $request){
+        // Decodificar las secuencias _d_ y _dinv_
+        $search = str_replace(['_d_', '_dinv_'], ['/', '\\'], $search);
+
         $sucursal = Sucursal::where([
                         ['nombre','=','NUBE'],
                         ['connection','=','hostinger']
@@ -2054,17 +2083,20 @@ class ProductoController extends Controller
                             ->where('statuss',31);
                     //ClaveExterna
                     if($type == 1 && $search != 'null'){
-                        $productos->where('producto.claveEx','like','%'.$search.'%');
+                        $productos->where('producto.claveEx','like',$search.'%');
                     }
                     //Descripcion
                     if($type == 2 && $search != 'null'){
-                        $productos->where('producto.descripcion','like','%'.$search.'%');
+                        $productos->where('producto.descripcion','like',$search.'%');
                     }
                     //codigo de barras
                     if($type == 3 && $search != 'null'){
-                        $productos->where('producto.cbarras','like','%'.$search.'%');
+                        $productos->where('producto.cbarras','like',$search.'%');
                     }
-                    $productos = $productos->paginate(5);
+
+                    $rows = $request->input('rows',100);
+                    $productos = $productos->orderBy('producto.claveEx')
+                                            ->paginate($rows);
 
                 $data = array(
                     'code'          =>  200,
