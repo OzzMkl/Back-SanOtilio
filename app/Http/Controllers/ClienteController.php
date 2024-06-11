@@ -163,16 +163,9 @@ class ClienteController extends Controller
             $params_array = array_map('trim',$params_array);
 
              $validate = Validator::make($params_array, [
-                 'pais'       => 'required',
-                 'estado'    => 'required',
-                 'ciudad'      => 'required',
                  'colonia'   => 'required',
                  'calle'   => 'required',
-                 'numExt'   => 'required',
-                 'cp'   => 'required',
-                 'referencia'   => 'required',
                  'telefono'   => 'required',
-                 'idZona'   => 'required'
              ]);
 
              if($validate->fails()){
@@ -193,7 +186,7 @@ class ClienteController extends Controller
                     $cdireccion->colonia = $params_array['colonia'];
                     $cdireccion->calle = $params_array['calle'];
                     $cdireccion->entreCalles = $params_array['entreCalles'];
-                    $cdireccion->numExt = $params_array['numExt'];
+                    $cdireccion->numExt = ($params_array['numExt'] == '') ? 'S/N' : $params_array['numExt'];
                     $cdireccion->numInt = $params_array['numInt'];
                     $cdireccion->cp = $params_array['cp'];
                     $cdireccion->referencia = $params_array['referencia'];
@@ -235,16 +228,9 @@ class ClienteController extends Controller
 
             $validate = Validator::make($params_array, [
                 'idCliente'       => 'required',
-                'pais'       => 'required',
-                'estado'    => 'required',
-                'ciudad'      => 'required',
                 'colonia'   => 'required',
                 'calle'   => 'required',
-                'numExt'   => 'required',
-                'referencia'   => 'required',
-                'cp'   => 'required',
                 'telefono'   => 'required',
-                'idZona'   => 'required'
             ]);
             if($validate->fails()){
                 $data = array(
@@ -267,7 +253,7 @@ class ClienteController extends Controller
                     $Ndireccion->ciudad = $params_array['ciudad'];
                     $Ndireccion->colonia = $params_array['colonia'];
                     $Ndireccion->calle = $params_array['calle'];
-                    $Ndireccion->numExt = $params_array['numExt'];
+                    $Ndireccion->numExt = ($params_array['numExt'] == '') ? 'S/N' : $params_array['numExt'];
                     $Ndireccion->referencia = $params_array['referencia'];
                     $Ndireccion->cp = $params_array['cp'];
                     $Ndireccion->telefono = $params_array['telefono'];
