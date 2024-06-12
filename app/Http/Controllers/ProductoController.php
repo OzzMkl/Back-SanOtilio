@@ -199,7 +199,7 @@ class ProductoController extends Controller
         //se separa y se ponen como array
         $params_array = json_decode($json, true);
 
-        // dd($params_array['producto']);
+        // dd($params_array);
             //revisamos que no vengan vacios
         if( !empty($params_array)){
             //Eliminamos el array de permisos para que unicamente quede el array que contiene
@@ -360,7 +360,7 @@ class ProductoController extends Controller
                             'stockMin' => $producto->stockMin,
                             'stockMax' => $producto->stockMax,
                             'imagen' => $producto->imagen,
-                            'statuss' => $producto->statuss,
+                            'statuss' => ($sucursal_con[$i]->connection == 'hostinger') ? 31 :32,//NOTA: SE INGRESA COMO DESHABILITADO
                             'ubicacion' => $producto->ubicacion,
                             'claveSat' => $producto->claveSat,
                             'tEntrega' => $producto->tEntrega,
@@ -1251,7 +1251,15 @@ class ProductoController extends Controller
             ['idProducto','=',$idProducto]
         ])
         ->orderBy('productos_medidas.idProdMedida','asc')
-        ->get();
+        ->get()
+        ->map(function ($obj){
+            $obj->precio1 = $obj->precio1 ? number_format($obj->precio1,2) : null;
+            $obj->precio2 = $obj->precio2 ? number_format($obj->precio2,2) : null;
+            $obj->precio3 = $obj->precio3 ? number_format($obj->precio3,2) : null;
+            $obj->precio4 = $obj->precio4 ? number_format($obj->precio4,2) : null;
+            $obj->precio5 = $obj->precio5 ? number_format($obj->precio5,2) : null;
+            return $obj;
+        });
 
         /***************************************** */
         $medidaMenor= 1;
