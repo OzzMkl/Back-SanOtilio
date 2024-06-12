@@ -69,16 +69,47 @@ class VentasController extends Controller
             4, //NO COBRADA
             5, //COBRO PARCIAL
         ];
-        $ventas = Ventasg::join('cliente','cliente.idcliente','=','ventasg.idcliente')
-                            ->join('empleado','empleado.idEmpleado','=','ventasg.idEmpleado')
-                            ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventasg.idTipoVenta')
-                            ->select('ventasg.*',
-                                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
-                                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
-                                    'tiposdeventas.nombre as nombreTipoventa')
-                            ->whereIn('ventasg.idStatusCaja',$status)
-                            ->orderBy('ventasg.idVenta','desc')
-                            ->get();
+        $ventas = DB::table('ventasg')
+        ->join('cliente', 'cliente.idcliente', '=', 'ventasg.idcliente')
+        ->join('empleado', 'empleado.idEmpleado', '=', 'ventasg.idEmpleado')
+        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventasg.idTipoVenta')
+        ->select(
+                    'ventasg.*',
+                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                    'tiposdeventas.nombre as nombreTipoventa',
+                    DB::raw("false as isCredito")
+                )
+        ->whereIn('ventasg.idStatusCaja', $status)
+        ->union(
+            DB::table('ventascre')
+                ->join('cliente', 'cliente.idcliente', '=', 'ventascre.idcliente')
+                ->join('empleado', 'empleado.idEmpleado', '=', 'ventascre.idEmpleadoG')
+                ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventascre.idTipoVenta')
+                ->select(
+                            'ventascre.idVenta',
+                            'ventascre.idCliente',
+                            'ventascre.cdireccion',
+                            'ventascre.idTipoVenta',
+                            'ventascre.observaciones',
+                            'ventascre.idStatusCaja',
+                            'ventascre.idStatusEntregas',
+                            'ventascre.idEmpleadoG AS idEmpleado',
+                            'ventascre.subtotal',
+                            'ventascre.descuento',
+                            'ventascre.created_at',
+                            'ventascre.updated_at',
+                            'ventascre.total',
+                            DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
+                            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                            'tiposdeventas.nombre as nombreTipoventa',
+                            DB::raw("true as isCredito")
+                        )
+                ->whereIn('ventascre.idStatusCaja', $status)
+        )
+        ->orderBy('idVenta', 'desc')
+        ->get();
+
         return response()->json([
             'code'      => 200,
             'status'    => 'success',
