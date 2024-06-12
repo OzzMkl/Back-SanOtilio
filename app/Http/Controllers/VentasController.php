@@ -313,16 +313,16 @@ class VentasController extends Controller
             // die();
             if($ventasg->idTipoVenta == 1 || $ventasg->idTipoVenta == 2 || $ventasg->idTipoVenta == 3){
                 if($ventasg->total >= 1000 || count($lista_productosVenta) > 7){
-                    $this-> generaTicketPeque();
+                    $this-> generaTicketPeque($ventasg->idVenta);
                 } else{
                     if($ventasg->idTipoVenta == 3){
-                        $this-> generaTicket($NoImpre=4);
+                        $this-> generaTicket(4,$ventasg->idVenta);
                     } else{
-                        $this-> generaTicket($NoImpre=3);
+                        $this-> generaTicket(3,$ventasg->idVenta);
                     }
                 }
             } elseif($ventasg->idTipoVenta == 4 || $ventasg->idTipoVenta == 5 || $ventasg->idTipoVenta == 6){
-                $this-> generaTicketPeque();
+                $this-> generaTicketPeque($ventasg->idVenta);
             }
         }
         return response()->json($data, $data['code']);
@@ -428,16 +428,16 @@ class VentasController extends Controller
             // die();
             if($ventag->idTipoVenta == 1 || $ventag->idTipoVenta == 2 || $ventag->idTipoVenta == 3){
                 if($ventag->total >= 1000 || count($params_array['lista_productoVentag']) > 7){
-                    $this-> generaTicketPeque();
+                    $this-> generaTicketPeque($ventag->idVenta);
                 } else{
                     if($ventag->idTipoVenta == 3){
-                        $this-> generaTicket(4);
+                        $this-> generaTicket(4,$ventag->idVenta);
                     } else{
-                        $this-> generaTicket(3);
+                        $this-> generaTicket(3,$ventag->idVenta);
                     }
                 }
             } elseif($ventag->idTipoVenta == 4 || $ventag->idTipoVenta == 5 || $ventag->idTipoVenta == 6){
-                $this-> generaTicketPeque();
+                $this-> generaTicketPeque($ventag->idVenta);
             }
         }
         return response()->json($data,$data['code']);
@@ -762,7 +762,7 @@ class VentasController extends Controller
         return $data;
     }
 
-    public function generaTicket($NoImpre){
+    public function generaTicket($NoImpre,$idVenta){
         /************** */
             //$nombreImpresora = "EPSON TM-U220 Receipt";
             //$profile = CapabilityProfile::load("simple");
@@ -781,7 +781,7 @@ class VentasController extends Controller
                                  'tiposdeventas.nombre as nombreVenta',
                                  DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
                                  DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
-                        ->latest('idVenta')
+                        ->where('idVenta',$idVenta)
                         ->first();
             //informacion de la venta
             $productos_ventasg = Productos_ventasg::where('idVenta',$ventasg->idVenta)
@@ -791,12 +791,14 @@ class VentasController extends Controller
                                  ->get();
 
             //obtenemos direccion ip
-            $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+            // $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+            $ip = $_SERVER['REMOTE_ADDR'];
 
-            $datos_imp = Impresoras::where('pcVentas','=',$ip)
+            // $datos_imp = Impresoras::where('pcVentas','=',$ip)
+            $datos_imp = Impresoras::where('ipVentas','=',$ip)
                             ->latest('idImpresora')
                             ->first();
-
+            // dd($datos_imp);
             if(is_object($datos_imp)){
                 for($i = 1; $i<= $NoImpre ; $i++){
                     //declaramos el nombre de la impresora
@@ -846,26 +848,30 @@ class VentasController extends Controller
                         $impresora->text(str_pad($paramdata['claveEx'],10," ")."/".
                                         str_pad($paramdata['cantidad'],3," ",STR_PAD_BOTH)."/".
                                         str_pad($paramdata['nombreMedida'],4," ",STR_PAD_BOTH)."/"."$".
-                                        str_pad($paramdata['precio'],6," ",STR_PAD_BOTH)."/"."$".
-                                        str_pad($paramdata['descuento'],3," ",STR_PAD_BOTH)."/"."$".
-                                        str_pad($paramdata['total'],6," ",STR_PAD_BOTH)."\n");
+                                        str_pad(number_format($paramdata['precio'],2),6," ",STR_PAD_BOTH)."/"."$".
+                                        str_pad(number_format($paramdata['descuento'],2),3," ",STR_PAD_BOTH)."/"."$".
+                                        str_pad(number_format($paramdata['total'],2),6," ",STR_PAD_BOTH)."\n");
                         
                         $impresora->text("- - - - - - - - - - - - - - - - - - - - \n");
                     }
                     /***** INFORMACION DE LA VENTA 2DA PARTE *****/
                     //$impresora->text("---------------------------------------- \n");
-                    $impresora->text("SUBTOTAL:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
-                    $impresora->text("DESCUENTO:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
+                    $impresora->text("SUBTOTAL:".str_pad("$".number_format($ventasg->subtotal,2),30," ",STR_PAD_LEFT)."\n");
+                    $impresora->text("DESCUENTO:".str_pad("$".number_format($ventasg->descuento,2),29," ",STR_PAD_LEFT)."\n");
                     $impresora->setJustification(Printer::JUSTIFY_RIGHT);
                     $impresora->text("                   ---------- \n");
                     $impresora->setJustification(Printer::JUSTIFY_LEFT);
-                    $impresora->text("TOTAL:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
+                    $impresora->text("TOTAL:".str_pad("$".number_format($ventasg->total,2),33," ",STR_PAD_LEFT)."\n");
                     $impresora->text("----------------------------------------\n");
                     $impresora->text("OBSERVACIONES: \n");
                     $impresora->text($ventasg->observaciones."\n");
                     $impresora->text("========================================\n");
                     $impresora->text("* TODO CAMBIO CAUSARA UN 10% EN EL IMPORTE TOTAL *"."\n");
                     $impresora->text("* TODA CANCELACION SE COBRARA 20% DEL IMPORTE TOTAL SIN EXCEPCION *"."\n");
+                    $impresora->text("\n");
+                    $impresora->text("\n");
+                    $impresora->text("\n");
+
                     $impresora->cut();
                     $impresora->close();
                     /************** */
@@ -880,7 +886,7 @@ class VentasController extends Controller
             
     }
 
-    public function generaTicketPeque(){
+    public function generaTicketPeque($idVenta){
 
         //informacion de la venta
         $ventasg = DB::table('ventasg')
@@ -892,17 +898,19 @@ class VentasController extends Controller
                             'ventasg.observaciones',
                             'ventasg.created_at',
                             'tiposdeventas.nombre as nombreVenta')
-                    ->latest('idVenta')
+                    ->where('idVenta',$idVenta)
                     ->first();
 
         //obtenemos direccion ip
-        $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);            
+        // $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);        
+        $ip = $_SERVER['REMOTE_ADDR'];        
         
         //Informacion de impresoras
-        $datos_imp = Impresoras::where('pcVentas','=',$ip)
+        // $datos_imp = Impresoras::where('pcVentas','=',$ip)
+        $datos_imp = Impresoras::where('ipVentas','=',$ip)
                             ->latest('idImpresora')
                             ->first();
-
+        // dd($datos_imp);
         if(is_object($datos_imp)){
 
             //declaramos el nombre de la impresora
@@ -920,12 +928,12 @@ class VentasController extends Controller
             //fecha y hora
             $impresora->text("Fecha: ".$ventasg->created_at. "\n");
             $impresora->text("========================================\n");
-            $impresora->text("Subtotal:".str_pad("$".$ventasg->subtotal,30," ",STR_PAD_LEFT)."\n");
-            $impresora->text("Descuento:".str_pad("$".$ventasg->descuento,29," ",STR_PAD_LEFT)."\n");
+            $impresora->text("Subtotal:".str_pad("$".number_format($ventasg->subtotal,2),30," ",STR_PAD_LEFT)."\n");
+            $impresora->text("Descuento:".str_pad("$".number_format($ventasg->descuento,2),29," ",STR_PAD_LEFT)."\n");
             $impresora->setJustification(Printer::JUSTIFY_RIGHT);
             $impresora->text("                   ---------- \n");
             $impresora->setJustification(Printer::JUSTIFY_LEFT);
-            $impresora->text("Total:".str_pad("$".$ventasg->total,33," ",STR_PAD_LEFT)."\n");
+            $impresora->text("Total:".str_pad("$".number_format($ventasg->total,2),33," ",STR_PAD_LEFT)."\n");
             $impresora->text("----------------------------------------\n");
             $impresora->text("Observaciones: \n");
             $impresora->text($ventasg->observaciones."\n");
