@@ -64,29 +64,35 @@ class VentasController extends Controller
     }
 
     /***** VENTAS *****/
-    public function indexVentas(){
+    public function indexVentas(Request $request){
         $status = [
             4, //NO COBRADA
             5, //COBRO PARCIAL
         ];
-        $ventas = DB::table('ventasg')
-        ->join('cliente', 'cliente.idcliente', '=', 'ventasg.idcliente')
-        ->join('empleado', 'empleado.idEmpleado', '=', 'ventasg.idEmpleado')
-        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventasg.idTipoVenta')
-        ->select(
-                    'ventasg.*',
-                    DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
-                    DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
-                    'tiposdeventas.nombre as nombreTipoventa',
-                    DB::raw("false as isCredito")
-                )
-        ->whereIn('ventasg.idStatusCaja', $status)
-        ->union(
-            DB::table('ventascre')
-                ->join('cliente', 'cliente.idcliente', '=', 'ventascre.idcliente')
-                ->join('empleado', 'empleado.idEmpleado', '=', 'ventascre.idEmpleadoG')
-                ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventascre.idTipoVenta')
-                ->select(
+        // dd($request->all());
+        $showCredito = $request->input('isCredito',1);
+        $type = $request->input('type',1);
+        $search = $request->input('search','');
+        
+        $ventasg = Ventasg::join('cliente', 'cliente.idcliente', '=', 'ventasg.idcliente')
+                    ->join('empleado', 'empleado.idEmpleado', '=', 'ventasg.idEmpleado')
+                    ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventasg.idTipoVenta')
+                    ->select(
+                        'ventasg.*',
+                        DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
+                        DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
+                        'tiposdeventas.nombre as nombreTipoventa',
+                        DB::raw("false as isCredito")
+                    )
+                    ->whereIn('ventasg.idStatusCaja', $status);
+
+        // Consulta para ventascre
+        $ventascre=null;
+        if ($showCredito == 1 || $showCredito == 3) {
+            $ventascre = Ventascre::join('cliente', 'cliente.idcliente', '=', 'ventascre.idcliente')
+                        ->join('empleado', 'empleado.idEmpleado', '=', 'ventascre.idEmpleadoG')
+                        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventascre.idTipoVenta')
+                        ->select(
                             'ventascre.idVenta',
                             'ventascre.idCliente',
                             'ventascre.cdireccion',
@@ -100,15 +106,57 @@ class VentasController extends Controller
                             'ventascre.created_at',
                             'ventascre.updated_at',
                             'ventascre.total',
-                            DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),
-                            DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"),
+                            DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
+                            DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
                             'tiposdeventas.nombre as nombreTipoventa',
                             DB::raw("true as isCredito")
                         )
-                ->whereIn('ventascre.idStatusCaja', $status)
-        )
-        ->orderBy('idVenta', 'desc')
-        ->get();
+                        ->whereIn('ventascre.idStatusCaja', $status);
+        }
+
+        // Filtrar por folio (idVenta)
+        if ($type == 1 && $search != '') {
+            $ventasg->where('ventasg.idVenta', 'like', '%' . $search . '%');
+
+            if ($ventascre) {
+                $ventascre->where('ventascre.idVenta', 'like', '%' . $search . '%');
+            }
+        }
+
+        // Filtrar por Cliente
+        if ($type == 2 && $search != '') {
+            $ventasg->whereRaw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) like ?", ['%' . $search . '%']);
+
+            if ($ventascre) {
+                $ventascre->whereRaw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) like ?", ['%' . $search . '%']);
+            }
+        }
+
+        // Filtrar por Vendedor
+        if ($type == 3 && $search != '') {
+            $ventasg->whereRaw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) like ?", ['%' . $search . '%']);
+
+            if ($ventascre) {
+                $ventascre->whereRaw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) like ?", ['%' . $search . '%']);
+            }
+        }
+
+        // Obtener resultados y combinar según $showCredito
+        if ($showCredito == 1) {
+            $ventas = $ventasg->union($ventascre)->orderBy('idVenta', 'desc')->get();
+        } elseif ($showCredito == 2) {
+            $ventas = $ventasg->orderBy('idVenta', 'desc')->get();
+        } elseif ($showCredito == 3) {
+            $ventas = $ventascre->orderBy('idVenta', 'desc')->get();
+        } else {
+            // En caso de un valor inesperado para $showCredito, devuelve un error
+            return response()->json([
+                'code' => 400,
+                'status' => 'error',
+                'message' => 'Valor no válido para isCredito'
+            ]);
+        }
+
 
         return response()->json([
             'code'      => 200,
