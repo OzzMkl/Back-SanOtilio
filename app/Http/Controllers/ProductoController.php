@@ -1251,15 +1251,15 @@ class ProductoController extends Controller
             ['idProducto','=',$idProducto]
         ])
         ->orderBy('productos_medidas.idProdMedida','asc')
-        ->get()
-        ->map(function ($obj){
-            $obj->precio1 = $obj->precio1 ? number_format($obj->precio1,2) : null;
-            $obj->precio2 = $obj->precio2 ? number_format($obj->precio2,2) : null;
-            $obj->precio3 = $obj->precio3 ? number_format($obj->precio3,2) : null;
-            $obj->precio4 = $obj->precio4 ? number_format($obj->precio4,2) : null;
-            $obj->precio5 = $obj->precio5 ? number_format($obj->precio5,2) : null;
-            return $obj;
-        });
+        ->get();
+        // ->map(function ($obj){
+        //     $obj->precio1 = $obj->precio1 ? number_format($obj->precio1,2) : null;
+        //     $obj->precio2 = $obj->precio2 ? number_format($obj->precio2,2) : null;
+        //     $obj->precio3 = $obj->precio3 ? number_format($obj->precio3,2) : null;
+        //     $obj->precio4 = $obj->precio4 ? number_format($obj->precio4,2) : null;
+        //     $obj->precio5 = $obj->precio5 ? number_format($obj->precio5,2) : null;
+        //     return $obj;
+        // });
 
         /***************************************** */
         $medidaMenor= 1;
