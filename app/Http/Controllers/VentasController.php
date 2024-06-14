@@ -317,7 +317,7 @@ class VentasController extends Controller
                 'message'   =>  'Los datos enviados son incorrectos'
             );
         }
-        return response()->json($data, $data['code']);
+        return response()->json($data);
     }
 
     public function guardarProductosVenta($ventasg, $lista_productosVenta){
@@ -947,9 +947,7 @@ class VentasController extends Controller
                     $impresora->text("========================================\n");
                     $impresora->text("* TODO CAMBIO CAUSARA UN 10% EN EL IMPORTE TOTAL *"."\n");
                     $impresora->text("* TODA CANCELACION SE COBRARA 20% DEL IMPORTE TOTAL SIN EXCEPCION *"."\n");
-                    $impresora->text("\n");
-                    $impresora->text("\n");
-                    $impresora->text("\n");
+                    $impresora->text("\n\n\n\n\n\n\n\n");
 
                     $impresora->cut();
                     $impresora->close();
