@@ -183,6 +183,7 @@ class VentasController extends Controller
         ->get()
         ->map(function ($obj) {
             $obj->isCredito = false;
+            $obj->seEnvia = ($obj->idStatusEntregas == 6) ? false : true;
             return $obj;
         });
         $productosVenta = DB::table('productos_ventasg')
@@ -450,6 +451,17 @@ class VentasController extends Controller
                         $ventag->subtotal = $params_array['ventasg']['subtotal'];
                         $ventag->descuento = $params_array['ventasg']['descuento'];
                         $ventag->total = $params_array['ventasg']['total'];
+                        /**
+                         * PROXIMO A REVISAR
+                         * Nota: Para entregas  revisar si la venta se cambia a no se envia revisar
+                         * si el status se pueda cambiar si es que ya cuenta con un envio parcial o un envio total
+                         * 
+                         */
+                            $ventag->cdireccion = $params_array['ventasg']['cdireccion'];
+                            if(strlen($ventag->cdireccion) > 10){
+                                $ventag->idStatusEntregas = 7;
+                            }
+                        /** */
                         $ventag->updated_at = Carbon::now();
                         $ventag->save();
                         
@@ -942,6 +954,10 @@ class VentasController extends Controller
                     $impresora->setJustification(Printer::JUSTIFY_LEFT);
                     $impresora->text("TOTAL:".str_pad("$".number_format($ventasg->total,2),33," ",STR_PAD_LEFT)."\n");
                     $impresora->text("----------------------------------------\n");
+                    if($ventasg->idStatusEntregas != 6){
+                        $impresora->text("DIRECCION: \n");
+                        $impresora->text($ventasg->cdireccion."\n\n");
+                    }
                     $impresora->text("OBSERVACIONES: \n");
                     $impresora->text($ventasg->observaciones."\n");
                     $impresora->text("========================================\n");
