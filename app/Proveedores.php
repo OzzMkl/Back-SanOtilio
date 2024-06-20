@@ -10,10 +10,22 @@ class Proveedores extends Model
     protected $table = 'proveedores';
     protected $primaryKey = 'idProveedor';
     protected $fillable = [
-        'rfc','nombre','pais',
-        'estado','ciudad','cpostal',
-        'colonia','calle','numero',
-        'telefono','creditoDias','creditoCantidad',
+        'rfc',
+        'nombre',
+        'pais',
+        'estado',
+        'ciudad',
+        'cpostal',
+        'colonia',
+        'calle',
+        'numero',
+        'telefono',
+        'creditoDias',
+        'creditoCantidad',
         'idStatus'
     ];
+
+    public function contactos(){
+        return $this->hasMany(contacto::class, 'idProveedor', 'idProveedor');
+    }
 }
