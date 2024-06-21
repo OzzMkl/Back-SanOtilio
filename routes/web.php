@@ -50,15 +50,9 @@ Route::get('/prueba', function(){
     Route::get('/api/proveedor/ObtenerLista','ProveedoresController@ObtenerLista');
     Route::post('/api/proveedor/register','ProveedoresController@register');
     Route::get('/api/proveedor/index','ProveedoresController@index');//mostrar proveedores activos
-    Route::get('/api/proveedor/proveedoresDes','ProveedoresController@proveedoresDes');//mostrar proveedores deshabilitados
     Route::get('/api/proveedor/{proveedor}','ProveedoresController@show');//sacar proveedor por id
     Route::get('/api/proveedor/provContactos/{proveedor}','ProveedoresController@provContactos');//obtener contactos a partir de idProveedor
     Route::get('/api/proveedor/getNCP/{proveedor}','ProveedoresController@getNCP');//obtener contactos a partir de idProveedor
-    Route::get('/api/proveedor/searchNombreProveedor/{nombreProveedor}','ProveedoresController@searchNombreProveedor');//Buscar proveedores por NOMBRE - HABILITADOS
-    Route::get('/api/proveedor/searchRFCProveedor/{rfc}','ProveedoresController@searchRFCProveedor');//Buscar proveedores por RFC - HABILITADOS
-    Route::get('/api/proveedor/searchNombreProveedorI/{nombreProveedor}','ProveedoresController@searchNombreProveedorI');//Buscar proveedores por NOMBRE - HABILITADOS
-    Route::get('/api/proveedor/searchRFCProveedorI/{rfc}','ProveedoresController@searchRFCProveedorI');//Buscar proveedores por RFC - HABILITADOS
-    
     Route::put('/api/proveedor/updatestatus/{proveedor}', 'ProveedoresController@updatestatus');//actualizacion de Status del proveedor
     
     

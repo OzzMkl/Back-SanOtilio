@@ -180,27 +180,6 @@ class ProveedoresController extends Controller
         ]);
     }
 
-    /**
-     * Lista los proveedores Deshabilitados con datos de su contacto
-     * datps paginados
-     */
-    public function proveedoresDes(){
-        $proveedores = DB::table('Proveedores')
-        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*', 
-                 DB::raw('MAX(contactos.nombre) as nombreCon'),
-                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
-                 DB::raw('MAX(contactos.email) as emailCon') )
-        ->where('idStatus',30)
-        ->groupBy('proveedores.idProveedor')
-        ->paginate(10);
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'proveedores'   =>  $proveedores
-        ]);
-    }
-
     public function show($idProveedor){
        config()->set('database.connections.mysql.strict', false);//se agrega este codigo para deshabilitar el forzado de mysql
         //FUNCION QUE DEVULEVE LOS PROVEEDOr DE ACUERDO A SU ID
@@ -334,101 +313,5 @@ class ProveedoresController extends Controller
                 );
         }
         return response()->json($data, $data['code']);
-    }
-
-    /**
-     * Busca a los proveedores por su NOMBRE
-     * Solo busca a los proveedores HABILITADOS
-     */
-    public function searchNombreProveedor($nombreProveedor){
-        $proveedores = DB::table('Proveedores')
-        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*', 
-                 DB::raw('MAX(contactos.nombre) as nombreCon'),
-                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
-                 DB::raw('MAX(contactos.email) as emailCon') )
-        ->where([
-            ['Proveedores.idStatus','=','29'],
-            ['Proveedores.nombre','like','%'.$nombreProveedor.'%']
-                ])
-        ->groupBy('proveedores.idProveedor')
-        ->paginate(1);
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'proveedores'   =>  $proveedores
-        ]);
-    }
-
-    /**
-     * Busca a los proveedores por su RFC
-     * Solo busca a los proveedores HABILITADOS
-     */
-    public function searchRFCProveedor($rfc){
-        $proveedores = DB::table('Proveedores')
-        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*', 
-                 DB::raw('MAX(contactos.nombre) as nombreCon'),
-                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
-                 DB::raw('MAX(contactos.email) as emailCon') )
-        ->where([
-            ['Proveedores.idStatus','=','29'],
-            ['Proveedores.rfc','like','%'.$rfc.'%']
-                ])
-        ->groupBy('proveedores.idProveedor')
-        ->paginate(1);
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'proveedores'   =>  $proveedores
-        ]);
-    }
-
-    /**
-     * Busca a los proveedores por su NOMBRE
-     * Solo busca a los proveedores INHABILITADOS
-     */
-    public function searchNombreProveedorI($nombreProveedor){
-        $proveedores = DB::table('Proveedores')
-        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*', 
-                 DB::raw('MAX(contactos.nombre) as nombreCon'),
-                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
-                 DB::raw('MAX(contactos.email) as emailCon') )
-        ->where([
-            ['Proveedores.idStatus','=','30'],
-            ['Proveedores.nombre','like','%'.$nombreProveedor.'%']
-                ])
-        ->groupBy('proveedores.idProveedor')
-        ->paginate(1);
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'proveedores'   =>  $proveedores
-        ]);
-    }
-
-    /**
-     * Busca a los proveedores por su RFC
-     * Solo busca a los proveedores INHABILITADOS
-     */
-    public function searchRFCProveedorI($rfc){
-        $proveedores = DB::table('Proveedores')
-        ->join('contactos', 'proveedores.idProveedor', '=', 'contactos.idProveedor')
-        ->select('proveedores.*', 
-                 DB::raw('MAX(contactos.nombre) as nombreCon'),
-                 DB::raw('MAX(contactos.telefono) as telefonoCon'),
-                 DB::raw('MAX(contactos.email) as emailCon') )
-        ->where([
-            ['Proveedores.idStatus','=','30'],
-            ['Proveedores.rfc','like','%'.$rfc.'%']
-                ])
-        ->groupBy('proveedores.idProveedor')
-        ->paginate(1);
-        return response()->json([
-            'code'          =>  200,
-            'status'        => 'success',
-            'proveedores'   =>  $proveedores
-        ]);
     }
 }
