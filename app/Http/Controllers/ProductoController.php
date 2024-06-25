@@ -63,9 +63,15 @@ class ProductoController extends Controller
         ]);
     }
 
-    public function newIndex($type, $search, Request $request){
-        // Decodificar las secuencias _d_ y _dinv_
-        $search = str_replace(['_d_', '_dinv_'], ['/', '\\'], $search);
+    public function newIndex(Request $request){
+
+        $type = $request->input('type',1);
+        $search = $request->input('search','');
+        $rows = $request->input('rows',100);
+        $statusString = $request->input('status', '31'); // HABILITADO POR DEFECTO 32
+        $status = explode(',', $statusString); 
+        
+        // dd(['search' => $search, 'all' => $request->all()]);
 
         $productos = DB::table('producto')
             ->join('marca', 'marca.idMarca','=','producto.idMarca')
@@ -73,22 +79,23 @@ class ProductoController extends Controller
             ->select('producto.idProducto','producto.claveEx','producto.cbarras','producto.descripcion',
                         'producto.existenciaG','marca.nombre as nombreMarca',
                         'departamentos.nombre as nombreDep')
-            ->where('statuss',31);
+            ->whereIn('statuss',$status);
             //ClaveExterna
-            if($type == 1 && $search != 'null'){
+            if($type == 1 && $search != ''){
                 $productos->where('producto.claveEx','like',$search.'%');
             }
             //Descripcion
-            if($type == 2 && $search != 'null'){
+            if($type == 2 && $search != ''){
                 $productos->where('producto.descripcion','like',$search.'%');
             }
             //codigo de barras
-            if($type == 3 && $search != 'null'){
+            if($type == 3 && $search != ''){
                 $productos->where('producto.cbarras','like',$search.'%');
             }
-            $rows = $request->input('rows',100);
+            
             $productos = $productos->orderBy('producto.claveEx')
                             ->paginate($rows);
+
         return response()->json([
             'code'          =>  200,
             'status'        => 'success',
