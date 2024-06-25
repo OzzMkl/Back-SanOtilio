@@ -59,7 +59,7 @@ Route::get('/prueba', function(){
     /*******bancos */
     Route::get('/api/banco/index','BancoController@index');//mostrar BANcos
     /*******PRODUCTOS */
-    Route::get('/api/productos/newIndex/{type}/{search}','ProductoController@newIndex');//mostrar productos activos
+    Route::get('/api/productos/newIndex','ProductoController@newIndex');//mostrar productos activos
     Route::get('/api/productos/getAllProductoNUBE/{type}/{search}','ProductoController@getAllProductoNUBE');//mostrar catalogo de productos de la NUBE
     Route::get('/api/productos/index','ProductoController@index');//mostrar productos activos
     Route::get('/api/productos/indexPV','ProductoController@indexPV');//mostrar productos activos
