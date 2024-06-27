@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\models\Productos_ventas_corre;
+use App\models\Ventas_corre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -69,85 +71,96 @@ class VentasController extends Controller
             4, //NO COBRADA
             5, //COBRO PARCIAL
         ];
-        // dd($request->all());
-        $showCredito = $request->input('isCredito',1);
+        /**
+         * 1 Todas las ventas
+         * 2 ventasg
+         * 3 ventascre
+         * 4 ventas_corre
+         */
+        $showVenta = $request->input('showVenta',1);
         $type = $request->input('type',1);
         $search = $request->input('search','');
+        // dd($request->all());
         
-        $ventasg = Ventasg::join('cliente', 'cliente.idcliente', '=', 'ventasg.idcliente')
-                    ->join('empleado', 'empleado.idEmpleado', '=', 'ventasg.idEmpleado')
-                    ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventasg.idTipoVenta')
-                    ->select(
-                        'ventasg.*',
-                        DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
-                        DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
-                        'tiposdeventas.nombre as nombreTipoventa',
-                        DB::raw("false as isCredito")
-                    )
-                    ->whereIn('ventasg.idStatusCaja', $status);
-
-        // Consulta para ventascre
+        // Alta de variables para consulta
+        $ventasg = null;
         $ventascre=null;
-        if ($showCredito == 1 || $showCredito == 3) {
-            $ventascre = Ventascre::join('cliente', 'cliente.idcliente', '=', 'ventascre.idcliente')
-                        ->join('empleado', 'empleado.idEmpleado', '=', 'ventascre.idEmpleadoG')
-                        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventascre.idTipoVenta')
-                        ->select(
-                            'ventascre.idVenta',
-                            'ventascre.idCliente',
-                            'ventascre.cdireccion',
-                            'ventascre.idTipoVenta',
-                            'ventascre.observaciones',
-                            'ventascre.idStatusCaja',
-                            'ventascre.idStatusEntregas',
-                            'ventascre.idEmpleadoG AS idEmpleado',
-                            'ventascre.subtotal',
-                            'ventascre.descuento',
-                            'ventascre.created_at',
-                            'ventascre.updated_at',
-                            'ventascre.total',
-                            DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
-                            DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
-                            'tiposdeventas.nombre as nombreTipoventa',
-                            DB::raw("true as isCredito")
-                        )
-                        ->whereIn('ventascre.idStatusCaja', $status);
+        $ventas_corre=null;
+
+        //Filtro de busqueda entre tablas
+        if ($showVenta == 1) {//mostrar todas las ventas
+
+            $ventasg =  $this->query_ventasg_index();
+                    $ventasg->whereIn('ventasg.idStatusCaja', $status);
+
+            $ventascre = $this->query_ventascre_index();
+                        $ventascre->whereIn('ventascre.idStatusCaja', $status);
+
+            $ventas_corre = $this->query_ventas_corre_index();
+
+        } elseif( $showVenta == 2){ //mostrar solo ventasg
+            $ventasg =  $this->query_ventasg_index();
+                    $ventasg->whereIn('ventasg.idStatusCaja', $status);
+
+        }elseif($showVenta == 3){ //mostrar solo ventascre
+            $ventascre = $this->query_ventascre_index();
+                        $ventascre->whereIn('ventascre.idStatusCaja', $status);
+
+        }elseif( $showVenta == 4){ //mostrar solo ventas_corre
+            $ventas_corre = $this->query_ventas_corre_index();
         }
 
         // Filtrar por folio (idVenta)
         if ($type == 1 && $search != '') {
-            $ventasg->where('ventasg.idVenta', 'like', '%' . $search . '%');
-
+            
+            if ($ventasg) {
+                $ventasg->where('ventasg.idVenta', 'like', '%' . $search . '%');
+            }
             if ($ventascre) {
                 $ventascre->where('ventascre.idVenta', 'like', '%' . $search . '%');
+            }
+            if ($ventas_corre) {
+                $ventas_corre->where('ventas_corre.idVenta', 'like', '%' . $search . '%');
             }
         }
 
         // Filtrar por Cliente
         if ($type == 2 && $search != '') {
-            $ventasg->whereRaw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) like ?", ['%' . $search . '%']);
 
+            if ($ventasg) {
+                $ventasg->whereRaw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) like ?", ['%' . $search . '%']);
+            }
             if ($ventascre) {
                 $ventascre->whereRaw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) like ?", ['%' . $search . '%']);
+            }
+            if ($ventas_corre) {
+                $ventas_corre->whereRaw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) like ?", ['%' . $search . '%']);
             }
         }
 
         // Filtrar por Vendedor
         if ($type == 3 && $search != '') {
-            $ventasg->whereRaw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) like ?", ['%' . $search . '%']);
 
+            if ($ventasg) {
+                $ventasg->whereRaw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) like ?", ['%' . $search . '%']);
+            }
             if ($ventascre) {
                 $ventascre->whereRaw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) like ?", ['%' . $search . '%']);
             }
+            if ($ventas_corre) {
+                $ventas_corre->whereRaw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) like ?", ['%' . $search . '%']);
+            }
         }
 
-        // Obtener resultados y combinar según $showCredito
-        if ($showCredito == 1) {
-            $ventas = $ventasg->union($ventascre)->orderBy('idVenta', 'desc')->get();
-        } elseif ($showCredito == 2) {
+        // Obtener resultados y combinar según $showVenta
+        if ($showVenta == 1) {
+            $ventas = $ventasg->union($ventascre)->union($ventas_corre)->orderBy('idVenta', 'desc')->get();
+        } elseif ($showVenta == 2) {
             $ventas = $ventasg->orderBy('idVenta', 'desc')->get();
-        } elseif ($showCredito == 3) {
+        } elseif ($showVenta == 3) {
             $ventas = $ventascre->orderBy('idVenta', 'desc')->get();
+        } elseif($showVenta ==4){
+            $ventas = $ventas_corre->orderBy('idVenta', 'desc')->get();
         } else {
             // En caso de un valor inesperado para $showCredito, devuelve un error
             return response()->json([
@@ -289,7 +302,12 @@ class VentasController extends Controller
                     /**** FIN proceso de  monitoreo ****/
 
                     /** INICIO DE INSERCION DE PRODUCTOS */
-                    $dataProductos = $this->guardarProductosVenta($ventasg, $params_array['lista_productoVentag']);
+                    if($ventasg->idTipoVenta == 7){
+                        $dataProductos = [];
+                        $this->guardaVentaCorre($ventasg,$params_array['lista_productoVentag']);
+                    } else{
+                        $dataProductos = $this->guardarProductosVenta($ventasg, $params_array['lista_productoVentag']);
+                    }
                     /** FIN DE INSERCION DE PRODUCTOS */
     
                     $data = array(
@@ -1040,6 +1058,140 @@ class VentasController extends Controller
                 'message'   => 'La ip no esta registrada'
             ]);
         }
+    }
+
+    function query_ventasg_index(){
+        return Ventasg::join('cliente', 'cliente.idcliente', '=', 'ventasg.idcliente')
+        ->join('empleado', 'empleado.idEmpleado', '=', 'ventasg.idEmpleado')
+        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventasg.idTipoVenta')
+        ->select(
+            'ventasg.*',
+            DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
+            DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
+            'tiposdeventas.nombre as nombreTipoventa',
+            DB::raw("false as isCredito")
+        );
+    }
+    function query_ventascre_index(){
+        return Ventascre::join('cliente', 'cliente.idcliente', '=', 'ventascre.idcliente')
+                        ->join('empleado', 'empleado.idEmpleado', '=', 'ventascre.idEmpleadoG')
+                        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventascre.idTipoVenta')
+                        ->select(
+                            'ventascre.idVenta',
+                            'ventascre.idCliente',
+                            'ventascre.cdireccion',
+                            'ventascre.idTipoVenta',
+                            'ventascre.observaciones',
+                            'ventascre.idStatusCaja',
+                            'ventascre.idStatusEntregas',
+                            'ventascre.idEmpleadoG AS idEmpleado',
+                            'ventascre.subtotal',
+                            'ventascre.descuento',
+                            'ventascre.created_at',
+                            'ventascre.updated_at',
+                            'ventascre.total',
+                            DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
+                            DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
+                            'tiposdeventas.nombre as nombreTipoventa',
+                            DB::raw("true as isCredito")
+                        );
+    }
+
+    function query_ventas_corre_index(){
+        return Ventas_corre::join('cliente', 'cliente.idcliente', '=', 'ventas_corre.idcliente')
+                        ->join('empleado', 'empleado.idEmpleado', '=', 'ventas_corre.idEmpleado')
+                        ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventas_corre.idTipoVenta')
+                        ->select(
+                            'ventas_corre.idVenta',
+                            'ventas_corre.idCliente',
+                            'ventas_corre.cdireccion',
+                            'ventas_corre.idTipoVenta',
+                            'ventas_corre.observaciones',
+                            'ventas_corre.idStatusCaja',
+                            'ventas_corre.idStatusEntregas',
+                            'ventas_corre.idEmpleado',
+                            'ventas_corre.subtotal',
+                            'ventas_corre.descuento',
+                            'ventas_corre.created_at',
+                            'ventas_corre.updated_at',
+                            'ventas_corre.total',
+                            DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
+                            DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
+                            'tiposdeventas.nombre as nombreTipoventa',
+                            DB::raw("false as isCredito")
+                        );
+    }
+
+    //VENTA CORRE A CUENTA
+    public function guardaVentaCorre($ventag, $lista_productosVenta){
+        try{
+            DB::beginTransaction();
+
+            //Cremoas venta de tipo corre a cuenta principal
+            $venta_corre = new Ventas_corre();
+            $venta_corre->idVenta = $ventag->idVenta;
+            $venta_corre->idCliente = $ventag->idCliente;
+            $venta_corre->cdireccion = $ventag->cdireccion;
+            $venta_corre->idTipoVenta = $ventag->idTipoVenta;
+            $venta_corre->observaciones = $ventag->observaciones;
+            $venta_corre->idStatusCaja = $ventag->idStatusCaja;
+            $venta_corre->idStatusEntregas = $ventag->idStatusEntregas;
+            $venta_corre->idEmpleado = $ventag->idEmpleado;
+            $venta_corre->subtotal = $ventag->subtotal;
+            $venta_corre->descuento = $ventag->descuento;
+            $venta_corre->total = $ventag->total;
+            $venta_corre->created_at = $ventag->created_at;
+            $venta_corre->updated_at = $ventag->updated_at;
+            $venta_corre->save();
+
+            //Creamos instancia para poder ocupar las funciones
+            $clsMedMen = new clsProducto();
+
+            // recorremos la lista de productos
+            foreach($lista_productosVenta as $param => $paramdata){
+
+                $medidaMenor = $clsMedMen->cantidad_En_MedidaMenor($paramdata['idProducto'],$paramdata['idProdMedida'],$paramdata['cantidad']);
+
+                $producto_ventas_corre = new Productos_ventas_corre();
+                $producto_ventas_corre->idVentaCorre = $venta_corre->idVentaCorre;
+                $producto_ventas_corre->idVenta = $ventag->idVenta;
+                $producto_ventas_corre->idProducto = $paramdata['idProducto'];
+                $producto_ventas_corre->descripcion = $paramdata['descripcion'];
+                $producto_ventas_corre->idProdMedida = $paramdata['idProdMedida'];
+                $producto_ventas_corre->cantidad = $paramdata['cantidad'];
+                $producto_ventas_corre->precio = $paramdata['precio'];
+                $producto_ventas_corre->descuento = $paramdata['descuento'];
+                $producto_ventas_corre->total = $paramdata['total'];
+                $producto_ventas_corre->igualMedidaMenor = $medidaMenor;
+                $producto_ventas_corre-> save();
+            }
+
+            //Eliminamos venta de VENTAG
+            Ventasg::where('idVenta',$ventag->idVenta)->delete();
+
+            //Si todo es correcto mandamos el ultimo producto insertado
+            $data =  array(
+                'code' =>  200,
+                'status' => 'success',
+                'message' => 'Venta y productos registrados correctamente en Corre a cuenta',
+            );
+            
+            DB::commit();
+        } catch (\Exception $e){
+            DB::rollBack();
+
+            //Si el array esta vacio o mal echo mandamos mensaje de error
+            $data =  array(
+                'status'        => 'error',
+                'code'          =>  404,
+                'message'       =>  'ocurrio un error',
+                'error'         => $e,
+            );
+            // propagamos el error
+            throw $e;
+        }
+
+        return $data;
     }
     
     /****ENTREGAS */
