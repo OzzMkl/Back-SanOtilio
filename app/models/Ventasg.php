@@ -18,6 +18,7 @@ class Ventasg extends Model
         'idEmpleado',
         'subtotal',
         'descuento',
-        'total' 
+        'total',
+        'idVentaCorre'
     ];
 }
