@@ -191,6 +191,8 @@ Route::get('/prueba', function(){
     Route::post('/api/ventas/cancelaVenta/{idVenta}','VentasController@cancelaVenta');
     Route::put('/api/ventas/updateVenta/{idVenta}','VentasController@updateVenta');
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
+    /*****VENTAS CORRE A CUENTA*/
+    Route::get('/api/ventas/getDetallesVentaCorreAcuenta/{idVenta}','VentasController@getDetallesVentaCorreAcuenta');
 
     /*****VENTAS CANCELADAS*/
     Route::get('/api/ventas/indexVentasCanceladas/{type}/{search}','VentasController@indexVentasCanceladas');

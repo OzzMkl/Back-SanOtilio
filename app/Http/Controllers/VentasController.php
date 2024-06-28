@@ -1087,9 +1087,10 @@ class VentasController extends Controller
                             'ventascre.idEmpleadoG AS idEmpleado',
                             'ventascre.subtotal',
                             'ventascre.descuento',
+                            'ventascre.total',
+                            DB::raw("null as idVentaCorre"),
                             'ventascre.created_at',
                             'ventascre.updated_at',
-                            'ventascre.total',
                             DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
                             DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
                             'tiposdeventas.nombre as nombreTipoventa',
@@ -1112,9 +1113,10 @@ class VentasController extends Controller
                             'ventas_corre.idEmpleado',
                             'ventas_corre.subtotal',
                             'ventas_corre.descuento',
+                            'ventas_corre.total',
+                            'ventas_corre.idVentaCorre',
                             'ventas_corre.created_at',
                             'ventas_corre.updated_at',
-                            'ventas_corre.total',
                             DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
                             DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
                             'tiposdeventas.nombre as nombreTipoventa',
@@ -1192,6 +1194,50 @@ class VentasController extends Controller
         }
 
         return $data;
+    }
+
+    public function getDetallesVentaCorreAcuenta($idVenta){
+        $venta = Ventas_corre::join('cliente','cliente.idcliente','=','ventas_corre.idcliente')
+        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+        ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventas_corre.idTipoVenta')
+        ->leftjoin('statuss','statuss.idStatus','=','ventas_corre.idStatusCaja')
+        ->leftjoin('statuss as statuss2','statuss2.idStatus','=','ventas_corre.idStatusEntregas')
+        ->join('empleado','empleado.idEmpleado','=','ventas_corre.idEmpleado')
+        ->select('ventas_corre.*',
+                        'tiposdeventas.nombre as nombreTipoVenta',
+                        'statuss.nombre as nombreStatus',
+                        'statuss2.nombre as nombreStatusEntregas',
+                        DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                ->where('ventas_corre.idVenta','=',$idVenta)
+                ->first();
+        $productosVenta = Productos_ventas_corre::
+                join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ventas_corre.idProdMedida')
+                ->join('producto','producto.idProducto','=','productos_ventas_corre.idProducto')
+                ->select('productos_ventas_corre.*',
+                        'productos_ventas_corre.total as subtotal',
+                        'historialproductos_medidas.nombreMedida',
+                        'producto.claveEx as claveEx')
+                ->where('productos_ventas_corre.idVenta','=',$idVenta)
+                ->get();
+        if(is_object($venta)){
+            //Agregamos propiedad de que es acredito
+            $venta->isCredito = false;
+        
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'venta_correAcuenta'   =>  $venta,
+                'productos_ventas_correAcuenta'     => $productosVenta
+            ];
+        }else{
+            $data = [
+                'code'          => 404,
+                'status'        => 'error',
+                'message'       => 'La venta no existe.'
+            ];
+        }
+        return response()->json($data, $data['code']);
     }
     
     /****ENTREGAS */
@@ -1419,7 +1465,11 @@ class VentasController extends Controller
                 ->first();
         $productosVenta = Productos_ventascre::
                 join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','Productos_ventascre.idProdMedida')
-                ->select('Productos_ventascre.*','Productos_ventascre.total as subtotal','historialproductos_medidas.nombreMedida')
+                ->join('producto','producto.idProducto','=','Productos_ventascre.idProducto')
+                ->select('Productos_ventascre.*',
+                        'Productos_ventascre.total as subtotal',
+                        'historialproductos_medidas.nombreMedida',
+                        'producto.claveEx as claveEx')
                 ->where('Productos_ventascre.idVenta','=',$idVenta)
                 ->get();
         if(is_object($venta)){
