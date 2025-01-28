@@ -124,8 +124,8 @@ class TraspasosController extends Controller
                     'sucursalR' =>  'required|different:sucursalE',
                     'folio'     =>  'required'
                 ]);
-            }else{
-
+            }elseif($params_array['tipoTraspaso']== 'Uso interno'){
+                registerUsoInterno($params_array);
             }
 
             if($validate->fails()){
@@ -235,10 +235,8 @@ class TraspasosController extends Controller
 
     }
 
-    public function registerUsoInterno(Request $request){
-        $json = $request -> input('json',null);
-        $params_array = json_decode($json, true);
-
+    public function registerUsoInterno($params_array){
+        
         if(!empty($params_array)){
 
             if($params_array['tipoTraspaso'] == 'Uso interno'){
@@ -252,7 +250,7 @@ class TraspasosController extends Controller
                 $data = array(
                     'code'      =>  '404',
                     'status'    =>  'error',
-                    'message'   =>  'Fallo la validación de los datos del traspaso',
+                    'message'   =>  'Fallo la validación de los datos del uso interno',
                     'errors'    =>  $validate->errors()
                 );
             }else{
@@ -756,7 +754,7 @@ class TraspasosController extends Controller
     }
 
     public function showMejorado($idTraspaso,$tipoTraspaso){
-        if($tipoTraspaso == 'Envia'){
+        if($tipoTraspaso == 'Envia' || $tipoTraspaso == 'Uso interno' ){
             $tabla = 'traspasoE';
             $tablaProd = 'productos_traspasoE';
         }elseif($tipoTraspaso == 'Recibe'){
@@ -918,12 +916,12 @@ class TraspasosController extends Controller
         $params_array = json_decode($json, true);
 
         //Verificar si es local o foráneo
+        //dd('Update traspaso',$params_array);
         $connection = DB::table('sucursal')->select('connection')->where('idSuc','=',$params_array['traspaso']['sucursalR'])->value('connection');
-        //dd($connection);
         //if(count($connection) >= 1 && !empty($connection) && $params_array['tipoTraspaso'] == 'Envia'){
-        if($connection != null){
-            //si es local se consulta idStatuss en sucursalR
-            //dd($params_array['traspaso']['sucursalE']);
+        if($connection != null && $params_array['sucursalE'] != $params_array['sucursalR']){
+            //si es local se consulta idStatuss en sucursalR     
+            // dd($params_array);
             $idStatus = DB::connection($connection)->table('traspasoR')->select('idStatus')
                 ->where([
                             ['folio','=',$params_array['traspaso']['idTraspasoE']],
@@ -961,8 +959,9 @@ class TraspasosController extends Controller
             }
 
         }else{
-            //Foraneo            
+            //Foraneo o Uso interno         
             //Llamar método de actualizacion en sucursalE
+            //dd('Foraneo o Uso interno',$params_array);
             $registroSucursalE = $this->updateSucursalE($params_array);
 
             $traspaso = TraspasoE::find($params_array['traspaso']['idTraspasoE']);
