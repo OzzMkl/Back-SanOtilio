@@ -677,10 +677,10 @@ class TraspasosController extends Controller
             $pdf->SetFont('helvetica', 'B', 9); // Establece la fuente
             //INSERTAMOS CABECERAS TABLA
             $pdf->Cell(35,10,'CLAVE EXTERNA',1,0,'C',true);
-            $pdf->Cell(81, 10, 'DESCRIPCION', 1,0,'C',true);
+            $pdf->Cell(94, 10, 'DESCRIPCION', 1,0,'C',true);
             $pdf->Cell(18, 10, 'MEDIDA', 1,0,'C',true);
             $pdf->Cell(16, 10, 'CANT.', 1,0,'C',true);
-            $pdf->Cell(40, 10, 'IGUAL MEDIDA MENOR', 1,0,'C',true);
+            $pdf->Cell(27, 10, 'MEDIDA MENOR', 1,0,'C',true);
             $pdf->Ln(); // Nueva línea3
 
             $pdf->SetTextColor(0, 0, 0);
@@ -701,21 +701,67 @@ class TraspasosController extends Controller
                     $pdf->SetFont('helvetica', 'B', 10); // Establece la fuente
                     //CABECERAS TABLA
                     $pdf->Cell(35,10,'CLAVE EXTERNA',1,0,'C',true);
-                    $pdf->Cell(81, 10, 'DESCRIPCION', 1,0,'C',true);
+                    $pdf->Cell(94, 10, 'DESCRIPCION', 1,0,'C',true);
                     $pdf->Cell(18, 10, 'MEDIDA', 1,0,'C',true);
                     $pdf->Cell(16, 10, 'CANT.', 1,0,'C',true);
-                    $pdf->Cell(40, 10, 'IGUAL MEDIDA MENOR', 1,0,'C',true);
+                    $pdf->Cell(27, 10, 'MEDIDA MENOR', 1,0,'C',true);
                     $pdf->Ln(); // Nueva línea3
                 }
-                    
-                    $pdf->SetTextColor(0, 0, 0);
-                    $pdf->SetFont('helvetica', '', 9); // Establece la fuente
-                    $pdf->MultiCell(35,0,$prod->claveEx,1,'C',false,0);
-                    $pdf->MultiCell(81,0,$prod->descripcion,1,'C',false,0);
-                    $pdf->MultiCell(18,0,$prod->nombreMedida,1,'C',false,0);
-                    $pdf->MultiCell(16,0,$prod->cantidad,1,'C',false,0);
-                    $pdf->MultiCell(40,0,$prod->igualMedidaMenor,1,'C',false,0);
-                    $pdf->Ln(); // Nueva línea
+
+                $pdf->SetTextColor(0, 0, 0);
+
+                $pdf->SetFont('helvetica', '', 10); // Establece la fuente
+                
+
+                $cellHeight = max(
+                    $pdf->getStringHeight(35, $prod->claveEx),
+                    $pdf->getStringHeight(95, trim($prod->descripcion)),
+                    $pdf->getStringHeight(18, $prod->nombreMedida),
+                    $pdf->getStringHeight(16, $prod->cantidad),
+                    $pdf->getStringHeight(27, $prod->igualMedidaMenor)
+                );
+
+                //OPCION 1 ACORTAR SOLAMENTE LA DESCRIPCION DESPUES DE CALCULAR LA ALTURA DE LA CELDA
+                // $pdf->MultiCell(35, $cellHeight, $prod->claveEx, 1, 'C', false, 0);
+                // if($cellHeight >= 7 && $cellHeight < 8){
+                //     $pdf->SetFont('helvetica', '', 8); // Establece la fuente en caso de tener una descripción muy larga
+                //     $pdf->MultiCell(94, $cellHeight, trim($prod->descripcion), 1, 'C', false, 0);
+                // }elseif($cellHeight >= 8) {
+                //     $pdf->SetFont('helvetica', '', 7); // Establece la fuente para el resto de los datos largos
+                //     $pdf->MultiCell(94, $cellHeight, trim($prod->descripcion), 1, 'C', false, 0);
+                // }
+                // else{
+                //     $pdf->MultiCell(94, $cellHeight, trim($prod->descripcion), 1, 'C', false, 0);
+                // }
+                // $pdf->SetFont('helvetica', '', 9); // Establece la fuente para el resto de los datos
+                // $pdf->MultiCell(18, $cellHeight, $prod->nombreMedida, 1, 'C', false, 0);
+                // $pdf->MultiCell(16, $cellHeight, $prod->cantidad, 1, 'C', false, 0);
+                // $pdf->MultiCell(27, $cellHeight, $prod->igualMedidaMenor, 1, 'C', false, 0);
+
+                //OPCION 2 ACORTAR TODOS LOS DATOS DESPUES DE CALCULAR LA ALTURA DE LA CELDA
+                // if($cellHeight >= 7 && $cellHeight < 8){
+                //     $pdf->SetFont('helvetica', '', 8); // Establece la fuente en caso de tener una descripción muy larga
+                // }elseif($cellHeight >= 8) {
+                //     $pdf->SetFont('helvetica', '', 7); // Establece la fuente para el resto de los datos largos
+                // }
+                // else{
+                //     $pdf->SetFont('helvetica', '', 9); // Establece la fuente para el resto de los datos
+                // }
+                // $pdf->MultiCell(35, $cellHeight, $prod->claveEx, 1, 'C', false, 0);
+                // $pdf->MultiCell(94, $cellHeight, trim($prod->descripcion), 1, 'C', false, 0);
+                // $pdf->MultiCell(18, $cellHeight, $prod->nombreMedida, 1, 'C', false, 0);
+                // $pdf->MultiCell(16, $cellHeight, $prod->cantidad, 1, 'C', false, 0);
+                // $pdf->MultiCell(27, $cellHeight, $prod->igualMedidaMenor, 1, 'C', false, 0);
+
+                //OPCION 3 ACORTAR TODOS LOS DATOS DESPUES DE CALCULAR LA ALTURA DE LA CELDA CON UNA FUENTE MAYOR
+                $pdf->SetFont('helvetica', '', 9);
+                $pdf->MultiCell(35, $cellHeight, $prod->claveEx, 1, 'C', false, 0);
+                $pdf->MultiCell(94, $cellHeight, trim($prod->descripcion), 1, 'C', false, 0);
+                $pdf->MultiCell(18, $cellHeight, $prod->nombreMedida, 1, 'C', false, 0);
+                $pdf->MultiCell(16, $cellHeight, $prod->cantidad, 1, 'C', false, 0);
+                $pdf->MultiCell(27, $cellHeight, $prod->igualMedidaMenor, 1, 'C', false, 0);
+
+                $pdf->Ln(); // Nueva línea
 
                     if($contRegistros == 18){
                         $RegistroPorPagina = 25;
@@ -723,6 +769,7 @@ class TraspasosController extends Controller
                     }
 
                     $contRegistros++;
+                    $cellHeight = 0;
             }
 
             $posY= $pdf->getY();
@@ -734,6 +781,7 @@ class TraspasosController extends Controller
 
             $pdf->SetFont('helvetica', '', 9); // Establece la fuente
             $pdf->setXY(9,$posY+20);
+            // $pdf->MultiCell(0,10,'OBSERVACIONES: '. $traspaso->observaciones ,0,'L',false);
             $pdf->MultiCell(0,10,'OBSERVACIONES: '. $traspaso->observaciones ,0,'L',false);
 
             $posY = $pdf->getY();
