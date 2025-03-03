@@ -1445,7 +1445,7 @@ class ProductoController extends Controller
         /*****FIN CONVECION */
 
         //Ahora verificamos que la cantidad solicita esta disponible
-        if($existencia > $igualMedidaMenor){
+        if($existencia >= $igualMedidaMenor){
             $disponible = true;
         } else{
             $disponible = false;
