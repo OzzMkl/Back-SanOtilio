@@ -77,25 +77,25 @@ class ProveedoresController extends Controller
                 $proveedor->save();
 
                 //consultamos el proveedor ingresado
-                $idProv = DB::table('Proveedores')->where('idStatus',29)->orderBy('idProveedor','desc')->first();
+                $idProv = DB::table('Proveedores')->where('idStatus',55)->orderBy('idProveedor','desc')->first();
 
                 //insertamos su Numero de cuentra del proveedor
-                $ncp = new ncp();//creamos el objeto y asignamos
-                $ncp -> idProveedor =$idProv->idProveedor;
-                $ncp -> ncuenta = $params_array['ncuenta'];
-                $ncp -> idBanco = $params_array['idBanco'];
-                $ncp -> titular = $params_array['titular'];
-                $ncp -> clabe  = $params_array['clabe'];
-                $ncp -> save();//guardamos
+                // $ncp = new ncp();//creamos el objeto y asignamos
+                // $ncp -> idProveedor =$idProv->idProveedor;
+                // $ncp -> ncuenta = $params_array['ncuenta'];
+                // $ncp -> idBanco = $params_array['idBanco'];
+                // $ncp -> titular = $params_array['titular'];
+                // $ncp -> clabe  = $params_array['clabe'];
+                // $ncp -> save();//guardamos
 
                 //insertamos su contacto
-                $contacto = new Contacto();
-                $contacto -> idProveedor = $idProv->idProveedor;
-                $contacto -> nombre = $params_array['nombreCon'];
-                $contacto -> email  = $params_array['emailCon'];
-                $contacto -> telefono = $params_array['telefonoCon'];
-                $contacto -> puesto = $params_array['puestoCon'];
-                $contacto->save();
+                // $contacto = new Contacto();
+                // $contacto -> idProveedor = $idProv->idProveedor;
+                // $contacto -> nombre = $params_array['nombreCon'];
+                // $contacto -> email  = $params_array['emailCon'];
+                // $contacto -> telefono = $params_array['telefonoCon'];
+                // $contacto -> puesto = $params_array['puestoCon'];
+                // $contacto->save();
 
                 //Insertamos movimiento en monitoreo
                 $monitoreo = new Monitoreo();
@@ -172,7 +172,7 @@ class ProveedoresController extends Controller
      * Esta funcion se utiliza para listar proveedores dentro de un select en el front
      */
     public function ObtenerLista(){
-        $provedores = DB::table('proveedores')->where('idStatus','=','29')->get();
+        $provedores = DB::table('proveedores')->where('idStatus','=','55')->get();
         return response()->json([
             'code'  => 200,
             'status'    => 'success',
@@ -249,11 +249,11 @@ class ProveedoresController extends Controller
             $ip = $_SERVER['REMOTE_ADDR'];
             
             switch ($statusProv) {
-                case 29:
+                case 55:
                         //Si esta habilitado lo deshabilitamos
                         $proveedor = Proveedores::where('idProveedor', $idProveedor)
                                                 ->update([
-                                                    'idStatus' => 30
+                                                    'idStatus' => 56
                                                         ]);
 
                         //insertamos el movimiento que se hizo
@@ -268,14 +268,14 @@ class ProveedoresController extends Controller
                         $data = array(
                             'code'      => 200,
                             'status'    => 'success',
-                            'message'   =>  'Proveedor con id: '.$idProveedor.' actualizado a idStatus: 30'
+                            'message'   =>  'Proveedor con id: '.$idProveedor.' actualizado a idStatus: 56'
                         );
                     break;
-                case 30:
+                case 56:
                         //Si esta deshabilitado lo habilitamos
                         $proveedor = Proveedores::where('idProveedor', $idProveedor)
                                                 ->update([
-                                                    'idStatus' => 29
+                                                    'idStatus' => 55
                                                         ]);
 
                         //insertamos el movimiento que se hizo
@@ -290,7 +290,7 @@ class ProveedoresController extends Controller
                         $data = array(
                             'code'      => 200,
                             'status'    => 'success',
-                            'message'   =>  'Proveedor con id: '.$idProveedor.' actualizado a idStatus: 29'
+                            'message'   =>  'Proveedor con id: '.$idProveedor.' actualizado a idStatus: 55'
                         );
                     break;
                 default:
