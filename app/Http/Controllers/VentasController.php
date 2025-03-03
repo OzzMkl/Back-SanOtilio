@@ -1066,7 +1066,20 @@ class VentasController extends Controller
         ->join('empleado', 'empleado.idEmpleado', '=', 'ventasg.idEmpleado')
         ->join('tiposdeventas', 'tiposdeventas.idTipoVenta', '=', 'ventasg.idTipoVenta')
         ->select(
-            'ventasg.*',
+            'ventasg.idVenta',
+            'ventasg.idCliente',
+            'ventasg.cdireccion',
+            'ventasg.idTipoVenta',
+            'ventasg.observaciones',
+            'ventasg.idStatusCaja',
+            'ventasg.idStatusEntregas',
+            'ventasg.idEmpleado',
+            'ventasg.subtotal',
+            'ventasg.descuento',
+            'ventasg.total',
+            'ventasg.idVentaCorre',
+            'ventasg.created_at',
+            'ventasg.updated_at',
             DB::raw("CONCAT(cliente.nombre, ' ', cliente.aPaterno, ' ', cliente.aMaterno) as nombreCliente"),
             DB::raw("CONCAT(empleado.nombre, ' ', empleado.aPaterno, ' ', empleado.aMaterno) as nombreEmpleado"),
             'tiposdeventas.nombre as nombreTipoventa',
