@@ -900,8 +900,9 @@ class VentasController extends Controller
                                  ->get();
 
             //obtenemos direccion ip
-            // $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
-            $ip = $_SERVER['REMOTE_ADDR'];
+            $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+            // $ip = $_SERVER['REMOTE_ADDR'];
+            // dd($ip);
 
             // $datos_imp = Impresoras::where('pcVentas','=',$ip)
             $datos_imp = Impresoras::where('ipVentas','=',$ip)
