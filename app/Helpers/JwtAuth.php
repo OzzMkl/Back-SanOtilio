@@ -10,6 +10,7 @@ use Firebase\JWT\JWT;
 use Iluminate\Support\Facades\DB;
 use App\Empleado;//tabla de empleados
 use App\models\Permisos;
+use Firebase\JWT\Key;
 
 class JwtAuth{
 
@@ -58,7 +59,8 @@ class JwtAuth{
                 );
 
                 $jwt = JWT::encode($token, $this->key, 'HS256');//creamos el token
-                $decoded = JWT::decode($jwt, $this->key, ['HS256']);//deciframos el token
+                $decoded = JWT::decode($jwt, new Key($this->key, 'HS256'));
+                // $decoded = JWT::decode($jwt, $this->key, 'HS256');//deciframos el token
                 //devolver los datos decodificados o el token en funcion de los parametros
                 if(is_null($getToken)){
                         $data = $jwt;
