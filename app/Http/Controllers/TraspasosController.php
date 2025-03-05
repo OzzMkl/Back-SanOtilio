@@ -163,7 +163,7 @@ class TraspasosController extends Controller
                 // die();
 
                 //obtenemos direccion ip
-                $ip = $_SERVER['REMOTE_ADDR'];
+                //$ip = $_SERVER['REMOTE_ADDR'];
 
                 if($params_array['tipoTraspaso']== 'Envia'){
                     $Traspaso = traspasoe::latest('idTraspasoE')->value('idTraspasoE');
