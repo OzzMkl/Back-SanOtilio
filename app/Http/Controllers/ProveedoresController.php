@@ -38,7 +38,6 @@ class ProveedoresController extends Controller
                 'calle'         =>  'required',
                 'numero'        =>  'required',
                 'telefono'      =>  'required',
-                'creditoDias'   =>  'required',
                 'ncuenta'       =>  'required',
                 'idBanco'       =>  'required',
                 'titular'       =>  'required',
