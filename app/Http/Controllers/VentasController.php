@@ -537,16 +537,16 @@ class VentasController extends Controller
             // die();
             if($ventag->idTipoVenta == 1 || $ventag->idTipoVenta == 2 || $ventag->idTipoVenta == 3){
                 if($ventag->total >= 1000 || count($params_array['lista_productoVentag']) > 7){
-                    $data['ticket'] = $this-> generaTicketPeque($ventag->idVenta);
+                    $this-> generaTicketPeque($ventag->idVenta);
                 } else{
                     if($ventag->idTipoVenta == 3){
-                        $data['ticket'] = $this-> generaTicket(4,$ventag->idVenta);
+                        $this-> generaTicket(4,$ventag->idVenta);
                     } else{
-                        $data['ticket'] = $this-> generaTicket(3,$ventag->idVenta);
+                        $this-> generaTicket(3,$ventag->idVenta);
                     }
                 }
             } elseif($ventag->idTipoVenta == 4 || $ventag->idTipoVenta == 5 || $ventag->idTipoVenta == 6){
-                $data['ticket'] = $this-> generaTicketPeque($ventag->idVenta);
+                $this-> generaTicketPeque($ventag->idVenta);
             }
         }
         return response()->json($data,$data['code']);
