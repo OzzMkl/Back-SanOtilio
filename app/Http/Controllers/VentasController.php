@@ -1178,7 +1178,7 @@ class VentasController extends Controller
 
                 $producto_ventas_corre = new Productos_ventas_corre();
                 $producto_ventas_corre->idVentaCorre = $venta_corre->idVentaCorre;
-                $producto_ventas_corre->idVenta = $ventag->idVenta;
+                $producto_ventas_corre->idVentag = $ventag->idVenta;
                 $producto_ventas_corre->idProducto = $paramdata['idProducto'];
                 $producto_ventas_corre->descripcion = $paramdata['descripcion'];
                 $producto_ventas_corre->idProdMedida = $paramdata['idProdMedida'];
@@ -1187,8 +1187,12 @@ class VentasController extends Controller
                 $producto_ventas_corre->descuento = $paramdata['descuento'];
                 $producto_ventas_corre->total = $paramdata['total'];
                 $producto_ventas_corre->igualMedidaMenor = $medidaMenor;
+                $producto_ventas_corre->created_at = Carbon::now();
+                $producto_ventas_corre->updated_at = Carbon::now();
                 $producto_ventas_corre-> save();
             }
+
+            $data['ticket'] = $this-> generaTicketPeque($ventag->idVenta);
 
             //Eliminamos venta de VENTAG
             Ventasg::where('idVenta',$ventag->idVenta)->delete();
@@ -1201,6 +1205,7 @@ class VentasController extends Controller
             );
             
             DB::commit();
+
         } catch (\Exception $e){
             DB::rollBack();
 
@@ -1240,7 +1245,7 @@ class VentasController extends Controller
                         'productos_ventas_corre.total as subtotal',
                         'historialproductos_medidas.nombreMedida',
                         'producto.claveEx as claveEx')
-                ->where('productos_ventas_corre.idVenta','=',$idVenta)
+                ->where('productos_ventas_corre.idVentag','=',$idVenta)
                 ->get();
         if(is_object($venta)){
             //Agregamos propiedad de que es acredito
