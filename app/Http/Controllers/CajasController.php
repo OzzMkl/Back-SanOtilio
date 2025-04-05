@@ -13,6 +13,7 @@ use App\Caja_movimientos;
 use App\models\Ventasg;
 use App\models\Ventasf;
 use App\models\Ventascre;
+use App\models\Ventas_corre;
 use App\models\Abono_venta;
 use Illuminate\Support\Facades\Storage;
 use Validator;
@@ -20,6 +21,7 @@ use App\models\Empresa;
 use App\models\Productos_ventasg;
 use App\models\Productos_ventasf;
 use App\models\Productos_ventascre;
+use App\models\Productos_ventas_corre;
 use App\Clases\clsMonedaLiteral;
 use TCPDF;
 use Carbon\Carbon;
@@ -232,12 +234,29 @@ class CajasController extends Controller
                     //por ultimo guardamos
                     $caja_movimientos->save();
 
-                    //primero la buscamos
-                    if($params_array['isCredito'] ==  true){
+                    $venta = '';
+
+                    //primero la buscamos en creditos
+                    if ($params_array['isCredito'] == true) {
                         $venta = Ventascre::find($idVenta);
-                    } else{
-                        $venta = Ventasg::find($idVenta);
+                        $paso='credito';
+                    } else {
+                        //si no la encontramos buscamos en ventasg
+                            $venta = Ventasg::find($idVenta);
+                            $paso='ventasg';
+                        //si no la encontramos buscamos en ventas_corre
+                        if(!$venta) {
+                            $venta = Ventas_corre::where('idVenta', $idVenta)->first();
+                            $paso='ventas_corre';
+                        }
                     }
+                    
+                    //Validación de búsqueda
+                    if(!$venta){
+                        // Si no se encuentra la venta en ninguna tabla, lanzamos una excepción
+                        throw new \Exception('La venta no fue encontrada en ninguna tabla.');                            
+                    }
+                        
 
                     //Si la venta cuenta con saldo pendiente o ya tenia abonos
                     if($params_array['isSaldo'] == true || $params_array['tieneAbono'] == true){

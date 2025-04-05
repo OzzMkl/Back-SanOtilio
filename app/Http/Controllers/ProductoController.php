@@ -206,7 +206,7 @@ class ProductoController extends Controller
         //se separa y se ponen como array
         $params_array = json_decode($json, true);
 
-        // dd($params_array);
+        //dd($params_array);
             //revisamos que no vengan vacios
         if( !empty($params_array)){
             //Eliminamos el array de permisos para que unicamente quede el array que contiene
@@ -270,9 +270,13 @@ class ProductoController extends Controller
                     //consultamos el ultimo producto ingresado
                     $ultimoProducto = Producto::with('marca','departamento','categoria','status','almacen')
                                         ->find($producto->idProducto);
+
+                    
+                    
                     //Insertamos el registro del producto al historial
                     Historial_producto::insertHistorial_producto($ultimoProducto, $params_array['empleado']['sub']);
 
+                    
                     //obtenemos direccion ip
                     $ip = gethostbyaddr($_SERVER['REMOTE_ADDR']);
                     //insertamos el movimiento realizado
@@ -282,13 +286,14 @@ class ProductoController extends Controller
                     $monitoreo -> folioNuevo =  $ultimoProducto->idProducto;
                     $monitoreo -> pc =  $ip;
                     $monitoreo ->save();
-
+                    
                     /**** */
                     $dataPrecios = $this->registraPrecioProducto($params_array['empleado']['sub'],$ultimoProducto->idProducto,$params_array['lista_productosMedida']);
+                    
                     /**** */
 
                     /***Empieza registro en otras sucursales */
-                    $data_registroMultiSucursal = $this->registraProductoMultiSucursal($ultimoProducto,$params_array['empleado']['sub'],$params_array['lista_productosMedida']);
+                    //  $data_registroMultiSucursal = $this->registraProductoMultiSucursal($ultimoProducto,$params_array['empleado']['sub'],$params_array['lista_productosMedida']);
                     // $data_registroPrecioMultiSucursal = $this->registraPrecioProductoMultiSucursal($params_array['empleado']['sub'],$ultimoProducto->idProducto,$params_array['lista_productosMedida']);
 
                     //generamos respuesta
@@ -297,9 +302,11 @@ class ProductoController extends Controller
                         'code'      =>  '200',
                         'message'   =>  'El producto se a guardado correctamente',
                         'producto'  =>  $producto,
-                        'data_precios_local'  =>  $dataPrecios,
-                        'data_producto_multi'  =>  $data_registroMultiSucursal,
+                        'data_precios_local'  =>  $dataPrecios
+                        //'data_producto_multi'  =>  $data_registroMultiSucursal,
                     );
+
+                    
 
                     /******GUARDACONSULTA */
                     $file = fopen('queries.txt', 'a');

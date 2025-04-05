@@ -68,7 +68,7 @@ Route::get('/prueba', function(){
     Route::get('/api/productos/getImageProduc/{filname}', 'ProductoController@getImageProduc');
     Route::post('/api/productos/register','ProductoController@register');
     Route::post('/api/productos/registraPrecioProducto','ProductoController@registraPrecioProducto');
-    Route::get('/api/productos/{producto}','ProductoController@show');//sacar producto por id
+    //Route::get('/api/productos/{producto}','ProductoController@show');//sacar producto por id
     Route::get('/api/productos/showTwo/{producto}','ProductoController@showTwo');//sacar producto por id
     Route::put('/api/productos/updatestatus/{producto}', 'ProductoController@updateStatus');//actualizacion de Status del producto
     Route::put('/api/productos/updateProduct/{producto}', 'ProductoController@updateProduct');//actualizacion de los datos del producto
@@ -193,6 +193,8 @@ Route::get('/prueba', function(){
     //Route::get('/api/ventas/generaTicket','VentasController@generaTicket');
     /*****VENTAS CORRE A CUENTA*/
     Route::get('/api/ventas/getDetallesVentaCorreAcuenta/{idVenta}','VentasController@getDetallesVentaCorreAcuenta');
+    Route::get('/api/ventas/getVentaCorreAcuentaActual/{idCliente}','VentasController@getVentaCorreAcuentaActual');
+
 
     /*****VENTAS CANCELADAS*/
     Route::get('/api/ventas/indexVentasCanceladas/{type}/{search}','VentasController@indexVentasCanceladas');
@@ -242,10 +244,11 @@ Route::get('/prueba', function(){
 
 
     /******TRASPASOS */
-    Route::get('/api/traspasos/newIndex/{tipoTraspaso}/{str_traspaso}','TraspasosController@newIndex');
+    
     Route::post('/api/traspasos/registerTraspaso','TraspasosController@registerTraspaso');
     Route::post('/api/traspasos/registerTraspasoUsoInterno','TraspasosController@registerUsoInterno');
     Route::post('/api/traspasos/cancelarTraspaso','TraspasosController@cancelarTraspaso');
+    Route::get('/api/traspasos/newIndex/{tipoTraspaso}/{str_traspaso}','TraspasosController@newIndex');
     Route::get('/api/traspasos/generatePDF/{idTraspaso}/{idempleado}/{tipoTraspaso}','TraspasosController@generatePDF');
     Route::get('/api/traspasos/showMejorado/{idTraspaso}/{tipoTraspaso}','TraspasosController@showMejorado');
     Route::post('/api/traspasos/updateTraspaso','TraspasosController@updateTraspaso');

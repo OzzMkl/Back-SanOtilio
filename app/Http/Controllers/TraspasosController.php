@@ -236,8 +236,16 @@ class TraspasosController extends Controller
 
     }
 
-    public function registerUsoInterno($params_array){
-        
+    public function registerUsoInterno(Request $request){
+        //hay que agregar el request para poder recibir los datos
+
+        //para tomar el input o en este caso el objeto llamado json
+        $json = $request -> input('json', null);
+        //lo decodificamos como json
+        $params = json_decode($json);
+        //se separa y se ponen como array
+        $params_array = json_decode($json, true);
+
         if(!empty($params_array)){
 
             if($params_array['tipoTraspaso'] == 'Uso interno'){

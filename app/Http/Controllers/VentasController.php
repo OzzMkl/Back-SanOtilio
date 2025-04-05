@@ -97,6 +97,7 @@ class VentasController extends Controller
                         $ventascre->whereIn('ventascre.idStatusCaja', $status);
 
             $ventas_corre = $this->query_ventas_corre_index();
+                        $ventas_corre->whereIn('ventas_corre.idStatusCaja', $status);
 
         } elseif( $showVenta == 2){ //mostrar solo ventasg
             $ventasg =  $this->query_ventasg_index();
@@ -107,7 +108,7 @@ class VentasController extends Controller
                         $ventascre->whereIn('ventascre.idStatusCaja', $status);
 
         }elseif( $showVenta == 4){ //mostrar solo ventas_corre
-            $ventas_corre = $this->query_ventas_corre_index();
+            $ventas_corre = $this->query_ventas_corre_index('ventas_corre.idStatusCaja', $status);
         }
 
         // Filtrar por folio (idVenta)
@@ -419,7 +420,7 @@ class VentasController extends Controller
                         $data['ticket'] = $this-> generaTicket(3,$ventasg->idVenta);
                     }
                 }
-            } elseif($ventasg->idTipoVenta == 4 || $ventasg->idTipoVenta == 5 || $ventasg->idTipoVenta == 6){
+            } elseif($ventasg->idTipoVenta == 4 || $ventasg->idTipoVenta == 5 || $ventasg->idTipoVenta == 6 || $ventasg->idTipoVenta == 8){
                 $data['ticket'] = $this-> generaTicketPeque($ventasg->idVenta);
             }
         }
@@ -1247,6 +1248,54 @@ class VentasController extends Controller
                         'producto.claveEx as claveEx')
                 ->where('productos_ventas_corre.idVentag','=',$idVenta)
                 ->get();
+        if(is_object($venta)){
+            //Agregamos propiedad de que es acredito
+            $venta->isCredito = false;
+        
+            $data = [
+                'code'          => 200,
+                'status'        => 'success',
+                'venta_correAcuenta'   =>  $venta,
+                'productos_ventas_correAcuenta'     => $productosVenta
+            ];
+        }else{
+            $data = [
+                'code'          => 404,
+                'status'        => 'error',
+                'message'       => 'La venta no existe.'
+            ];
+        }
+        return response()->json($data, $data['code']);
+    }
+
+    public function getVentaCorreAcuentaActual($idCliente){
+        $venta = Ventas_corre::join('cliente','cliente.idcliente','=','ventas_corre.idcliente')
+        ->join('tipocliente','tipocliente.idTipo','=','cliente.idTipo')
+        ->join('tiposdeventas','tiposdeventas.idTipoVenta','=','ventas_corre.idTipoVenta')
+        ->leftjoin('statuss','statuss.idStatus','=','ventas_corre.idStatusCaja')
+        ->leftjoin('statuss as statuss2','statuss2.idStatus','=','ventas_corre.idStatusEntregas')
+        ->join('empleado','empleado.idEmpleado','=','ventas_corre.idEmpleado')
+        ->select('ventas_corre.*',
+                        'tiposdeventas.nombre as nombreTipoVenta',
+                        'statuss.nombre as nombreStatus',
+                        'statuss2.nombre as nombreStatusEntregas',
+                        DB::raw("CONCAT(cliente.nombre,' ',cliente.aPaterno,' ',cliente.aMaterno) as nombreCliente"),'cliente.rfc as clienteRFC','cliente.correo as clienteCorreo','tipocliente.nombre as tipocliente',
+                        DB::raw("CONCAT(empleado.nombre,' ',empleado.aPaterno,' ',empleado.aMaterno) as nombreEmpleado"))
+                        ->where('ventas_corre.idCliente', '=', $idCliente)
+                        ->where('ventas_corre.idStatusCaja', '=', 3)
+                        ->where('ventas_corre.idTipoVenta', '=', 7)
+                        ->where('ventas_corre.idStatusEntregas', '=', 6)
+                        ->first();
+        // $productosVenta = Productos_ventas_corre::
+        //         join('historialproductos_medidas','historialproductos_medidas.idProdMedida','=','productos_ventas_corre.idProdMedida')
+        //         ->join('producto','producto.idProducto','=','productos_ventas_corre.idProducto')
+        //         ->select('productos_ventas_corre.*',
+        //                 'productos_ventas_corre.total as subtotal',
+        //                 'historialproductos_medidas.nombreMedida',
+        //                 'producto.claveEx as claveEx')
+        //         ->where('productos_ventas_corre.idVentag','=',$idVenta)
+        //         ->get();
+        $productosVenta = [];
         if(is_object($venta)){
             //Agregamos propiedad de que es acredito
             $venta->isCredito = false;
